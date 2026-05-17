@@ -211,6 +211,71 @@ const U = {
     stripEmoji: s => s.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,''),
     clone: obj => typeof structuredClone === 'function' ? structuredClone(obj) : JSON.parse(JSON.stringify(obj)),
     _tid: null,
+    
+    // Gestione Statistiche Locali
+    getStats() {
+        try {
+            const data = localStorage.getItem('packlist_stats');
+            return data ? JSON.parse(data) : {};
+        } catch { return {}; }
+    },
+    trackStats(name, weight) {
+        const stats = this.getStats();
+        const normalizedName = name.trim().toLowerCase();
+        if (!stats[normalizedName]) {
+            stats[normalizedName] = { name: name.trim(), count: 0, totalWeight: 0, lastAdded: null };
+        }
+        stats[normalizedName].count++;
+        stats[normalizedName].totalWeight += (weight || 0);
+        stats[normalizedName].lastAdded = new Date().toISOString();
+        localStorage.setItem('packlist_stats', JSON.stringify(stats));
+    },
+    exportStats() {
+        const stats = this.getStats();
+        let csv = 'Data,Oggetto,Peso Stimato (g),Volte Aggiunto\n';
+        for (const key in stats) {
+            const item = stats[key];
+            const date = item.lastAdded ? new Date(item.lastAdded).toLocaleString('it-IT') : '';
+            csv += `"${date}","${item.name}",${item.totalWeight / item.count},${item.count}\n`;
+        }
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `packlist_log_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    },
+    showStatsModal() {
+        const stats = this.getStats();
+        const items = Object.values(stats).sort((a,b) => b.count - a.count);
+        
+        if (items.length === 0) {
+            alert('Nessuna statistica disponibile. Aggiungi qualche oggetto personalizzato per iniziare!');
+            return;
+        }
+        
+        let html = '<div style="max-height:60vh;overflow-y:auto;text-align:left;">';
+        html += '<h3>📊 Statistiche Oggetti Personalizzati</h3>';
+        html += '<table style="width:100%;border-collapse:collapse;"><tr><th style="border-bottom:2px solid #ccc;padding:8px;">Oggetto</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:center;">Volte</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:right;">Peso Medio</th></tr>';
+        
+        items.forEach(item => {
+            const avgWeight = Math.round(item.totalWeight / item.count);
+            html += `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${U.esc(item.name)}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${item.count}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${avgWeight}g</td></tr>`;
+        });
+        
+        html += '</table><br>';
+        html += '<button onclick="U.exportStats()" style="background:#4CAF50;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">📥 Scarica Report CSV</button>';
+        html += '<button onclick="document.querySelector(\'.stats-modal\').remove()" style="background:#f44336;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;margin-left:10px;">Chiudi</button>';
+        html += '</div>';
+        
+        const modal = document.createElement('div');
+        modal.className = 'stats-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+        modal.innerHTML = `<div style="background:white;padding:20px;border-radius:10px;max-width:600px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">${html}</div>`;
+        document.body.appendChild(modal);
+    },
+    
     toast(msg, type = 'success', undoCb = null) {
         clearTimeout(this._tid);
         document.querySelectorAll('.toast').forEach(t => t.remove());
@@ -414,8 +479,20 @@ const Ctrl = {
         const input = document.getElementById(inputId);
         const rawName = input?.value.trim();
         if (!rawName) return;
+        
+        // Chiedi il peso stimato
+        const weightStr = prompt(`Inserisci il peso stimato di "${rawName}" in grammi (es. 150):`, "100");
+        if (weightStr === null) return; // Annullato
+        const weight = parseInt(weightStr) || 100;
+        
         if (!STATE.list[cat]) STATE.list[cat] = [];
-        STATE.list[cat].push({ n: rawName, q: 1, checked: false, uid: U.uid(), w: 100, v: 1, worn: false, custom: true });
+        
+        const newItem = { n: rawName, q: 1, checked: false, uid: U.uid(), w: weight, v: 1, worn: false, custom: true };
+        STATE.list[cat].push(newItem);
+        
+        // Registra statistica
+        U.trackStats(rawName, weight);
+        
         input.value = '';
         this.rerender();
         U.toast('⭐ Item aggiunto!');
