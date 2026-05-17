@@ -79,8 +79,8 @@ const FILTER_MAP = {
     essentials:['Essenziali','Igiene','Salute','Comfort','Zaino','Accessori','Camping','Lavanderia','Sicurezza','Città']
 };
 
-// ── DATABASE ─────────────────────────────────────────────────
 // ── DATABASE LOGIC ────────────────────────────────────────────
+// Nota: Il database è caricato da data.json tramite loadDatabase()
 
 // Calcola la quantità basata sul tipo (fixed o nights) e sul numero di notti
 function calculateQty(item, nights) {
@@ -125,62 +125,6 @@ function generateListFromDB(nights) {
     return list;
 }
 
-const DB = {
-    base:[
-const DEFAULT_ITEMS = [
-  {n:"Mutande",q:"n",cat:"Abbigliamento Base",s:"U",w:50,v:1,overnight:true,icon:"👕"},
-  {n:"Calze",q:"n",cat:"Abbigliamento Base",s:"U",w:80,v:1,overnight:true,icon:"👕"},
-  {n:"Canottiere/Sottogiacca",q:"n",cat:"Abbigliamento Base",s:"U",w:120,v:1,overnight:true,icon:"👕"},
-  {n:"T-shirt",q:"n",cat:"Abbigliamento Base",s:"U",w:180,v:1,overnight:true,icon:"👕"},
-  {n:"Pigiama",q:"f",cat:"Abbigliamento Base",s:"U",w:300,v:1,icon:"👕"},
-  {n:"Pantaloni casual",q:"f",cat:"Abbigliamento Base",s:"U",w:400,v:1,icon:"👕"},
-  {n:"Documenti/Patente",q:"f",cat:"Essenziali",s:"U",w:30,v:1,icon:"🎒"},
-  {n:"Portafoglio/Contanti",q:"f",cat:"Essenziali",s:"U",w:100,v:1,icon:"🎒"},
-  {n:"Tessera sanitaria",q:"f",cat:"Essenziali",s:"U",w:5,v:1,icon:"🎒"},
-  {n:"Numeri emergenza locali",q:"f",cat:"Essenziali",s:"U",w:5,v:1,icon:"🎒"},
-  {n:"Copia documenti digitale",q:"f",cat:"Essenziali",s:"U",w:5,v:1,icon:"🎒"},
-  {n:"Cellulare + Cavo",q:"f",cat:"Tech",s:"U",w:250,v:1,icon:"💻"},
-  {n:"Powerbank",q:"f",cat:"Tech",s:"U",w:250,v:1,icon:"💻"},
-  {n:"Multipresa viaggio",q:"f",cat:"Tech",s:"U",w:300,v:1,icon:"💻"},
-  {n:"Cuffie",q:"f",cat:"Tech",s:"U",w:200,v:1,icon:"💻"},
-  {n:"Cavo ricarica auto",q:"f",cat:"Tech",s:"U",w:150,v:1,icon:"💻"},
-  {n:"Fogli",q:"f",cat:"Tech",s:"U",w:100,v:1,icon:"💻"},
-  {n:"Spazzolino/Dentifricio",q:"f",cat:"Igiene",s:"U",w:80,v:1,icon:"🧴"},
-  {n:"Deodorante",q:"f",cat:"Igiene",s:"U",w:100,v:1,icon:"🧴"},
-  {n:"Tagliaunghie/Pinzetta",q:"f",cat:"Igiene",s:"U",w:50,v:1,icon:"🧴"},
-  {n:"Kit Barba",q:"f",cat:"Igiene",s:"U",w:200,v:1,icon:"🧴"},
-  {n:"Shampoo",q:"f",cat:"Igiene",s:"U",w:100,v:1,icon:"🧴"},
-  {n:"Bagnoschiuma",q:"f",cat:"Igiene",s:"U",w:100,v:1,icon:"🧴"},
-  {n:"Spazzola/Pettine",q:"f",cat:"Igiene",s:"U",w:60,v:1,icon:"🧴"},
-  {n:"Bastoncini cotonati",q:"f",cat:"Igiene",s:"U",w:20,v:1,icon:"🧴"},
-  {n:"Lucido scarpe compatto",q:"f",cat:"Igiene",s:"U",w:40,v:1,icon:"🧴"},
-  {n:"Tachipirina/Oki",q:"f",cat:"Salute",s:"U",w:50,v:1,icon:"💊"},
-  {n:"Cerotti assortiti",q:"f",cat:"Salute",s:"U",w:40,v:1,icon:"💊"},
-  {n:"Disinfettante mani",q:"f",cat:"Salute",s:"U",w:100,v:1,icon:"💊"},
-  {n:"Cerotto antinausea",q:"f",cat:"Salute",s:"U",w:10,v:1,icon:"💊"},
-  {n:"Mascherina viaggio",q:"f",cat:"Salute",s:"U",w:10,v:1,icon:"💊"},
-  {n:"Crema solare SPF50",q:"f",cat:"Salute",s:"U",w:200,v:1,icon:"💊"},
-  {n:"Burrocacao",q:"f",cat:"Salute",s:"U",w:30,v:1,icon:"💊"},
-  {n:"Borraccia",q:"f",cat:"Accessori",s:"U",w:250,v:1,icon:"🔋"},
-  {n:"Occhiali da sole",q:"f",cat:"Accessori",s:"U",w:80,v:1,icon:"🔋"},
-  {n:"Cappellino",q:"f",cat:"Accessori",s:"U",w:100,v:1,icon:"🔋"},
-  {n:"Ombrello piccolo",q:"f",cat:"Accessori",s:"U",w:300,v:1,icon:"🔋"},
-  {n:"Sacca impermeabile",q:"f",cat:"Accessori",s:"U",w:150,v:1,icon:"🔋"},
-  {n:"Guanti/Berretto",q:"f",cat:"Accessori",s:"U",w:150,v:1,icon:"🔋"},
-  {n:"Sciarpa",q:"f",cat:"Accessori",s:"U",w:200,v:1,icon:"🔋"},
-  {n:"Busta panni sporchi",q:"f",cat:"Lavanderia",s:"U",w:30,v:1,icon:"🧺"},
-  {n:"Detersivo viaggio",q:"f",cat:"Lavanderia",s:"U",w:50,v:1,icon:"🧺"},
-  {n:"Ammorbidente viaggio",q:"f",cat:"Lavanderia",s:"U",w:50,v:1,icon:"🧺"},
-  {n:"Mollette viaggio",q:"f",cat:"Lavanderia",s:"U",w:30,v:1,icon:"🧺"},
-  {n:"Filo stendino",q:"f",cat:"Lavanderia",s:"U",w:40,v:1,icon:"🧺"},
-  {n:"Guscio/Impermeabile",q:"f",cat:"Abbigliamento Tecnico",s:"U",w:600,v:1,icon:"🧥"},
-  {n:"Scarpe waterproof",q:"f",cat:"Abbigliamento Tecnico",s:"U",w:800,v:1,icon:"🧥"},
-  {n:"Maglia termica",q:"f",cat:"Abbigliamento Tecnico",s:"U",w:200,v:1,icon:"🧥"},
-  {n:"Giacca pesante",q:"f",cat:"Abbigliamento Tecnico",s:"U",w:900,v:1,icon:"🧥"},
-  {n:"Occhiali guida",q:"f",cat:"Trasporto",s:"U",w:80,v:1,icon:"🚗"},
-  {n:"Kit emergenza auto",q:"f",cat:"Trasporto",s:"U",w:400,v:1,icon:"🚗"}
-];
-};
 
 // ── UTILITIES ────────────────────────────────────────────────
 const U = {
