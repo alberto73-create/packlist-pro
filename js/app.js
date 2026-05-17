@@ -645,116 +645,15 @@ const Ctrl = {
         try {
             if (Object.values(STATE.list).flat().some(i => i.checked) && !confirm('⚠️ Rigenerare sovrascriverà la lista. Continuare?')) return;
             this.syncConfig();
-            const { nights, gender, transport, laundry, laundryFreq, laundryBuffer, weather, activities } = STATE.config;
-            const isDaytrip = nights === 0;
-
-            let nCalc;
-            if (isDaytrip) { nCalc = 1; }
-            else if (laundry) { nCalc = Math.min(nights, laundryFreq) + laundryBuffer; }
-            else { nCalc = nights <= 2 ? nights : nights + 1; }
-            nCalc = Math.max(1, nCalc);
-
-            // Preserve custom items
-            const custom = {};
-            for (const cat in STATE.list) {
-                STATE.list[cat].forEach(i => {
-                    if (i.custom) { if (!custom[cat]) custom[cat]=[]; custom[cat].push(i); }
-                });
-            }
-            STATE.list = {};
-
-            const addItems = (arr, mult) => {
-                if (!arr) return;
-                arr.forEach(i => {
-                    if (!i.n || !i.cat) return;
-                    if (isDaytrip && i.overnight) return;
-                    if (i.s !== 'U' && i.s !== gender) return;
-                    if (!STATE.list[i.cat]) STATE.list[i.cat] = [];
-                    STATE.list[i.cat].push({ n: i.n, cat: i.cat, q: i.q === 'n' ? mult : 1, checked: false, uid: U.uid(), w: i.w || 100, v: i.v || 1, worn: !!i.worn, custom: false });
-                });
-            };
-
-            addItems(DB.base, nCalc);
-            addItems(DB.documents, 1);
-            addItems(DB.comfort, 1);
-            if (laundry && !isDaytrip) addItems(DB.laundry, 1);
-
-            const weatherCovered = new Set();
-            weather.forEach(w => {
-                addItems(DB.weather[w], 1);
-                DB.weather[w]?.forEach(i => weatherCovered.add(normalizeName(i.n)));
-            });
-
-            addItems(DB.transport[transport], 1);
-
-            const HEAVY_ACTIVITIES = ['trekking','alpinismo','ferrata','moto_adv','sport_invernali'];
-            const heavyCount = activities.filter(a => HEAVY_ACTIVITIES.includes(a)).length;
-            if (heavyCount > 1) {
-                setTimeout(() => U.toast('⚠️ Più attività tecniche selezionate: verifica duplicati gear nella lista', 'warning'), 800);
-            }
-
-            activities.forEach(id => {
-                const basePrefixes = ['comuni'];
-                basePrefixes.push(isDaytrip ? 'giornata' : (nights >= 2 ? 'multiday' : 'giornata'));
-                if (gender === 'F') basePrefixes.push('donna');
-                if (gender === 'M') basePrefixes.push('uomo');
-
-                const weatherPrefixes = [];
-                weather.forEach(w => {
-                    if (w==='rain') weatherPrefixes.push('pioggia');
-                    if (w==='sun') weatherPrefixes.push('sole');
-                    if (w==='cold') weatherPrefixes.push('freddo');
-                });
-
-                basePrefixes.forEach(p => {
-                    const key = `${id}_${p}`;
-                    if (DB.extra[key]) addItems(DB.extra[key], nCalc);
-                });
-
-                weatherPrefixes.forEach(p => {
-                    const key = `${id}_${p}`;
-                    if (DB.extra[key]) {
-                        const filtered = DB.extra[key].filter(i => !weatherCovered.has(normalizeName(i.n)));
-                        addItems(filtered, nCalc);
-                    }
-                });
-            });
-
-            // Deduplicator: Math.max for max quantity across contexts
-            const seenByName = new Map();
-            for (const cat in STATE.list) {
-                for (const item of STATE.list[cat]) {
-                    const nameKey = normalizeName(item.n);
-                    if (seenByName.has(nameKey)) {
-                        const existing = seenByName.get(nameKey);
-                        existing.q = Math.max(existing.q, item.q);
-                    } else {
-                        seenByName.set(nameKey, { ...item, cat });
-                    }
-                }
-            }
-
-            const deduped = {};
-            seenByName.forEach(item => {
-                if (!deduped[item.cat]) deduped[item.cat] = [];
-                deduped[item.cat].push(item);
-            });
-            STATE.list = deduped;
-
-            for (const cat in custom) {
-                if (!STATE.list[cat]) STATE.list[cat] = [];
-                STATE.list[cat].push(...custom[cat]);
-            }
-            Object.keys(STATE.list).forEach(cat => { if (!STATE.list[cat]?.length) delete STATE.list[cat]; });
-
-            if (!Object.keys(STATE.list).length) return U.toast("Nessun item! Seleziona un'attività ⚠️", 'error');
+            const isDaytrip = STATE.config.nights === 0;
+            STATE.list = generateListFromDB(STATE.config.nights);
             WARNINGS.filter(w => w.check(STATE)).forEach((w, i) => setTimeout(() => U.toast(w.msg, 'warning'), i * 600));
 
             document.getElementById('searchItems').value = '';
             document.getElementById('searchClear').classList.remove('visible');
             this.rerender();
             const totalItems = Object.values(STATE.list).flat().length;
-            U.toast(`✅ ${totalItems} item · ${isDaytrip ? 'giornata' : laundry ? nCalc + ' cambi (lavanderia)' : nCalc + ' notti'}`);
+            const cfg = STATE.config; const nCalc = cfg.laundry ? Math.min(cfg.nights, cfg.laundryFreq) + cfg.laundryBuffer : (cfg.nights <= 2 ? cfg.nights : cfg.nights + 1); U.toast(`✅ ${totalItems} item · ${isDaytrip ? 'giornata' : cfg.laundry ? nCalc + ' cambi (lavanderia)' : nCalc + ' notti'}`);
             setTimeout(() => document.getElementById('statsBar').scrollIntoView({ behavior: 'smooth' }), 150);
         } catch(e) {
             console.error(e);
