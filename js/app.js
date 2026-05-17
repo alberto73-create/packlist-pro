@@ -1,10 +1,27 @@
 // ============================================================
-//  Packlist Pro — App Logic v1.00.15
+//  Packlist Pro — App Logic v1.00.16
+//  Database-driven con calcolo intelligente per notti
 // ============================================================
+
+let PACKLIST_DATA = null;
+
+// Carica il database JSON
+async function loadDatabase() {
+    try {
+        const response = await fetch('data.json');
+        if (!response.ok) throw new Error('Impossibile caricare data.json');
+        PACKLIST_DATA = await response.json();
+        console.log('[App] Database caricato:', PACKLIST_DATA.version);
+        return true;
+    } catch (error) {
+        console.error('[App] Errore caricamento database:', error);
+        return false;
+    }
+}
 
 // ── CONFIG & STATE ───────────────────────────────────────────
 const DEFAULT_CONFIG = {
-    nights: 1, gender: 'M', transport: 'auto',
+    nights: 3, gender: 'M', transport: 'auto',
     weather: [], activities: [], laundry: false, laundryFreq: 3, laundryBuffer: 1
 };
 
@@ -63,6 +80,51 @@ const FILTER_MAP = {
 };
 
 // ── DATABASE ─────────────────────────────────────────────────
+// ── DATABASE LOGIC ────────────────────────────────────────────
+
+// Calcola la quantità basata sul tipo (fixed o nights) e sul numero di notti
+function calculateQty(item, nights) {
+    if (item.type === 'fixed') {
+        return item.baseQty;
+    } else if (item.type === 'nights') {
+        // Formula: baseQty + ceil(nights * ratio)
+        // Esempio: mutande (ratio 1) per 3 notti = 1 + 3 = 4
+        // Esempio: camicie lavoro (ratio 0.5) per 7 notti = 1 + ceil(3.5) = 5
+        const additional = Math.ceil(nights * (item.ratio || 1));
+        return Math.max(item.baseQty, additional);
+    }
+    return item.baseQty || 1;
+}
+
+// Genera la lista dal database JSON
+function generateListFromDB(nights) {
+    if (!PACKLIST_DATA) {
+        console.error('[App] Database non caricato');
+        return {};
+    }
+    
+    const list = {};
+    
+    PACKLIST_DATA.categories.forEach(cat => {
+        const categoryName = cat.name;
+        list[categoryName] = [];
+        
+        cat.items.forEach(item => {
+            const qty = calculateQty(item, nights);
+            list[categoryName].push({
+                id: item.id,
+                n: item.name,
+                q: qty,
+                w: item.weight,
+                checked: false,
+                custom: false
+            });
+        });
+    });
+    
+    return list;
+}
+
 const DB = {
     base:[
 const DEFAULT_ITEMS = [
@@ -330,16 +392,25 @@ const Ctrl = {
     rerender() { View.list(); View.stats(); Storage.queueSave(); },
 
     syncConfig() {
+        const oldNights = STATE.config.nights;
         STATE.config.nights = parseInt(document.getElementById('nights').value) || 0;
         STATE.config.gender = document.getElementById('gender').value;
         STATE.config.transport = document.getElementById('transport').value;
         STATE.config.laundryFreq = Math.max(1, parseInt(document.getElementById('laundryFreq').value) || 3);
         STATE.config.laundryBuffer = Math.max(0, parseInt(document.getElementById('laundryBuffer').value) || 1);
         STATE.config.activities = [...document.querySelectorAll('.act-btn.active')].map(el => el.id.replace('act-',''));
+        
+        // Se le notti sono cambiate, rigenera la lista dal database
+        if (oldNights !== STATE.config.nights && PACKLIST_DATA) {
+            STATE.list = generateListFromDB(STATE.config.nights);
+            console.log('[App] Lista rigenerata per', STATE.config.nights, 'notti');
+        }
+        
         const isDaytrip = STATE.config.nights === 0;
         document.getElementById('daytripBanner').classList.toggle('visible', isDaytrip);
         this._updateLaundryInfo();
         Storage.queueSave();
+        this.rerender();
     },
 
     _updateLaundryInfo() {
@@ -887,7 +958,17 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── INIT ─────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    // Carica il database JSON prima di inizializzare l'app
+    const dbLoaded = await loadDatabase();
+    if (!dbLoaded) {
+        alert('Errore: impossibile caricare il database della lista. Riprova.');
+        return;
+    }
+    
+    // Inizializza la lista dal database
+    STATE.list = generateListFromDB(STATE.config.nights);
+    
     // Build activity grid
     const grid = document.getElementById('activityGrid');
     ACTIVITIES.forEach(a => {
