@@ -184,21 +184,30 @@ const DEFAULT_ITEMS = [
 
 // ── UTILITIES ────────────────────────────────────────────────
 const U = {
-    uid: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2,9)}`,
+    uid: (() => {
+        let counter = Date.now();
+        return () => `${counter.toString(36)}-${Math.random().toString(36).substr(2,9)}`;
+    })(),
     weight: g => {
         const grams = (g && !isNaN(g) && g > 0) ? g : 0;
         return grams < 1000 ? `${grams} g` : `${Number((grams/1000).toFixed(1))} kg`;
     },
-    esc: t => !t ? '' : String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])),
+    esc: (() => {
+        const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+        return t => !t ? '' : String(t).replace(/[&<>"']/g, c => map[c]);
+    })(),
     stripEmoji: s => s.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,''),
     clone: obj => typeof structuredClone === 'function' ? structuredClone(obj) : JSON.parse(JSON.stringify(obj)),
     _tid: null,
+    _statsCache: null,
     
     // Gestione Statistiche Locali
     getStats() {
+        if (this._statsCache !== null) return this._statsCache;
         try {
             const data = localStorage.getItem('packlist_stats');
-            return data ? JSON.parse(data) : {};
+            this._statsCache = data ? JSON.parse(data) : {};
+            return this._statsCache;
         } catch { return {}; }
     },
     trackStats(name, weight) {
@@ -210,6 +219,7 @@ const U = {
         stats[normalizedName].count++;
         stats[normalizedName].totalWeight += (weight || 0);
         stats[normalizedName].lastAdded = new Date().toISOString();
+        this._statsCache = stats;
         localStorage.setItem('packlist_stats', JSON.stringify(stats));
     },
     exportStats() {
@@ -228,6 +238,7 @@ const U = {
         link.click();
         URL.revokeObjectURL(url);
     },
+    invalidateStatsCache() { this._statsCache = null; },
     showStatsModal() {
         const stats = this.getStats();
         const items = Object.values(stats).sort((a,b) => b.count - a.count);
