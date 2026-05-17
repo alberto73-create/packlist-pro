@@ -1,0 +1,11 @@
+#Images
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+*.webm
+
+#Icons and screenshots
+icons/
+screenshots/
