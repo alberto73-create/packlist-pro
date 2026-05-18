@@ -921,8 +921,6 @@ document.getElementById('results').addEventListener('click', e => {
         e.stopPropagation();
         const { action, cat, uid, input: inputId } = btn.dataset;
         if (action === 'settings') Ctrl.editItemSettings(cat, uid);
-        else if (action === 'worn') Ctrl.toggleWorn(cat, uid);
-        else if (action === 'edit') Ctrl.editWeight(cat, uid);
         else if (action === 'del') Ctrl.removeItem(cat, uid);
         else if (action === 'add') Ctrl.addCustom(cat, inputId);
         return;
