@@ -623,6 +623,59 @@ const Ctrl = {
         // choice === '4' o null: annulla
     },
 
+    editWeight(cat, uid) {
+        const item = STATE.list[cat]?.find(i => i.uid === uid);
+        if (!item) return;
+        
+        // Mostra menu con tutte le opzioni
+        const currentStatus = item.worn ? 'Indossato 🧥' : 'In valigia 🎒';
+        const options = [
+            `1. [INDOSSATO/BAGAGLIO] Toggle stato: ${currentStatus}`,
+            `2. [MODIFICA PESO] Attuale: ${U.weight(item.w)}`,
+            `3. [MODIFICA QUANTITÀ] Attuale: ${item.q}x`,
+            `4. Annulla`
+        ].join('\n');
+        
+        const choice = prompt(`⚙️ IMPOSTAZIONI: "${item.n}"\n\n${options}\n\nScegli un'opzione (1-4):`);
+        
+        if (choice === '1') {
+            const oldStatus = item.worn ? 'Indossato' : 'In valigia';
+            item.worn = !item.worn;
+            this.rerender();
+            U.trackStats('destination', item.n, item.w, item.q);
+            U.toast(`📦 Destinazione: ${oldStatus} → ${item.worn ? 'Indossato 🧥' : 'In valigia 🎒'}`);
+        } else if (choice === '2') {
+            const val = prompt(`[MODIFICA PESO]\nPeso attuale di "${item.n}": ${U.weight(item.w)}\n\nNuovo peso in grammi:`, item.w);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Peso non valido!', 'error');
+                } else {
+                    const old = item.w;
+                    item.w = num;
+                    this.rerender();
+                    U.trackStats('weight_change', item.n, num, item.q);
+                    U.toast(`⚖️ Peso: ${U.weight(old)} → ${U.weight(num)}`);
+                }
+            }
+        } else if (choice === '3') {
+            const val = prompt(`[MODIFICA QUANTITÀ]\nQuantità attuale di "${item.n}": ${item.q}x\n\nNuova quantità:`, item.q);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Quantità non valida!', 'error');
+                } else {
+                    const old = item.q;
+                    item.q = num;
+                    this.rerender();
+                    U.trackStats('qty_change', item.n, item.w, num);
+                    U.toast(`🔢 Quantità: ${old}x → ${num}x`);
+                }
+            }
+        }
+        // choice === '4' o null: annulla
+    },
+
     removeItem(cat, uid) {
         if (!STATE.list[cat]) return;
         const item = STATE.list[cat].find(i => i.uid === uid);
@@ -950,6 +1003,8 @@ document.getElementById('results').addEventListener('click', e => {
         e.stopPropagation();
         const { action, cat, uid, input: inputId } = btn.dataset;
         if (action === 'settings') Ctrl.editItemSettings(cat, uid);
+        else if (action === 'worn') Ctrl.toggleWorn(cat, uid);
+        else if (action === 'edit') Ctrl.editWeight(cat, uid);
         else if (action === 'del') Ctrl.removeItem(cat, uid);
         else if (action === 'add') Ctrl.addCustom(cat, inputId);
         return;
