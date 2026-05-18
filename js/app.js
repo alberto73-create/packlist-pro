@@ -96,31 +96,107 @@ function calculateQty(item, nights) {
     return item.baseQty || 1;
 }
 
-// Genera la lista dal database JSON
-function generateListFromDB(nights) {
+// Genera la lista dal database JSON considerando tutta la configurazione
+function generateListFromDB(config) {
     if (!PACKLIST_DATA) {
         console.error('[App] Database non caricato');
         return {};
     }
     
-    const list = {};
+    const { nights, gender, transport, laundry, laundryFreq, laundryBuffer, weather, activities } = config;
+    const isDaytrip = nights === 0;
     
-    PACKLIST_DATA.categories.forEach(cat => {
-        const categoryName = cat.name;
-        list[categoryName] = [];
+    // Calcola notti effettive per il calcolo quantità
+    let nCalc;
+    if (isDaytrip) { nCalc = 1; }
+    else if (laundry) { nCalc = Math.min(nights, laundryFreq) + laundryBuffer; }
+    else { nCalc = nights <= 2 ? nights : nights + 1; }
+    nCalc = Math.max(1, nCalc);
+    
+    const list = {};
+    const seenByName = new Map(); // Per deduplicazione
+    
+    // Funzione helper per aggiungere item
+    const addItem = (item, qtyMultiplier = 1, categoryOverride = null) => {
+        if (!item || !item.id || !item.name) return;
         
-        cat.items.forEach(item => {
-            const qty = calculateQty(item, nights);
-            list[categoryName].push({
+        // Filtra per giorno/notte (se specificato)
+        if (isDaytrip && item.overnight) return;
+        
+        // Filtra per genere (se specificato)
+        if (item.gender && item.gender !== 'U' && item.gender !== gender) return;
+        
+        // Calcola quantità
+        let qty;
+        if (item.type === 'fixed') {
+            qty = item.baseQty;
+        } else if (item.type === 'nights') {
+            const additional = Math.ceil(nCalc * (item.ratio || 1));
+            qty = Math.max(item.baseQty, additional);
+        } else {
+            qty = item.baseQty || 1;
+        }
+        qty = qty * qtyMultiplier;
+        
+        // Normalizza nome per deduplicazione
+        const normalizedName = normalizeName(item.name);
+        
+        // Usa categoria override o cerca nel database
+        let category = categoryOverride || 'Essenziali';
+        if (!categoryOverride) {
+            for (const cat of PACKLIST_DATA.categories) {
+                if (cat.items.some(i => i.id === item.id)) {
+                    category = cat.name;
+                    break;
+                }
+            }
+        }
+        
+        if (!list[category]) list[category] = [];
+        
+        // Gestione deduplicazione: tieni la quantità massima
+        if (seenByName.has(normalizedName)) {
+            const existing = seenByName.get(normalizedName);
+            existing.q = Math.max(existing.q, qty);
+        } else {
+            const newItem = {
                 id: item.id,
                 n: item.name,
+                cat: category,
                 q: qty,
-                w: item.weight,
+                w: item.weight || 100,
                 checked: false,
-                custom: false
-            });
+                custom: false,
+                overnight: !!item.overnight
+            };
+            list[category].push(newItem);
+            seenByName.set(normalizedName, newItem);
+        }
+    };
+    
+    // Aggiungi tutti gli items base da tutte le categorie
+    // Nota: Il database attuale non ha flag weather/activity/transport/gender
+    // Quindi aggiungiamo tutto e filtriamo solo per overnight se daytrip
+    PACKLIST_DATA.categories.forEach(cat => {
+        cat.items.forEach(item => {
+            // Salta solo items overnight per gite in giornata
+            if (isDaytrip && item.overnight) return;
+            
+            // Salta items di genere specifico se non corrispondono
+            if (item.gender && item.gender !== 'U' && item.gender !== gender) return;
+            
+            addItem(item, nCalc, cat.name);
         });
     });
+    
+    // Rimuovi categorie vuote
+    Object.keys(list).forEach(cat => {
+        if (!list[cat].length) delete list[cat];
+    });
+    
+    if (!Object.keys(list).length) {
+        U.toast("Nessun item! Seleziona un'attività ⚠️", 'error');
+    }
     
     return list;
 }
@@ -357,7 +433,7 @@ const Ctrl = {
         
         // Se le notti sono cambiate, rigenera la lista dal database
         if (oldNights !== STATE.config.nights && PACKLIST_DATA) {
-            STATE.list = generateListFromDB(STATE.config.nights);
+            STATE.list = generateListFromDB(STATE.config);
             console.log('[App] Lista rigenerata per', STATE.config.nights, 'notti');
         }
         
@@ -646,7 +722,7 @@ const Ctrl = {
             if (Object.values(STATE.list).flat().some(i => i.checked) && !confirm('⚠️ Rigenerare sovrascriverà la lista. Continuare?')) return;
             this.syncConfig();
             const isDaytrip = STATE.config.nights === 0;
-            STATE.list = generateListFromDB(STATE.config.nights);
+            STATE.list = generateListFromDB(STATE.config);
             WARNINGS.filter(w => w.check(STATE)).forEach((w, i) => setTimeout(() => U.toast(w.msg, 'warning'), i * 600));
 
             document.getElementById('searchItems').value = '';
@@ -821,7 +897,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Inizializza la lista dal database
-    STATE.list = generateListFromDB(STATE.config.nights);
+    STATE.list = generateListFromDB(STATE.config);
     
     // Build activity grid
     const grid = document.getElementById('activityGrid');
