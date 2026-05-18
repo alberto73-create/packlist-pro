@@ -1,5 +1,5 @@
 // ============================================================
-//  Packlist Pro — App Logic v1.00.16
+//  Packlist Pro — App Logic v1.00.17
 //  Database-driven con calcolo intelligente per notti
 // ============================================================
 
@@ -116,6 +116,30 @@ function generateListFromDB(config) {
     const list = {};
     const seenByName = new Map(); // Per deduplicazione
     
+    // Determina quali categorie includere in base alle attività
+    const includeAllActivities = !activities || activities.length === 0;
+    const activityCategories = new Set(activities.map(a => {
+        // Mappa attività -> ID categoria
+        const map = {
+            'trekking': 'trekking',
+            'piscina': 'piscina',
+            'spiaggia': 'spiaggia',
+            'citta': 'citta',
+            'lavoro': 'lavoro',
+            'cena': 'cena_elegante',
+            'ciclismo': 'ciclismo',
+            'sport_invernali': 'sport_invernali',
+            'moto_adv': 'moto_pro',
+            'camping': 'campeggio',
+            'foto': 'fotografia',
+            'fitness': 'fitness',
+            'bambini': 'bambini',
+            'alpinismo': 'tecnico',
+            'ferrata': 'tecnico'
+        };
+        return map[a];
+    }).filter(Boolean));
+    
     // Funzione helper per aggiungere item
     const addItem = (item, qtyMultiplier = 1, categoryOverride = null) => {
         if (!item || !item.id || !item.name) return;
@@ -174,10 +198,28 @@ function generateListFromDB(config) {
         }
     };
     
-    // Aggiungi tutti gli items base da tutte le categorie
-    // Nota: Il database attuale non ha flag weather/activity/transport/gender
-    // Quindi aggiungiamo tutto e filtriamo solo per overnight se daytrip
+    // Aggiungi items basati sulle attività selezionate
     PACKLIST_DATA.categories.forEach(cat => {
+        // Categorie sempre incluse (essenziali, igiene, salute, accessori, lavanderia, trasporto)
+        const alwaysIncluded = ['essenziali', 'igiene', 'salute', 'accessori', 'lavanderia', 'trasporto'];
+        const isAlwaysIncluded = alwaysIncluded.includes(cat.id);
+        
+        // Determina se includere questa categoria
+        let shouldInclude = false;
+        
+        if (isAlwaysIncluded) {
+            // Queste categorie sono sempre incluse
+            shouldInclude = true;
+        } else if (includeAllActivities) {
+            // Se nessuna attività selezionata, includi solo le categorie "alwaysIncluded"
+            shouldInclude = false;
+        } else if (activityCategories.has(cat.id)) {
+            // Se l'attività è selezionata, includi la categoria corrispondente
+            shouldInclude = true;
+        }
+        
+        if (!shouldInclude) return;
+        
         cat.items.forEach(item => {
             // Salta solo items overnight per gite in giornata
             if (isDaytrip && item.overnight) return;
@@ -759,7 +801,7 @@ const Ctrl = {
             text += '\n';
         }
         const all = Object.values(STATE.list).flat(), done = all.filter(i => i.checked).length;
-        text += `📊 ${done}/${all.length} item (${all.length ? Math.round(done/all.length*100) : 0}%)\n⚖️ In valigia: ${U.weight(suitcaseG)}\n\nPacklist Pro v1.00.14 ✨`;
+        text += `📊 ${done}/${all.length} item (${all.length ? Math.round(done/all.length*100) : 0}%)\n⚖️ In valigia: ${U.weight(suitcaseG)}\n\nPacklist Pro v1.00.17 ✨`;
         navigator.clipboard.writeText(text)
             .then(() => U.toast('📋 Lista copiata!'))
             .catch(() => {
@@ -805,7 +847,7 @@ const Ctrl = {
             doc.setFontSize(8); doc.setTextColor(71,85,105);
             doc.text(`Progresso: ${done}/${all.length} · In valigia: ${U.weight(bagG)}`, 10, y + 4);
             doc.setFontSize(7);
-            doc.text('Packlist Pro v1.00.14', 10, y + 10);
+            doc.text('Packlist Pro v1.00.17', 10, y + 10);
             doc.save(`Packlist_${new Date().toLocaleDateString('it-IT').replace(/\//g,'-')}.pdf`);
             U.toast('📄 PDF esportato!');
         } catch(e) {
