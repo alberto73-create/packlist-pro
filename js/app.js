@@ -1,5 +1,5 @@
 // ============================================================
-//  Packlist Pro — App Logic v1.00.16
+//  Packlist Pro — App Logic v1.00.17
 //  Database-driven con calcolo intelligente per notti
 // ============================================================
 
@@ -116,6 +116,30 @@ function generateListFromDB(config) {
     const list = {};
     const seenByName = new Map(); // Per deduplicazione
     
+    // Determina quali categorie includere in base alle attività
+    const includeAllActivities = !activities || activities.length === 0;
+    const activityCategories = new Set(activities.map(a => {
+        // Mappa attività -> ID categoria
+        const map = {
+            'trekking': 'trekking',
+            'piscina': 'piscina',
+            'spiaggia': 'spiaggia',
+            'citta': 'citta',
+            'lavoro': 'lavoro',
+            'cena': 'cena_elegante',
+            'ciclismo': 'ciclismo',
+            'sport_invernali': 'sport_invernali',
+            'moto_adv': 'moto_pro',
+            'camping': 'campeggio',
+            'foto': 'fotografia',
+            'fitness': 'fitness',
+            'bambini': 'bambini',
+            'alpinismo': 'tecnico',
+            'ferrata': 'tecnico'
+        };
+        return map[a];
+    }).filter(Boolean));
+    
     // Funzione helper per aggiungere item
     const addItem = (item, qtyMultiplier = 1, categoryOverride = null) => {
         if (!item || !item.id || !item.name) return;
@@ -174,10 +198,28 @@ function generateListFromDB(config) {
         }
     };
     
-    // Aggiungi tutti gli items base da tutte le categorie
-    // Nota: Il database attuale non ha flag weather/activity/transport/gender
-    // Quindi aggiungiamo tutto e filtriamo solo per overnight se daytrip
+    // Aggiungi items basati sulle attività selezionate
     PACKLIST_DATA.categories.forEach(cat => {
+        // Categorie sempre incluse (essenziali, igiene, salute, accessori, lavanderia, trasporto)
+        const alwaysIncluded = ['essenziali', 'igiene', 'salute', 'accessori', 'lavanderia', 'trasporto'];
+        const isAlwaysIncluded = alwaysIncluded.includes(cat.id);
+        
+        // Determina se includere questa categoria
+        let shouldInclude = false;
+        
+        if (isAlwaysIncluded) {
+            // Queste categorie sono sempre incluse
+            shouldInclude = true;
+        } else if (includeAllActivities) {
+            // Se nessuna attività selezionata, includi solo le categorie "alwaysIncluded"
+            shouldInclude = false;
+        } else if (activityCategories.has(cat.id)) {
+            // Se l'attività è selezionata, includi la categoria corrispondente
+            shouldInclude = true;
+        }
+        
+        if (!shouldInclude) return;
+        
         cat.items.forEach(item => {
             // Salta solo items overnight per gite in giornata
             if (isDaytrip && item.overnight) return;
@@ -584,14 +626,54 @@ const Ctrl = {
     editWeight(cat, uid) {
         const item = STATE.list[cat]?.find(i => i.uid === uid);
         if (!item) return;
-        const val = prompt(`Peso attuale di "${item.n}": ${U.weight(item.w)}\n\nNuovo peso in grammi:`, item.w);
-        if (val === null) return;
-        const num = parseInt(val);
-        if (isNaN(num) || num <= 0) return U.toast('❌ Peso non valido!', 'error');
-        const old = item.w;
-        item.w = num;
-        this.rerender();
-        U.toast(`⚖️ Peso: ${U.weight(old)} → ${U.weight(num)}`);
+        
+        // Mostra menu con tutte le opzioni
+        const currentStatus = item.worn ? 'Indossato 🧥' : 'In valigia 🎒';
+        const options = [
+            `1. [INDOSSATO/BAGAGLIO] Toggle stato: ${currentStatus}`,
+            `2. [MODIFICA PESO] Attuale: ${U.weight(item.w)}`,
+            `3. [MODIFICA QUANTITÀ] Attuale: ${item.q}x`,
+            `4. Annulla`
+        ].join('\n');
+        
+        const choice = prompt(`⚙️ IMPOSTAZIONI: "${item.n}"\n\n${options}\n\nScegli un'opzione (1-4):`);
+        
+        if (choice === '1') {
+            const oldStatus = item.worn ? 'Indossato' : 'In valigia';
+            item.worn = !item.worn;
+            this.rerender();
+            U.trackStats('destination', item.n, item.w, item.q);
+            U.toast(`📦 Destinazione: ${oldStatus} → ${item.worn ? 'Indossato 🧥' : 'In valigia 🎒'}`);
+        } else if (choice === '2') {
+            const val = prompt(`[MODIFICA PESO]\nPeso attuale di "${item.n}": ${U.weight(item.w)}\n\nNuovo peso in grammi:`, item.w);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Peso non valido!', 'error');
+                } else {
+                    const old = item.w;
+                    item.w = num;
+                    this.rerender();
+                    U.trackStats('weight_change', item.n, num, item.q);
+                    U.toast(`⚖️ Peso: ${U.weight(old)} → ${U.weight(num)}`);
+                }
+            }
+        } else if (choice === '3') {
+            const val = prompt(`[MODIFICA QUANTITÀ]\nQuantità attuale di "${item.n}": ${item.q}x\n\nNuova quantità:`, item.q);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Quantità non valida!', 'error');
+                } else {
+                    const old = item.q;
+                    item.q = num;
+                    this.rerender();
+                    U.trackStats('qty_change', item.n, item.w, num);
+                    U.toast(`🔢 Quantità: ${old}x → ${num}x`);
+                }
+            }
+        }
+        // choice === '4' o null: annulla
     },
 
     removeItem(cat, uid) {
@@ -772,7 +854,7 @@ const Ctrl = {
             text += '\n';
         }
         const all = Object.values(STATE.list).flat(), done = all.filter(i => i.checked).length;
-        text += `📊 ${done}/${all.length} item (${all.length ? Math.round(done/all.length*100) : 0}%)\n⚖️ In valigia: ${U.weight(suitcaseG)}\n\nPacklist Pro v1.00.14 ✨`;
+        text += `📊 ${done}/${all.length} item (${all.length ? Math.round(done/all.length*100) : 0}%)\n⚖️ In valigia: ${U.weight(suitcaseG)}\n\nPacklist Pro v1.00.17 ✨`;
         navigator.clipboard.writeText(text)
             .then(() => U.toast('📋 Lista copiata!'))
             .catch(() => {
@@ -818,7 +900,7 @@ const Ctrl = {
             doc.setFontSize(8); doc.setTextColor(71,85,105);
             doc.text(`Progresso: ${done}/${all.length} · In valigia: ${U.weight(bagG)}`, 10, y + 4);
             doc.setFontSize(7);
-            doc.text('Packlist Pro v1.00.14', 10, y + 10);
+            doc.text('Packlist Pro v1.00.17', 10, y + 10);
             doc.save(`Packlist_${new Date().toLocaleDateString('it-IT').replace(/\//g,'-')}.pdf`);
             U.toast('📄 PDF esportato!');
         } catch(e) {

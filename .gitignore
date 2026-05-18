@@ -1,3 +1,4 @@
+(data.json and js/app.js are source files, no build artifacts, dependencies, or temp files in the changes)
 ```
 # Compiled and build artifacts
 *.pyc
