@@ -612,6 +612,7 @@
         .ia-btn:hover { transform: scale(1.05); }
         .ia-btn.worn:hover { background: rgba(245, 158, 11, .15); }
         .ia-btn.edit:hover { background: rgba(90, 103, 242, .15); }
+        .ia-btn.settings:hover { background: rgba(139, 92, 246, .15); }
         .ia-btn.del:hover { background: rgba(244, 63, 94, .15); }
         .ia-btn.del { color: var(--rose); }
 
@@ -707,10 +708,12 @@
             pointer-events: auto;
             user-select: none;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .fab-main:hover { transform: scale(1.05); }
-        .fab-main.open { transform: rotate(90deg); background: var(--rose); }
+        .fab-main.open { transform: rotate(90deg) scale(1.1); background: var(--rose); }
+        .fab-main:active { transform: scale(0.95); }
 
         /* ─── OFFLINE INDICATOR ─────────────────────────────────── */
         .offline-bar {

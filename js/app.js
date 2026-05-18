@@ -221,7 +221,7 @@ const U = {
     _tid: null,
     _statsCache: null,
     
-    // Gestione Statistiche Locali
+    // Gestione Statistiche Locali - Traccia tutte le modifiche
     getStats() {
         if (this._statsCache !== null) return this._statsCache;
         try {
@@ -230,25 +230,70 @@ const U = {
             return this._statsCache;
         } catch { return {}; }
     },
-    trackStats(name, weight) {
+    trackStats(action, name, weight, qty = 1, extraData = {}) {
         const stats = this.getStats();
         const normalizedName = name.trim().toLowerCase();
         if (!stats[normalizedName]) {
-            stats[normalizedName] = { name: name.trim(), count: 0, totalWeight: 0, lastAdded: null };
+            stats[normalizedName] = { 
+                name: name.trim(), 
+                count: 0, 
+                removedCount: 0, 
+                totalWeight: 0, 
+                lastAdded: null, 
+                lastRemoved: null,
+                weightChanges: [],
+                qtyChanges: [],
+                destinationChanges: [],
+                allActions: []
+            };
         }
-        stats[normalizedName].count++;
-        stats[normalizedName].totalWeight += (weight || 0);
-        stats[normalizedName].lastAdded = new Date().toISOString();
+        
+        const timestamp = new Date().toISOString();
+        const actionRecord = { action, timestamp, weight, qty, ...extraData };
+        stats[normalizedName].allActions.push(actionRecord);
+        
+        if (action === 'add') {
+            stats[normalizedName].count += qty;
+            stats[normalizedName].totalWeight += (weight || 0) * qty;
+            stats[normalizedName].lastAdded = timestamp;
+        } else if (action === 'remove') {
+            stats[normalizedName].removedCount += qty;
+            stats[normalizedName].lastRemoved = timestamp;
+        } else if (action === 'weight_change') {
+            stats[normalizedName].weightChanges.push({ oldWeight: null, newWeight: weight, timestamp });
+        } else if (action === 'qty_change') {
+            stats[normalizedName].qtyChanges.push({ oldQty: null, newQty: qty, timestamp });
+        } else if (action === 'destination') {
+            stats[normalizedName].destinationChanges.push({ destination: extraData.destination || 'unknown', timestamp });
+        }
+        
         this._statsCache = stats;
         localStorage.setItem('packlist_stats', JSON.stringify(stats));
     },
     exportStats() {
         const stats = this.getStats();
-        let csv = 'Data,Oggetto,Peso Stimato (g),Volte Aggiunto\n';
+        let csv = 'Data,Oggetto,Azione,Dettagli,Peso (g),Quantità,Destinazione\n';
         for (const key in stats) {
             const item = stats[key];
-            const date = item.lastAdded ? new Date(item.lastAdded).toLocaleString('it-IT') : '';
-            csv += `"${date}","${item.name}",${item.totalWeight / item.count},${item.count}\n`;
+            // Esporta tutte le azioni registrate
+            if (item.allActions && item.allActions.length > 0) {
+                item.allActions.forEach(act => {
+                    const date = act.timestamp ? new Date(act.timestamp).toLocaleString('it-IT') : '';
+                    const actionLabel = U._getActionLabel(act.action);
+                    const details = [];
+                    if (act.action === 'weight_change') details.push(`Peso: ${act.newWeight}g`);
+                    if (act.action === 'qty_change') details.push(`Qty: ${act.qty}x`);
+                    if (act.action === 'destination') details.push(`Dest: ${act.destination || 'N/A'}`);
+                    if (act.action === 'remove') details.push('Eliminato');
+                    if (act.action === 'add') details.push('Aggiunto');
+                    csv += `"${date}","${item.name}",${actionLabel},"${details.join('; ')}",${act.weight || ''},${act.qty || ''},"${act.destination || ''}"\n`;
+                });
+            } else {
+                // Fallback per vecchi dati
+                const dateAdded = item.lastAdded ? new Date(item.lastAdded).toLocaleString('it-IT') : '';
+                const avgWeight = item.count > 0 ? Math.round(item.totalWeight / item.count) : 0;
+                csv += `"${dateAdded}","${item.name}",ADD,"Aggiunto ${item.count} volte",${avgWeight},${item.count},""\n`;
+            }
         }
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -257,6 +302,16 @@ const U = {
         link.download = `packlist_log_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
         URL.revokeObjectURL(url);
+    },
+    _getActionLabel(action) {
+        const labels = {
+            'add': 'AGGIUNTA',
+            'remove': 'ELIMINAZIONE',
+            'weight_change': 'MODIFICA PESO',
+            'qty_change': 'MODIFICA QTY',
+            'destination': 'DESTINAZIONE'
+        };
+        return labels[action] || action.toUpperCase();
     },
     invalidateStatsCache() { this._statsCache = null; },
     showStatsModal() {
@@ -270,11 +325,12 @@ const U = {
         
         let html = '<div style="max-height:60vh;overflow-y:auto;text-align:left;">';
         html += '<h3>📊 Statistiche Oggetti Personalizzati</h3>';
-        html += '<table style="width:100%;border-collapse:collapse;"><tr><th style="border-bottom:2px solid #ccc;padding:8px;">Oggetto</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:center;">Volte</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:right;">Peso Medio</th></tr>';
+        html += '<table style="width:100%;border-collapse:collapse;"><tr><th style="border-bottom:2px solid #ccc;padding:8px;">Oggetto</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:center;">Aggiunti</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:center;"> Rimossi</th><th style="border-bottom:2px solid #ccc;padding:8px;text-align:right;">Peso Medio</th></tr>';
         
         items.forEach(item => {
-            const avgWeight = Math.round(item.totalWeight / item.count);
-            html += `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${U.esc(item.name)}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${item.count}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${avgWeight}g</td></tr>`;
+            const avgWeight = item.count > 0 ? Math.round(item.totalWeight / item.count) : 0;
+            const removedCount = item.removedCount || 0;
+            html += `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${U.esc(item.name)}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${item.count}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${removedCount}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${avgWeight}g</td></tr>`;
         });
         
         html += '</table><br>';
@@ -367,8 +423,7 @@ const View = {
                         <span class="item-weight">${wDisplay}</span>
                     </div>
                     <div class="item-actions">
-                        <button class="ia-btn worn" data-action="worn" data-cat="${U.esc(cat)}" data-uid="${item.uid}" title="Toggle indossato">${item.worn ? '🧥' : '🎒'}</button>
-                        <button class="ia-btn edit" data-action="edit" data-cat="${U.esc(cat)}" data-uid="${item.uid}" title="Modifica peso">⚖️</button>
+                        <button class="ia-btn settings" data-action="settings" data-cat="${U.esc(cat)}" data-uid="${item.uid}" title="Impostazioni item">⚙️</button>
                         <button class="ia-btn del" data-action="del" data-cat="${U.esc(cat)}" data-uid="${item.uid}" title="Rimuovi">❌</button>
                     </div>`;
                 box.appendChild(row);
@@ -471,7 +526,60 @@ const Ctrl = {
     },
 
     toggleItem(cat, uid) { const item = STATE.list[cat]?.find(i => i.uid === uid); if (!item) return; item.checked = !item.checked; this.rerender(); },
-    toggleWorn(cat, uid) { const item = STATE.list[cat]?.find(i => i.uid === uid); if (!item) return; item.worn = !item.worn; this.rerender(); },
+    
+    // Funzione unificata per le impostazioni dell'item (cappotto + bilancia + quantità in uno)
+    editItemSettings(cat, uid) {
+        const item = STATE.list[cat]?.find(i => i.uid === uid);
+        if (!item) return;
+        
+        // Mostra menu con tutte le opzioni
+        const currentStatus = item.worn ? 'Indossato 🧥' : 'In valigia 🎒';
+        const options = [
+            `1. [INDOSSATO/BAGAGLIO] Toggle stato: ${currentStatus}`,
+            `2. [MODIFICA PESO] Attuale: ${U.weight(item.w)}`,
+            `3. [MODIFICA QUANTITÀ] Attuale: ${item.q}x`,
+            `4. Annulla`
+        ].join('\n');
+        
+        const choice = prompt(`⚙️ IMPOSTAZIONI: "${item.n}"\n\n${options}\n\nScegli un'opzione (1-4):`);
+        
+        if (choice === '1') {
+            const oldStatus = item.worn ? 'Indossato' : 'In valigia';
+            item.worn = !item.worn;
+            this.rerender();
+            U.trackStats('destination', item.n, item.w, item.q);
+            U.toast(`📦 Destinazione: ${oldStatus} → ${item.worn ? 'Indossato 🧥' : 'In valigia 🎒'}`);
+        } else if (choice === '2') {
+            const val = prompt(`[MODIFICA PESO]\nPeso attuale di "${item.n}": ${U.weight(item.w)}\n\nNuovo peso in grammi:`, item.w);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Peso non valido!', 'error');
+                } else {
+                    const old = item.w;
+                    item.w = num;
+                    this.rerender();
+                    U.trackStats('weight_change', item.n, num, item.q);
+                    U.toast(`⚖️ Peso: ${U.weight(old)} → ${U.weight(num)}`);
+                }
+            }
+        } else if (choice === '3') {
+            const val = prompt(`[MODIFICA QUANTITÀ]\nQuantità attuale di "${item.n}": ${item.q}x\n\nNuova quantità:`, item.q);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (isNaN(num) || num <= 0) {
+                    U.toast('❌ Quantità non valida!', 'error');
+                } else {
+                    const old = item.q;
+                    item.q = num;
+                    this.rerender();
+                    U.trackStats('qty_change', item.n, item.w, num);
+                    U.toast(`🔢 Quantità: ${old}x → ${num}x`);
+                }
+            }
+        }
+        // choice === '4' o null: annulla
+    },
 
     editWeight(cat, uid) {
         const item = STATE.list[cat]?.find(i => i.uid === uid);
@@ -491,6 +599,8 @@ const Ctrl = {
         const item = STATE.list[cat].find(i => i.uid === uid);
         if (!item) return;
         if (item.custom && !confirm(`Rimuovere "${item.n}"?`)) return;
+        // Registra statistica rimozione
+        U.trackStats('remove', item.n, item.w || 100, item.q || 1);
         STATE.list[cat] = STATE.list[cat].filter(i => i.uid !== uid);
         if (!STATE.list[cat].length) delete STATE.list[cat];
         this.rerender();
@@ -513,7 +623,7 @@ const Ctrl = {
         STATE.list[cat].push(newItem);
         
         // Registra statistica
-        U.trackStats(rawName, weight);
+        U.trackStats('add', rawName, weight, 1);
         
         input.value = '';
         this.rerender();
@@ -810,7 +920,8 @@ document.getElementById('results').addEventListener('click', e => {
     if (btn) {
         e.stopPropagation();
         const { action, cat, uid, input: inputId } = btn.dataset;
-        if (action === 'worn') Ctrl.toggleWorn(cat, uid);
+        if (action === 'settings') Ctrl.editItemSettings(cat, uid);
+        else if (action === 'worn') Ctrl.toggleWorn(cat, uid);
         else if (action === 'edit') Ctrl.editWeight(cat, uid);
         else if (action === 'del') Ctrl.removeItem(cat, uid);
         else if (action === 'add') Ctrl.addCustom(cat, inputId);
