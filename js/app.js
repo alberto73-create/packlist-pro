@@ -581,19 +581,6 @@ const Ctrl = {
         // choice === '4' o null: annulla
     },
 
-    editWeight(cat, uid) {
-        const item = STATE.list[cat]?.find(i => i.uid === uid);
-        if (!item) return;
-        const val = prompt(`Peso attuale di "${item.n}": ${U.weight(item.w)}\n\nNuovo peso in grammi:`, item.w);
-        if (val === null) return;
-        const num = parseInt(val);
-        if (isNaN(num) || num <= 0) return U.toast('❌ Peso non valido!', 'error');
-        const old = item.w;
-        item.w = num;
-        this.rerender();
-        U.toast(`⚖️ Peso: ${U.weight(old)} → ${U.weight(num)}`);
-    },
-
     removeItem(cat, uid) {
         if (!STATE.list[cat]) return;
         const item = STATE.list[cat].find(i => i.uid === uid);
