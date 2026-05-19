@@ -1,27 +1,89 @@
-// js/modules/ui.js - Gestione dell'Interfaccia Utente
+// js/modules/ui.js - Gestione dell'Interfaccia Utente - Versione Ottimizzata
+
+import { getDB } from './db.js';
+import { toggleActivity as handleToggleActivity } from './controller.js';
 
 /**
- * Renderizza la griglia delle attività
+ * Debounce utility per limitare chiamate frequenti
  */
-export function renderActivities(container, activities, selectedActivities) {
-    if (!container || !activities) return;
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
-    container.innerHTML = '';
-    activities.forEach(act => {
+/**
+ * Throttle utility per limitare frequenza esecuzione
+ */
+function throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+/**
+ * Renderizza la griglia delle attività - Versione corretta con gestione evento change
+ */
+export function renderActivities() {
+    const db = getDB();
+    const container = document.getElementById('activityGrid');
+    if (!container || !db.activities) return;
+
+    // Usa DocumentFragment per minimizzare reflow
+    const fragment = document.createDocumentFragment();
+    const selectedActivities = db.settings.selectedActivities || [];
+    
+    db.activities.forEach(act => {
         const label = document.createElement('label');
         label.className = 'activity-chip';
         const isChecked = selectedActivities.includes(act.id);
         
-        label.innerHTML = `
-            <input type="checkbox" value="${act.id}" ${isChecked ? 'checked' : ''}>
-            <span>${act.icon} ${act.name}</span>
-        `;
-        container.appendChild(label);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = act.id;
+        checkbox.checked = isChecked;
+        
+        const span = document.createElement('span');
+        span.textContent = `${act.icon} ${act.name}`;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        fragment.appendChild(label);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    
+    // Aggiungi listener per il cambio di stato delle attività
+    container.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+            const actId = e.target.value;
+            const isChecked = e.target.checked;
+            toggleActivity(actId, isChecked);
+        }
     });
 }
 
 /**
- * Crea l'elemento HTML per un item
+ * Toggle attività - wrapper per la funzione del controller
+ */
+function toggleActivity(actId, isChecked) {
+    handleToggleActivity(actId, isChecked);
+}
+
+/**
+ * Crea l'elemento HTML per un item - Versione Ottimizzata
  */
 export function createItemElement(item, state = {}) {
     const div = document.createElement('div');
@@ -39,22 +101,66 @@ export function createItemElement(item, state = {}) {
 
     const totalWeight = (item.weight * qty).toFixed(2);
 
-    div.innerHTML = `
-        <div class="item-info" style="flex-grow:1;">
-            <div class="item-name">${item.name}</div>
-            <div class="item-meta">${totalWeight}kg • Qty: ${qty}</div>
-        </div>
-        <div class="item-controls" style="display:flex; align-items:center; gap:8px;">
-            <button class="btn-icon btn-qty" aria-label="Meno">-</button>
-            <span class="qty-display">${qty}</span>
-            <button class="btn-icon btn-qty" aria-label="Più">+</button>
-            
-            <div style="width:8px;"></div>
-            
-            <button class="btn-icon btn-gear" title="Impostazioni" aria-label="Impostazioni">⚙️</button>
-            <button class="btn-icon btn-delete" title="Elimina" aria-label="Elimina">❌</button>
-        </div>
-    `;
+    // Usa createElement invece di innerHTML per migliorare sicurezza e prestazioni
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'item-info';
+    infoDiv.style.flexGrow = '1';
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'item-name';
+    nameDiv.textContent = item.name; // textContent è più sicuro di innerHTML
+    
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'item-meta';
+    metaDiv.textContent = `${totalWeight}kg • Qty: ${qty}`;
+    
+    infoDiv.appendChild(nameDiv);
+    infoDiv.appendChild(metaDiv);
+    
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'item-controls';
+    controlsDiv.style.display = 'flex';
+    controlsDiv.style.alignItems = 'center';
+    controlsDiv.style.gap = '8px';
+    
+    const btnMinus = document.createElement('button');
+    btnMinus.className = 'btn-icon btn-qty';
+    btnMinus.setAttribute('aria-label', 'Meno');
+    btnMinus.textContent = '-';
+    
+    const qtyDisplay = document.createElement('span');
+    qtyDisplay.className = 'qty-display';
+    qtyDisplay.textContent = qty;
+    
+    const btnPlus = document.createElement('button');
+    btnPlus.className = 'btn-icon btn-qty';
+    btnPlus.setAttribute('aria-label', 'Più');
+    btnPlus.textContent = '+';
+    
+    const spacer = document.createElement('div');
+    spacer.style.width = '8px';
+    
+    const btnGear = document.createElement('button');
+    btnGear.className = 'btn-icon btn-gear';
+    btnGear.setAttribute('title', 'Impostazioni');
+    btnGear.setAttribute('aria-label', 'Impostazioni');
+    btnGear.textContent = '⚙️';
+    
+    const btnDelete = document.createElement('button');
+    btnDelete.className = 'btn-icon btn-delete';
+    btnDelete.setAttribute('title', 'Elimina');
+    btnDelete.setAttribute('aria-label', 'Elimina');
+    btnDelete.textContent = '❌';
+    
+    controlsDiv.appendChild(btnMinus);
+    controlsDiv.appendChild(qtyDisplay);
+    controlsDiv.appendChild(btnPlus);
+    controlsDiv.appendChild(spacer);
+    controlsDiv.appendChild(btnGear);
+    controlsDiv.appendChild(btnDelete);
+    
+    div.appendChild(infoDiv);
+    div.appendChild(controlsDiv);
 
     return div;
 }

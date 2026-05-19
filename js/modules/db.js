@@ -1,11 +1,16 @@
-// js/modules/db.js - Gestione del Database e Dati
+// js/modules/db.js - Gestione del Database e Dati - Versione Ottimizzata
 export const DB_VERSION = "1.00.18";
 
 let db = {};
 let statsLog = [];
 
+// Cache per migliorare le prestazioni delle lookup
+let itemCache = new Map();
+let activityCache = new Map();
+let categoryCache = new Map();
+
 /**
- * Carica il database da data.json
+ * Carica il database da data.json - Versione Ottimizzata
  */
 export async function loadDatabase() {
     try {
@@ -20,7 +25,10 @@ export async function loadDatabase() {
 
         console.log(`[DB] Database caricato: ${db.version || DB_VERSION}`);
         
-        const versionEl = document.getElementById('app-version');
+        // Costruisci cache per lookup più veloci
+        rebuildCaches();
+        
+        const versionEl = document.getElementById('appVersion');
         if(versionEl) versionEl.innerText = `v${db.version || DB_VERSION}`;
 
     } catch (error) {
@@ -33,6 +41,34 @@ export async function loadDatabase() {
             settings: { selectedActivities: [], nights: 3, laundryFreq: 0 } 
         };
     }
+}
+
+/**
+ * Ricostruisce le cache per lookup veloci
+ */
+function rebuildCaches() {
+    itemCache.clear();
+    activityCache.clear();
+    categoryCache.clear();
+    
+    if (db.items) {
+        db.items.forEach(item => itemCache.set(item.id, item));
+    }
+    if (db.activities) {
+        db.activities.forEach(act => activityCache.set(act.id, act));
+    }
+    if (db.categories) {
+        db.categories.forEach(cat => categoryCache.set(cat.id, cat));
+    }
+}
+
+/**
+ * Invalida una cache specifica quando i dati cambiano
+ */
+function invalidateCache(type, id) {
+    if (type === 'item') itemCache.delete(id);
+    else if (type === 'activity') activityCache.delete(id);
+    else if (type === 'category') categoryCache.delete(id);
 }
 
 /**
@@ -50,40 +86,46 @@ export function setDB(newDB) {
 }
 
 /**
- * Ottiene il nome di un item dato l'ID
+ * Ottiene il nome di un item dato l'ID - Versione Ottimizzata con cache
  */
 export function getItemName(id) {
+    if (itemCache.has(id)) {
+        return itemCache.get(id).name;
+    }
     const item = db.items.find(i => i.id === id);
     return item ? item.name : id;
 }
 
 /**
- * Ottiene il nome di un'attività dato l'ID
+ * Ottiene il nome di un'attività dato l'ID - Versione Ottimizzata con cache
  */
 export function getActivityName(id) {
+    if (activityCache.has(id)) {
+        return activityCache.get(id).name;
+    }
     const act = db.activities.find(a => a.id === id);
     return act ? act.name : id;
 }
 
 /**
- * Ottiene un item dato l'ID
+ * Ottiene un item dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getItemById(id) {
-    return db.items.find(i => i.id === id);
+    return itemCache.get(id) || db.items.find(i => i.id === id);
 }
 
 /**
- * Ottiene un'attività dato l'ID
+ * Ottiene un'attività dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getActivityById(id) {
-    return db.activities.find(a => a.id === id);
+    return activityCache.get(id) || db.activities.find(a => a.id === id);
 }
 
 /**
- * Ottiene una categoria dato l'ID
+ * Ottiene una categoria dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getCategoryById(id) {
-    return db.categories.find(c => c.id === id);
+    return categoryCache.get(id) || db.categories.find(c => c.id === id);
 }
 
 /**

@@ -245,7 +245,7 @@
         }
 
         .weather-btn:hover { border-color: var(--amber); color: var(--amber); }
-        .weather-btn.active { border-color: var(--amber); background: rgba(245,158,11,.12); color: var(--amber); box-shadow: 0 1px 8px rgba(245,158,11,.2); }
+        .weather-btn.selected { border-color: var(--amber); background: rgba(245,158,11,.12); color: var(--amber); box-shadow: 0 1px 8px rgba(245,158,11,.2); }
 
         /* ─── ACTIVITIES ────────────────────────────────────────── */
         .activity-grid {
@@ -269,9 +269,9 @@
             will-change: transform;
         }
 
-        .act-btn:hover { border-color: var(--violet); color: var(--text); }
+        .activity-chip:hover { border-color: var(--violet); color: var(--text); }
 
-        .act-btn.active {
+        .activity-chip input:checked + span {
             border-color: var(--violet);
             background: rgba(139, 92, 246, .1);
             color: var(--text);
@@ -615,6 +615,30 @@
         .ia-btn.settings:hover { background: rgba(139, 92, 246, .15); }
         .ia-btn.del:hover { background: rgba(244, 63, 94, .15); }
         .ia-btn.del { color: var(--rose); }
+
+        .btn-icon {
+            border: none;
+            background: var(--surface2);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all .15s;
+            min-width: 32px;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+
+        .btn-icon:hover { transform: scale(1.05); background: var(--border2); }
+        .btn-icon:active { transform: scale(0.95); }
+        .btn-icon.btn-gear:hover { background: rgba(139, 92, 246, .2); }
+        .btn-icon.btn-delete:hover { background: rgba(244, 63, 94, .2); }
+        .btn-icon.btn-qty:hover { background: rgba(90, 103, 242, .2); }
+
 
         /* ─── ADD CUSTOM ────────────────────────────────────────── */
         .add-custom { display: flex; gap: 5px; margin-top: 8px; position: relative; z-index: 2; }
