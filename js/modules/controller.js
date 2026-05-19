@@ -1,20 +1,7 @@
-// js/modules/controller.js - Logica di Controllo dell'Applicazione - Versione Ottimizzata
+// js/modules/controller.js - Logica di Controllo dell'Applicazione - Versione Corretta
 
 import { getDB, getItemById, getActivityName, trackStats, removeItemFromList, updateItemQty, setItemQty, toggleWornStatus } from './db.js';
 import { createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
-
-// Listener per eventi di attività da ui.js (solo se window è disponibile)
-if (typeof window !== 'undefined') {
-    window.addEventListener('activity-changed', (e) => {
-        const { actId, isChecked } = e.detail;
-        // Registra statistiche quando un'attività cambia
-        if (isChecked) {
-            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
-        } else {
-            trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
-        }
-    });
-}
 
 /**
  * Debounce per prevenire chiamate multiple ravvicinate
@@ -31,45 +18,19 @@ function debounce(func, wait) {
     };
 }
 
-// Versione debounced di generateListFromDB per evitare refresh multipli
-const debouncedGenerateList = debounce(generateListFromDBCore, 150);
-
 /**
- * Toggle attività selezionata - Versione Ottimizzata (usata solo da app.js)
+ * Genera la lista dal database - Funzione Core
  */
-export function toggleActivity(actId, isChecked) {
-    const db = getDB();
-    
-    if (isChecked) {
-        if (!db.settings.selectedActivities.includes(actId)) {
-            db.settings.selectedActivities.push(actId);
-            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
-        }
-    } else {
-        db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
-        trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
-    }
-    
-    saveLocalSettings();
-    debouncedGenerateList(); // Usa versione debounced
-}
-
-/**
- * Genera la lista dal database - Versione Ottimizzata
- */
-export function generateListFromDB() {
-    generateListFromDBCore();
-}
-
-// Funzione core per la generazione della lista (usata anche dalla versione debounced)
 function generateListFromDBCore() {
     const db = getDB();
-    const listContainer = document.getElementById('packing-list') || document.getElementById('results');
-    if (!listContainer) return;
+    const listContainer = document.getElementById('results');
+    if (!listContainer) {
+        console.warn('[Controller] Container risultati non trovato');
+        return;
+    }
 
     // Usa DocumentFragment per minimizzare i reflow
     const fragment = document.createDocumentFragment();
-    fragment.innerHTML = '';
     
     const selectedActs = db.settings.selectedActivities || [];
     const hasActivitiesSelected = selectedActs.length > 0;
@@ -90,16 +51,8 @@ function generateListFromDBCore() {
         );
     });
 
-    // 2. Genera HTML per ogni categoria visibile
+    // 2. Genera elementi per ogni categoria visibile
     visibleCategories.forEach(cat => {
-        // Aggiungi header categoria se presente
-        if (document.getElementById('packing-list')) {
-            const catHeader = document.createElement('div');
-            catHeader.className = 'category-header';
-            catHeader.innerHTML = `<span>${cat.icon} ${cat.name}</span>`;
-            fragment.appendChild(catHeader);
-        }
-
         // Filtra gli oggetti dentro questa categoria
         const itemsForCat = db.items.filter(item => {
             if (item.category !== cat.id) return false;
@@ -125,11 +78,34 @@ function generateListFromDBCore() {
         showEmptyState(listContainer, "Nessun oggetto da mostrare. Seleziona un'attività o controlla i filtri.");
     }
     
-    calculateAndDisplayStats();
+    calculateAndDisplayStatsCore();
+}
+
+// Versione debounced di generateListFromDB per evitare refresh multipli
+const debouncedGenerateList = debounce(generateListFromDBCore, 150);
+
+/**
+ * Setup listener per eventi di attività - DA CHIAMARE DOPO IL DOMContentLoaded
+ */
+export function setupActivityListener() {
+    window.addEventListener('activity-changed', (e) => {
+        const { actId, isChecked } = e.detail;
+        
+        // Registra statistiche quando un'attività cambia
+        if (isChecked) {
+            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
+        } else {
+            trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
+        }
+        
+        // Rigenera la lista con debounce quando un'attività cambia
+        console.log('[Controller] Attività cambiata:', actId, isChecked);
+        debouncedGenerateList();
+    });
 }
 
 /**
- * Calcola e mostra le statistiche - Versione Ottimizzata
+ * Calcola e mostra le statistiche - Versione Corretta
  */
 const debouncedCalculateStats = debounce(calculateAndDisplayStatsCore, 100);
 
@@ -158,7 +134,7 @@ function calculateAndDisplayStatsCore() {
 
         if (!isNaN(qty) && !isNaN(weight)) {
             totalItems += qty;
-            totalWeight += (weight * qty); // Correzione: moltiplica peso per quantità
+            totalWeight += (weight * qty);
             totalPossibleItems += qty;
         }
         
@@ -192,10 +168,17 @@ function calculateAndDisplayStatsCore() {
 }
 
 /**
+ * Genera la lista dal database - Export pubblico
+ */
+export function generateListFromDB() {
+    generateListFromDBCore();
+}
+
+/**
  * Setup event listeners per la lista
  */
 export function setupListEventListeners(callbacks) {
-    const listContainer = document.getElementById('packing-list') || document.getElementById('results');
+    const listContainer = document.getElementById('results');
     if (!listContainer) return;
 
     listContainer.addEventListener('click', (e) => {
@@ -272,7 +255,6 @@ export function handleSettingsModal(category, itemId) {
         case 'P':
             const newWeight = parseFloat(prompt("Nuovo peso (kg):", item.weight));
             if (!isNaN(newWeight) && newWeight >= 0) {
-                // Nota: il peso è nel DB, qui sarebbe necessario aggiornare il DB locale
                 trackStats('MODIFICA_PESO', itemId, `${item.weight} -> ${newWeight} kg`);
             } else { alert("Peso non valido"); }
             break;
@@ -297,23 +279,4 @@ export function handleSettingsModal(category, itemId) {
     }
     
     calculateAndDisplayStats();
-}
-
-/**
- * Salva impostazioni locali
- */
-function saveLocalSettings() {
-    const db = getDB();
-    localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
-}
-
-/**
- * Carica impostazioni locali
- */
-export function loadLocalSettings() {
-    const saved = localStorage.getItem('packlist_settings');
-    if (saved) {
-        return JSON.parse(saved);
-    }
-    return null;
 }
