@@ -1,0 +1,266 @@
+// js/modules/controller.js - Logica di Controllo dell'Applicazione
+
+import { getDB, getItemById, getActivityName, trackStats, removeItemFromList, updateItemQty, setItemQty, toggleWornStatus } from './db.js';
+import { renderActivities, createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
+
+/**
+ * Toggle attività selezionata
+ */
+export function toggleActivity(actId, isChecked) {
+    const db = getDB();
+    
+    if (isChecked) {
+        if (!db.settings.selectedActivities.includes(actId)) {
+            db.settings.selectedActivities.push(actId);
+            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
+        }
+    } else {
+        db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
+        trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
+    }
+    
+    saveLocalSettings();
+    generateListFromDB();
+}
+
+/**
+ * Genera la lista dal database
+ */
+export function generateListFromDB() {
+    const db = getDB();
+    const listContainer = document.getElementById('packing-list') || document.getElementById('results');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+    
+    const selectedActs = db.settings.selectedActivities || [];
+    const hasActivitiesSelected = selectedActs.length > 0;
+
+    // 1. Determina quali categorie mostrare
+    const visibleCategories = db.categories.filter(cat => {
+        // Le categorie ESSENZIALI si vedono SEMPRE
+        if (cat.essential) return true;
+        
+        // Le categorie NON essenziali si vedono SOLO se:
+        // A) È selezionata almeno un'attività
+        // B) La categoria contiene oggetti pertinenti a quelle attività
+        if (!hasActivitiesSelected) return false;
+
+        return db.items.some(item => 
+            item.category === cat.id && 
+            (item.activities.length === 0 || item.activities.some(a => selectedActs.includes(a)))
+        );
+    });
+
+    // 2. Genera HTML per ogni categoria visibile
+    visibleCategories.forEach(cat => {
+        // Aggiungi header categoria se presente
+        if (document.getElementById('packing-list')) {
+            const catHeader = document.createElement('div');
+            catHeader.className = 'category-header';
+            catHeader.innerHTML = `<span>${cat.icon} ${cat.name}</span>`;
+            listContainer.appendChild(catHeader);
+        }
+
+        // Filtra gli oggetti dentro questa categoria
+        const itemsForCat = db.items.filter(item => {
+            if (item.category !== cat.id) return false;
+            
+            // Oggetti senza attività specifica (generici) -> Sempre inclusi se la categoria è visibile
+            if (item.activities.length === 0) return true;
+
+            // Oggetti specifici -> Inclusi solo se matching con attività selezionate
+            return item.activities.some(actId => selectedActs.includes(actId));
+        });
+
+        itemsForCat.forEach(item => {
+            const itemEl = createItemElement(item);
+            listContainer.appendChild(itemEl);
+        });
+    });
+
+    if (listContainer.children.length === 0) {
+        showEmptyState(listContainer, "Nessun oggetto da mostrare. Seleziona un'attività o controlla i filtri.");
+    }
+    
+    calculateAndDisplayStats();
+}
+
+/**
+ * Calcola e mostra le statistiche
+ */
+export function calculateAndDisplayStats() {
+    let totalWeight = 0;
+    let totalItems = 0;
+    let checkedItems = 0;
+    let totalPossibleItems = 0;
+
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qtyText = row.querySelector('.qty-display')?.innerText || '0';
+        const qty = parseInt(qtyText);
+        
+        const metaText = row.querySelector('.item-meta')?.innerText || '';
+        const weightPart = metaText.split('kg')[0];
+        const weight = parseFloat(weightPart);
+
+        if (!isNaN(qty) && !isNaN(weight)) {
+            totalItems += qty;
+            totalWeight += weight;
+            totalPossibleItems += qty;
+        }
+        
+        if (row.classList.contains('checked')) {
+            checkedItems += qty;
+        }
+    });
+
+    // Aggiorna UI statistiche
+    updateStatsUI(totalWeight, totalItems);
+    
+    // Aggiorna progress bar
+    const pct = totalPossibleItems > 0 ? Math.round((checkedItems / totalPossibleItems) * 100) : 0;
+    
+    const fillEl = document.getElementById('progressFill');
+    const weightFillEl = document.getElementById('weightFill');
+    
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (weightFillEl) {
+        weightFillEl.style.width = `${Math.min(100, (totalWeight / 15) * 100)}%`;
+    }
+    
+    // Aggiorna chips statistiche
+    const itemsCountEl = document.getElementById('itemsCount');
+    const weightSuitcaseEl = document.getElementById('weightSuitcase');
+    const weightTotalEl = document.getElementById('weightTotal');
+    
+    if (itemsCountEl) itemsCountEl.innerText = `${checkedItems}/${totalPossibleItems}`;
+    if (weightSuitcaseEl) weightSuitcaseEl.innerText = `${(totalWeight * 1000).toFixed(0)} g`;
+    if (weightTotalEl) weightTotalEl.innerText = `${(totalWeight * 1000).toFixed(0)} g`;
+}
+
+/**
+ * Setup event listeners per la lista
+ */
+export function setupListEventListeners(callbacks) {
+    const listContainer = document.getElementById('packing-list') || document.getElementById('results');
+    if (!listContainer) return;
+
+    listContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        const row = target.closest('.item-row');
+        
+        if (!row) return;
+        
+        const itemId = row.dataset.id;
+        const category = row.dataset.category;
+
+        // Rotella Impostazioni
+        if (target.classList.contains('btn-gear') || target.closest('.btn-gear')) {
+            e.stopPropagation();
+            if (callbacks.onSettings) callbacks.onSettings(category, itemId);
+            return;
+        }
+
+        // Elimina (X)
+        if (target.classList.contains('btn-delete') || target.closest('.btn-delete')) {
+            e.stopPropagation();
+            if (confirm(`Eliminare definitivamente "${getItemById(itemId)?.name || itemId}"?`)) {
+                removeItemFromList(itemId);
+                if (callbacks.onDelete) callbacks.onDelete(itemId);
+            }
+            return;
+        }
+        
+        // Quantità +/-
+        if (target.classList.contains('btn-qty')) {
+            const delta = target.textContent === '+' ? 1 : -1;
+            const newQty = updateItemQty(itemId, delta);
+            
+            const item = getItemById(itemId);
+            updateItemRow(row, item, newQty);
+            
+            if (callbacks.onQtyChange) callbacks.onQtyChange(itemId, delta);
+            return;
+        }
+        
+        // Toggle checkbox item
+        if (target.type === 'checkbox' || row.querySelector('input[type="checkbox"]')?.contains(target)) {
+            row.classList.toggle('checked');
+            if (callbacks.onCheck) callbacks.onCheck(itemId, row.classList.contains('checked'));
+            return;
+        }
+    });
+}
+
+/**
+ * Gestisce il modale impostazioni
+ */
+export function handleSettingsModal(category, itemId) {
+    const item = getItemById(itemId);
+    if (!item) return;
+
+    const currentState = {
+        qty: parseInt(localStorage.getItem(`item_${itemId}_qty`)) || item.defaultQty,
+        worn: localStorage.getItem(`item_${itemId}_worn`) === 'true'
+    };
+
+    const action = openSettingsModal(item, currentState);
+
+    if (!action) return;
+
+    switch(action.toUpperCase()) {
+        case 'W':
+            const isWorn = toggleWornStatus(itemId);
+            trackStats('DESTINAZIONE', itemId, `Cambiato in: ${isWorn ? 'Indossato' : 'Bagaglio'}`);
+            
+            const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
+            applyWornStatus(row, isWorn);
+            break;
+        case 'P':
+            const newWeight = parseFloat(prompt("Nuovo peso (kg):", item.weight));
+            if (!isNaN(newWeight) && newWeight >= 0) {
+                // Nota: il peso è nel DB, qui sarebbe necessario aggiornare il DB locale
+                trackStats('MODIFICA_PESO', itemId, `${item.weight} -> ${newWeight} kg`);
+            } else { alert("Peso non valido"); }
+            break;
+        case 'Q':
+            const newQty = parseInt(prompt("Nuova quantità:", currentState.qty));
+            if (!isNaN(newQty) && newQty >= 0) {
+                setItemQty(itemId, newQty);
+                trackStats('MODIFICA_QTY', itemId, `${currentState.qty} -> ${newQty}`);
+                
+                const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
+                updateItemRow(row, item, newQty);
+            } else { alert("Quantità non valida"); }
+            break;
+        case 'C':
+            if(confirm("Eliminare oggetto?")) {
+                removeItemFromList(itemId);
+                trackStats('ELIMINAZIONE_MANUALE', itemId);
+            }
+            break;
+        default:
+            alert("Comando non riconosciuto");
+    }
+    
+    calculateAndDisplayStats();
+}
+
+/**
+ * Salva impostazioni locali
+ */
+function saveLocalSettings() {
+    const db = getDB();
+    localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
+}
+
+/**
+ * Carica impostazioni locali
+ */
+export function loadLocalSettings() {
+    const saved = localStorage.getItem('packlist_settings');
+    if (saved) {
+        return JSON.parse(saved);
+    }
+    return null;
+}
