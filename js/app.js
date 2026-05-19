@@ -1,486 +1,493 @@
-// js/app.js - Versione 1.00.18 (Fix Filtro Vuoto)
-const DB_VERSION = "1.00.18";
-let db = {};
-let statsLog = [];
+// js/app.js - Entry Point dell'Applicazione Packlist Pro
+// Versione 2.0.0 - Struttura Modulare Ristrutturata
+
+import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings, exportStatsCSV } from './modules/db.js';
+import { renderActivities, generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
+import { updateProgressDisplay, showInstallBanner } from './modules/ui.js';
+import { registerServiceWorker, setupInstallPrompt, triggerInstall, dismissInstallBanner, setupOnlineOfflineHandlers } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log(`[App] Avvio versione ${DB_VERSION}`);
+    console.log('[App] Avvio Packlist Pro v2.0.0');
+    
+    // Inizializza PWA
+    await registerServiceWorker();
+    setupInstallPrompt();
+    setupOnlineOfflineHandlers();
+    
+    // Carica database
     await loadDatabase();
+    
+    // Setup UI iniziale
     setupEventListeners();
     renderActivities();
     generateListFromDB();
-    updateStatsUI();
+    calculateAndDisplayStats();
     loadLocalSettings();
+    
+    // Controlla banner installazione
+    checkInstallBanner();
 });
 
-// --- CARICAMENTO DATABASE ---
-async function loadDatabase() {
-    try {
-        const response = await fetch('data.json?t=' + new Date().getTime());
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data = await response.json();
-
-        db = data;
-        
-        if (!db.settings) db.settings = { selectedActivities: [], nights: 3, laundryFreq: 0 };
-        if (!db.settings.selectedActivities) db.settings.selectedActivities = [];
-
-        console.log(`[App] Database caricato: ${db.version || DB_VERSION}`);
-        
-        const versionEl = document.getElementById('app-version');
-        if(versionEl) versionEl.innerText = `v${db.version || DB_VERSION}`;
-
-    } catch (error) {
-        console.error("[App] Errore caricamento DB:", error);
-        db = { 
-            version: DB_VERSION,
-            categories: [], 
-            activities: [], 
-            items: [], 
-            settings: { selectedActivities: [], nights: 3, laundryFreq: 0 } 
-        };
-    }
-}
-
-// --- GESTIONE EVENTI ---
+// --- GESTIONE EVENTI GLOBALI ---
 function setupEventListeners() {
-    const listContainer = document.getElementById('packing-list');
-    if (listContainer) {
-        listContainer.addEventListener('click', (e) => {
-            const target = e.target;
-            const row = target.closest('.item-row');
-            
-            if (!row) return;
-            
-            const itemId = row.dataset.id;
-            const category = row.dataset.category;
-
-            // Rotella Impostazioni
-            if (target.classList.contains('btn-gear') || target.closest('.btn-gear')) {
-                e.stopPropagation();
-                openSettingsModal(category, itemId);
-                return;
-            }
-
-            // Elimina (X)
-            if (target.classList.contains('btn-delete') || target.closest('.btn-delete')) {
-                e.stopPropagation();
-                if(confirm(`Eliminare definitivamente "${getItemName(itemId)}"?`)) {
-                    removeItemFromList(itemId);
-                }
-                return;
-            }
-            
-            // Quantità +/-
-            if (target.classList.contains('btn-qty')) {
-                const delta = target.textContent === '+' ? 1 : -1;
-                updateQty(itemId, delta);
-                return;
+    // Setup listener per la lista items
+    setupListEventListeners({
+        onSettings: (category, itemId) => handleSettingsModal(category, itemId),
+        onDelete: () => calculateAndDisplayStats(),
+        onQtyChange: () => calculateAndDisplayStats(),
+        onCheck: () => calculateAndDisplayStats()
+    });
+    
+    // Listener per attività
+    const activityGrid = document.getElementById('activityGrid');
+    if (activityGrid) {
+        activityGrid.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                // Gestito dal controller tramite renderActivities
             }
         });
     }
-
-    // Checkbox Attività
-    document.querySelectorAll('.activity-filter input[type="checkbox"]').forEach(input => {
-        input.addEventListener('change', (e) => {
-            toggleActivity(e.target.value, e.target.checked);
+    
+    // Input viaggio
+    const nightsInput = document.getElementById('nights');
+    const genderInput = document.getElementById('gender');
+    const transportInput = document.getElementById('transport');
+    const laundryFreqInput = document.getElementById('laundryFreq');
+    const laundryBufferInput = document.getElementById('laundryBuffer');
+    
+    [nightsInput, genderInput, transportInput, laundryFreqInput, laundryBufferInput].forEach(input => {
+        if (input) {
+            input.addEventListener('change', syncConfig);
+            input.addEventListener('input', syncConfig);
+        }
+    });
+    
+    // Pulsanti meteo
+    document.querySelectorAll('.weather-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const weatherType = btn.id.replace('w-', '');
+            toggleWeather(weatherType);
+        });
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const weatherType = btn.id.replace('w-', '');
+                toggleWeather(weatherType);
+            }
         });
     });
-
-    // Input Viaggio
-    const nightsInput = document.getElementById('nights-input');
-    const laundryInput = document.getElementById('laundry-input');
     
-    if(nightsInput) nightsInput.addEventListener('change', updateTripSettings);
-    if(laundryInput) laundryInput.addEventListener('change', updateTripSettings);
-}
-
-// --- LOGICA ATTIVITÀ ---
-function toggleActivity(actId, isChecked) {
-    if (isChecked) {
-        if (!db.settings.selectedActivities.includes(actId)) {
-            db.settings.selectedActivities.push(actId);
-            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
-        }
-    } else {
-        db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
-        trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
+    // Toggle lavanderia
+    const laundryToggle = document.getElementById('laundryToggle');
+    if (laundryToggle) {
+        laundryToggle.addEventListener('click', toggleLaundry);
+        laundryToggle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleLaundry();
+            }
+        });
     }
     
-    saveLocalSettings();
+    // Template select
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                loadTemplate(e.target.value);
+                e.target.value = '';
+            }
+        });
+    }
+    
+    // Search
+    const searchInput = document.getElementById('searchItems');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterList);
+    }
+    
+    const searchClear = document.getElementById('searchClear');
+    if (searchClear) {
+        searchClear.addEventListener('click', clearSearch);
+    }
+    
+    // FAB Main
+    const fabMain = document.getElementById('fabMain');
+    if (fabMain) {
+        fabMain.addEventListener('click', toggleMenu);
+    }
+    
+    // Install banner
+    const installBtn = document.getElementById('installBtn');
+    if (installBtn) {
+        installBtn.addEventListener('click', install);
+    }
+    
+    const installClose = document.getElementById('installClose');
+    if (installClose) {
+        installClose.addEventListener('click', dismissInstall);
+    }
+}
+
+// --- FUNZIONI DI CONFIGURAZIONE ---
+export function syncConfig() {
+    const db = getDB();
+    
+    db.settings.nights = parseInt(document.getElementById('nights')?.value) || 0;
+    db.settings.gender = document.getElementById('gender')?.value || 'M';
+    db.settings.transport = document.getElementById('transport')?.value || 'auto';
+    db.settings.laundryFreq = parseInt(document.getElementById('laundryFreq')?.value) || 3;
+    db.settings.laundryBuffer = parseInt(document.getElementById('laundryBuffer')?.value) || 1;
+    
+    saveLocalSettings(db.settings);
+    updateDaytripBanner();
+    updateLaundryInfo();
+}
+
+export function toggleWeather(type) {
+    const db = getDB();
+    if (!db.settings.weathers) db.settings.weathers = [];
+    
+    const index = db.settings.weathers.indexOf(type);
+    if (index > -1) {
+        db.settings.weathers.splice(index, 1);
+    } else {
+        db.settings.weathers.push(type);
+    }
+    
+    const btn = document.getElementById(`w-${type}`);
+    if (btn) {
+        const isSelected = db.settings.weathers.includes(type);
+        btn.classList.toggle('selected', isSelected);
+        btn.setAttribute('aria-pressed', isSelected);
+    }
+    
+    saveLocalSettings(db.settings);
     generateListFromDB();
 }
 
-function renderActivities() {
-    const container = document.querySelector('.activity-filter');
-    if (!container || !db.activities) return;
-
-    container.innerHTML = '';
-    db.activities.forEach(act => {
-        const label = document.createElement('label');
-        label.className = 'activity-chip';
-        const isChecked = db.settings.selectedActivities.includes(act.id);
-        
-        label.innerHTML = `
-            <input type="checkbox" value="${act.id}" ${isChecked ? 'checked' : ''}>
-            <span>${act.icon} ${act.name}</span>
-        `;
-        container.appendChild(label);
-    });
-}
-
-// --- GENERAZIONE LISTA (LOGICA CORRETTA) ---
-function generateListFromDB() {
-    const listContainer = document.getElementById('packing-list');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
+export function toggleLaundry() {
+    const db = getDB();
+    db.settings.laundryEnabled = !db.settings.laundryEnabled;
     
-    const selectedActs = db.settings.selectedActivities || [];
-    const hasActivitiesSelected = selectedActs.length > 0;
-
-    // 1. Determina quali categorie mostrare
-    const visibleCategories = db.categories.filter(cat => {
-        // Le categorie ESSENZIALI si vedono SEMPRE
-        if (cat.essential) return true;
-        
-        // Le categorie NON essenziali si vedono SOLO se:
-        // A) È selezionata almeno un'attività
-        // B) La categoria contiene oggetti pertinenti a quelle attività
-        if (!hasActivitiesSelected) return false;
-
-        return db.items.some(item => 
-            item.category === cat.id && 
-            (item.activities.length === 0 || item.activities.some(a => selectedActs.includes(a)))
-        );
-    });
-
-    // 2. Genera HTML per ogni categoria visibile
-    visibleCategories.forEach(cat => {
-        const catHeader = document.createElement('div');
-        catHeader.className = 'category-header';
-        catHeader.innerHTML = `<span>${cat.icon} ${cat.name}</span>`;
-        listContainer.appendChild(catHeader);
-
-        // Filtra gli oggetti dentro questa categoria
-        const itemsForCat = db.items.filter(item => {
-            if (item.category !== cat.id) return false;
-            
-            // Oggetti senza attività specifica (generici) -> Sempre inclusi se la categoria è visibile
-            if (item.activities.length === 0) return true;
-
-            // Oggetti specifici -> Inclusi solo se matching con attività selezionate
-            return item.activities.some(actId => selectedActs.includes(actId));
-        });
-
-        itemsForCat.forEach(item => {
-            const itemEl = createItemElement(item);
-            listContainer.appendChild(itemEl);
-        });
-    });
-
-    if (listContainer.children.length === 0) {
-        listContainer.innerHTML = '<div class="empty-state">Nessun oggetto da mostrare. Seleziona un\'attività o controlla i filtri.</div>';
+    const toggle = document.getElementById('laundryToggle');
+    const freqBox = document.getElementById('laundryFreqBox');
+    
+    if (toggle) {
+        toggle.setAttribute('aria-pressed', db.settings.laundryEnabled);
+        toggle.classList.toggle('active', db.settings.laundryEnabled);
     }
     
-    updateStatsUI();
-}
-
-// --- CREAZIONE ELEMENTO ITEM ---
-function createItemElement(item) {
-    const div = document.createElement('div');
-    div.className = 'item-row';
-    div.dataset.id = item.id;
-    div.dataset.category = item.category;
-
-    const savedState = getItemState(item.id);
-    const qty = savedState.qty !== undefined ? savedState.qty : item.defaultQty;
-    const isWorn = savedState.worn || false;
-
-    if (isWorn) {
-        div.style.opacity = '0.6';
-        div.style.borderLeft = '4px solid #4CAF50';
+    if (freqBox) {
+        freqBox.style.display = db.settings.laundryEnabled ? 'flex' : 'none';
     }
-
-    const totalWeight = (item.weight * qty).toFixed(2);
-
-    div.innerHTML = `
-        <div class="item-info" style="flex-grow:1;">
-            <div class="item-name">${item.name}</div>
-            <div class="item-meta">${totalWeight}kg • Qty: ${qty}</div>
-        </div>
-        <div class="item-controls" style="display:flex; align-items:center; gap:8px;">
-            <button class="btn-icon btn-qty" aria-label="Meno">-</button>
-            <span class="qty-display">${qty}</span>
-            <button class="btn-icon btn-qty" aria-label="Più">+</button>
-            
-            <div style="width:8px;"></div>
-            
-            <button class="btn-icon btn-gear" title="Impostazioni" aria-label="Impostazioni">⚙️</button>
-            <button class="btn-icon btn-delete" title="Elimina" aria-label="Elimina">❌</button>
-        </div>
-    `;
-
-    return div;
-}
-
-// --- MODALE IMPOSTAZIONI ---
-function openSettingsModal(category, itemId) {
-    const item = db.items.find(i => i.id === itemId);
-    if (!item) return;
-
-    const currentState = getItemState(itemId);
-    const currentQty = currentState.qty !== undefined ? currentState.qty : item.defaultQty;
-    const currentWeight = item.weight;
-    const isWorn = currentState.worn || false;
-    const destText = isWorn ? "INDOSSATO" : "IN BAGAGLIO";
-
-    const action = prompt(
-        `IMPOSTAZIONI: ${item.name}\n` +
-        `--------------------------\n` +
-        `Stato: [${destText}]\n` +
-        `Peso: ${currentWeight} kg | Qty: ${currentQty}\n\n` +
-        `Digita una lettera:\n` +
-        `[W] Cambia destinazione (Indossato/Bagaglio)\n` +
-        `[P] Modifica Peso\n` +
-        `[Q] Modifica Quantità\n` +
-        `[C] Cancella Oggetto\n` +
-        `--------------------------`
-    );
-
-    if (!action) return;
-
-    switch(action.toUpperCase()) {
-        case 'W':
-            toggleWornStatus(itemId);
-            trackStats('DESTINAZIONE', itemId, `Cambiato in: ${!isWorn ? 'Indossato' : 'Bagaglio'}`);
-            break;
-        case 'P':
-            const newWeight = parseFloat(prompt("Nuovo peso (kg):", currentWeight));
-            if (!isNaN(newWeight) && newWeight >= 0) {
-                updateItemWeight(itemId, newWeight);
-                trackStats('MODIFICA_PESO', itemId, `${currentWeight} -> ${newWeight} kg`);
-            } else { alert("Peso non valido"); }
-            break;
-        case 'Q':
-            const newQty = parseInt(prompt("Nuova quantità:", currentQty));
-            if (!isNaN(newQty) && newQty >= 0) {
-                updateQtyInternal(itemId, newQty);
-                trackStats('MODIFICA_QTY', itemId, `${currentQty} -> ${newQty}`);
-            } else { alert("Quantità non valida"); }
-            break;
-        case 'C':
-            if(confirm("Eliminare oggetto?")) {
-                removeItemFromList(itemId);
-                trackStats('ELIMINAZIONE_MANUALE', itemId);
-            }
-            break;
-        default:
-            alert("Comando non riconosciuto");
-    }
-}
-
-// --- FUNZIONI DI STATO ---
-
-function toggleWornStatus(itemId) {
-    const state = getItemState(itemId);
-    state.worn = !state.worn;
-    saveItemState(itemId, state);
     
-    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-    if (row) {
-        row.style.opacity = state.worn ? '0.6' : '1';
-        row.style.borderLeft = state.worn ? '4px solid #4CAF50' : 'none';
-    }
-    updateStatsUI();
+    saveLocalSettings(db.settings);
+    updateLaundryInfo();
+    generateListFromDB();
 }
 
-function updateQty(itemId, delta) {
-    const state = getItemState(itemId);
-    const item = db.items.find(i => i.id === itemId);
-    let newQty = (state.qty !== undefined ? state.qty : item.defaultQty) + delta;
-
-    if (newQty < 0) newQty = 0;
-
-    state.qty = newQty;
-    saveItemState(itemId, state);
-
-    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-    if (row) {
-        row.querySelector('.qty-display').innerText = newQty;
-        const weightSpan = row.querySelector('.item-meta');
-        if (weightSpan) {
-            const totalW = (newQty * item.weight).toFixed(2);
-            weightSpan.innerText = `${totalW}kg • Qty: ${newQty}`;
-        }
-    }
-
-    if (delta > 0) trackStats('AGGIUNTA_QTY', itemId, `+${delta}`);
-    else if (delta < 0) trackStats('RIMOZIONE_QTY', itemId, `${delta}`);
+function updateLaundryInfo() {
+    const db = getDB();
+    const infoEl = document.getElementById('laundryInfo');
     
-    updateStatsUI();
-}
-
-function updateQtyInternal(itemId, newQty) {
-    const state = getItemState(itemId);
-    state.qty = newQty;
-    saveItemState(itemId, state);
+    if (!db.settings.laundryEnabled || !infoEl) {
+        if (infoEl) infoEl.textContent = '';
+        return;
+    }
     
-    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-    if (row) {
-        const item = db.items.find(i => i.id === itemId);
-        row.querySelector('.qty-display').innerText = newQty;
-        row.querySelector('.item-meta').innerText = `${(newQty * item.weight).toFixed(2)}kg • Qty: ${newQty}`;
-    }
-    updateStatsUI();
-}
-
-function updateItemWeight(itemId, newWeight) {
-    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-    if (row) {
-        const qtyDisplay = row.querySelector('.qty-display').innerText;
-        const qty = parseInt(qtyDisplay);
-        row.querySelector('.item-meta').innerText = `${(qty * newWeight).toFixed(2)}kg • Qty: ${qty}`;
-    }
-    updateStatsUI();
-}
-
-function removeItemFromList(itemId) {
-    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-    if (row) {
-        row.remove();
-        localStorage.removeItem(`item_${itemId}`);
-        updateStatsUI();
-    }
-}
-
-// --- IMPOSTAZIONI VIAGGIO ---
-
-function updateTripSettings() {
-    const nightsInput = document.getElementById('nights-input');
-    const laundryInput = document.getElementById('laundry-input');
-
-    if (!nightsInput || !laundryInput) return;
-
-    const nights = parseInt(nightsInput.value) || 0;
-    const laundryFreq = parseInt(laundryInput.value) || 0;
-
-    db.settings.nights = nights;
-    db.settings.laundryFreq = laundryFreq;
-
-    saveLocalSettings();
+    const nights = db.settings.nights || 0;
+    const freq = db.settings.laundryFreq || 3;
+    const buffer = db.settings.laundryBuffer || 1;
     
     let daysNeeded = nights + 1;
     if (nights === 0) daysNeeded = 1;
-
-    let effectiveDays = daysNeeded;
-    if (laundryFreq > 0 && daysNeeded > laundryFreq) {
-        effectiveDays = laundryFreq; 
-    }
-
-    console.log(`[App] Viaggio: ${nights} notti, Lavanderia ogni ${laundryFreq} gg.`);
-    trackStats('IMPOSTAZIONI_VIAGGIO', 'system', `Notti: ${nights}, Lavanderia: ${laundryFreq}`);
-}
-
-function loadLocalSettings() {
-    const saved = localStorage.getItem('packlist_settings');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        if(parsed.nights && document.getElementById('nights-input')) document.getElementById('nights-input').value = parsed.nights;
-        if(parsed.laundryFreq && document.getElementById('laundry-input')) document.getElementById('laundry-input').value = parsed.laundryFreq;
-        if(parsed.selectedActivities) {
-            db.settings.selectedActivities = parsed.selectedActivities;
-            renderActivities();
-        }
-    }
-}
-
-function saveLocalSettings() {
-    localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
-}
-
-// --- UTILS ---
-
-function getItemState(itemId) {
-    const stored = localStorage.getItem(`item_${itemId}`);
-    return stored ? JSON.parse(stored) : {};
-}
-
-function saveItemState(itemId, state) {
-    localStorage.setItem(`item_${itemId}`, JSON.stringify(state));
-}
-
-function getItemName(id) {
-    const item = db.items.find(i => i.id === id);
-    return item ? item.name : id;
-}
-
-function getActivityName(id) {
-    const act = db.activities.find(a => a.id === id);
-    return act ? act.name : id;
-}
-
-// --- STATS ---
-
-function trackStats(action, itemId, details = "") {
-    const itemObj = db.items.find(i => i.id === itemId);
-    const state = getItemState(itemId);
     
-    const entry = {
-        timestamp: new Date().toISOString(),
-        item: itemObj ? itemObj.name : (itemId === 'system' ? 'Sistema' : itemId),
-        action: action,
-        details: details,
-        weight: itemObj ? itemObj.weight : 0,
-        qty: state.qty || (itemObj ? itemObj.defaultQty : 0),
-        destination: state.worn ? 'Indossato' : 'Bagaglio'
+    let washes = 0;
+    if (freq > 0 && daysNeeded > freq) {
+        washes = Math.floor((daysNeeded - 1) / freq);
+    }
+    
+    infoEl.textContent = `🧮 Con ${nights} notti e lavanderia ogni ${freq}gg: farai circa ${washes} lavatrici. Buffer: +${buffer} capi.`;
+}
+
+function updateDaytripBanner() {
+    const db = getDB();
+    const banner = document.getElementById('daytripBanner');
+    
+    if (!banner) return;
+    
+    const isDayTrip = db.settings.nights === 0;
+    banner.style.display = isDayTrip ? 'block' : 'none';
+}
+
+// --- TEMPLATE MANAGEMENT ---
+export function saveTemplate() {
+    const nameInput = document.getElementById('templateName');
+    const name = nameInput?.value?.trim();
+    
+    if (!name) {
+        alert('Inserisci un nome per il template');
+        return;
+    }
+    
+    const db = getDB();
+    const templates = JSON.parse(localStorage.getItem('packlist_templates') || '{}');
+    
+    templates[name] = {
+        settings: { ...db.settings },
+        activities: [...db.settings.selectedActivities],
+        weathers: [...(db.settings.weathers || [])]
     };
     
-    statsLog.push(entry);
-    console.log("[Stats Log]", entry);
-    updateStatsUI();
+    localStorage.setItem('packlist_templates', JSON.stringify(templates));
+    nameInput.value = '';
+    updateTemplateSelect();
+    alert(`Template "${name}" salvato!`);
 }
 
-function updateStatsUI() {
-    let totalWeight = 0;
-    let totalItems = 0;
+export function loadTemplate(name) {
+    const templates = JSON.parse(localStorage.getItem('packlist_templates') || '{}');
+    const template = templates[name];
+    
+    if (!template) return;
+    
+    const db = getDB();
+    db.settings = { ...db.settings, ...template.settings };
+    db.settings.selectedActivities = [...template.activities];
+    db.settings.weathers = [...(template.weathers || [])];
+    
+    document.getElementById('nights').value = db.settings.nights || 0;
+    document.getElementById('gender').value = db.settings.gender || 'M';
+    document.getElementById('transport').value = db.settings.transport || 'auto';
+    document.getElementById('laundryFreq').value = db.settings.laundryFreq || 3;
+    document.getElementById('laundryBuffer').value = db.settings.laundryBuffer || 1;
+    
+    if (document.getElementById('laundryToggle')) {
+        document.getElementById('laundryToggle').classList.toggle('active', db.settings.laundryEnabled);
+    }
+    
+    if (db.settings.weathers) {
+        ['sun', 'rain', 'cold'].forEach(type => {
+            const btn = document.getElementById(`w-${type}`);
+            if (btn) {
+                const isSelected = db.settings.weathers.includes(type);
+                btn.classList.toggle('selected', isSelected);
+                btn.setAttribute('aria-pressed', isSelected);
+            }
+        });
+    }
+    
+    saveLocalSettings(db.settings);
+    renderActivities();
+    generateListFromDB();
+    updateTemplateSelect();
+}
 
-    document.querySelectorAll('.item-row').forEach(row => {
-        const qtyText = row.querySelector('.qty-display').innerText;
-        const qty = parseInt(qtyText);
-        
-        const metaText = row.querySelector('.item-meta').innerText;
-        const weightPart = metaText.split('kg')[0];
-        const weight = parseFloat(weightPart);
+export function deleteTemplate() {
+    const select = document.getElementById('templateSelect');
+    const name = select?.value;
+    
+    if (!name) {
+        alert('Seleziona un template da eliminare');
+        return;
+    }
+    
+    if (!confirm(`Eliminare il template "${name}"?`)) return;
+    
+    const templates = JSON.parse(localStorage.getItem('packlist_templates') || '{}');
+    delete templates[name];
+    localStorage.setItem('packlist_templates', JSON.stringify(templates));
+    updateTemplateSelect();
+}
 
-        if (!isNaN(qty) && !isNaN(weight)) {
-            totalItems += qty;
-            totalWeight += weight;
-        }
+function updateTemplateSelect() {
+    const select = document.getElementById('templateSelect');
+    if (!select) return;
+    
+    const templates = JSON.parse(localStorage.getItem('packlist_templates') || '{}');
+    const names = Object.keys(templates);
+    
+    select.innerHTML = '<option value="">📂 Carica template...</option>';
+    names.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = `📄 ${name}`;
+        select.appendChild(option);
     });
-
-    const wEl = document.getElementById('total-weight');
-    const iEl = document.getElementById('total-items');
-    
-    if(wEl) wEl.innerText = `${totalWeight.toFixed(2)} kg`;
-    if(iEl) iEl.innerText = totalItems;
 }
 
-function exportStatsCSV() {
-    if(statsLog.length === 0) { alert("Nessun dato nei log."); return; }
+// --- SEARCH & FILTER ---
+export function filterList() {
+    const query = document.getElementById('searchItems')?.value.toLowerCase() || '';
+    const clearBtn = document.getElementById('searchClear');
     
-    const headers = ["Data", "Oggetto", "Azione", "Dettagli", "Peso", "Quantità", "Destinazione"];
-    const rows = statsLog.map(log => [
-        log.timestamp, log.item, log.action, log.details, log.weight, log.qty, log.destination
-    ]);
-
-    let csvContent = "text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `packlist_log_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (clearBtn) {
+        clearBtn.style.display = query ? 'block' : 'none';
+    }
+    
+    document.querySelectorAll('.item-row').forEach(row => {
+        const name = row.querySelector('.item-name')?.textContent.toLowerCase() || '';
+        const category = row.dataset.category || '';
+        
+        const matches = name.includes(query) || category.includes(query);
+        row.style.display = matches ? '' : 'none';
+    });
 }
+
+export function clearSearch() {
+    const searchInput = document.getElementById('searchItems');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    filterList();
+}
+
+export function setFilter(filter) {
+    document.querySelectorAll('.fab-item').forEach(btn => {
+        btn.classList.remove('active-filter');
+    });
+    document.getElementById(`filter-${filter}`)?.classList.add('active-filter');
+    
+    document.querySelectorAll('.item-row').forEach(row => {
+        const category = row.dataset.category || '';
+        
+        let show = false;
+        switch (filter) {
+            case 'all':
+                show = true;
+                break;
+            case 'clothing':
+                show = category === 'clothing' || category === 'shoes' || category === 'accessories';
+                break;
+            case 'tech':
+                show = category === 'electronics' || category === 'work';
+                break;
+            case 'essentials':
+                show = category === 'documents' || category === 'hygiene' || category === 'health';
+                break;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+    
+    toggleMenu();
+}
+
+// --- ACTIONS ---
+export function copyList() {
+    const items = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        const name = row.querySelector('.item-name')?.textContent || '';
+        const qty = row.querySelector('.qty-display')?.textContent || '0';
+        if (name) items.push(`${name} x${qty}`);
+    });
+    
+    const text = items.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Lista copiata negli appunti!');
+    }).catch(err => {
+        console.error('Errore copia:', err);
+    });
+}
+
+export function exportPDF() {
+    if (!window.jspdf) {
+        alert('jsPDF non caricato. Riprova tra pochi secondi.');
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.text('Packlist Pro - La tua lista di viaggio', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generata il: ${new Date().toLocaleDateString()}`, 14, 28);
+    
+    const tableData = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        const name = row.querySelector('.item-name')?.textContent || '';
+        const qty = row.querySelector('.qty-display')?.textContent || '0';
+        const meta = row.querySelector('.item-meta')?.textContent || '';
+        tableData.push([name, `x${qty}`, meta]);
+    });
+    
+    doc.autoTable({
+        head: [['Item', 'Qty', 'Peso']],
+        body: tableData,
+        startY: 35,
+    });
+    
+    doc.save('packlist.pdf');
+}
+
+export function uncheckAll() {
+    document.querySelectorAll('.item-row').forEach(row => {
+        row.classList.remove('checked');
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = false;
+    });
+    calculateAndDisplayStats();
+}
+
+export function resetSession() {
+    if (!confirm('Sei sicuro di voler resettare tutta la sessione?')) return;
+    
+    localStorage.removeItem('packlist_settings');
+    localStorage.removeItem('packlist_templates');
+    
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('item_'));
+    keys.forEach(k => localStorage.removeItem(k));
+    
+    location.reload();
+}
+
+// --- PWA FUNCTIONS ---
+export async function install() {
+    const accepted = await triggerInstall();
+    if (accepted) {
+        console.log('[App] Installazione accettata');
+    }
+}
+
+export function dismissInstall() {
+    dismissInstallBanner();
+    showInstallBanner(false);
+}
+
+function checkInstallBanner() {
+    if (!dismissInstallBanner()) {
+        // Banner gestito dall'evento beforeinstallprompt
+    }
+}
+
+function toggleMenu() {
+    const menu = document.getElementById('fabMenu');
+    const main = document.getElementById('fabMain');
+    if (menu && main) {
+        const isExpanded = main.getAttribute('aria-expanded') === 'true';
+        main.setAttribute('aria-expanded', !isExpanded);
+        menu.classList.toggle('open');
+    }
+}
+
+// Export per debug/testing
+window.App = {
+    install,
+    dismissInstall,
+    syncConfig,
+    toggleWeather,
+    toggleLaundry,
+    saveTemplate,
+    loadTemplate,
+    deleteTemplate,
+    filterList,
+    clearSearch,
+    setFilter,
+    copyList,
+    exportPDF,
+    uncheckAll,
+    resetSession
+};

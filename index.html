@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="./css/style.css">
 </head>
 
+<body>
 <!-- Offline indicator -->
 <div class="offline-bar" id="offlineBar">📡 Sei offline — la lista è salvata localmente</div>
 
@@ -55,7 +56,7 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
-            <span class="app-version">v1.00.14</span>
+            <span class="app-version">v2.0.0</span>
         </div>
     </div>
 
@@ -63,8 +64,8 @@
     <div class="install-banner" id="installBanner">
         <span>📲</span>
         <span class="install-banner-text">Installa Packlist Pro sul tuo dispositivo!</span>
-        <button class="btn-sm" id="installBtn" onclick="App.install()">Installa</button>
-        <button class="install-banner-close" id="installClose" onclick="App.dismissInstall()" aria-label="Chiudi">✕</button>
+        <button class="btn-sm" id="installBtn">Installa</button>
+        <button class="install-banner-close" id="installClose" aria-label="Chiudi">✕</button>
     </div>
 
     <!-- Setup Card -->
@@ -73,11 +74,11 @@
         <div class="setup-grid">
             <div class="input-box">
                 <label>🌙 NOTTI</label>
-                <input type="number" id="nights" value="1" min="0" max="90" inputmode="numeric" oninput="Ctrl.syncConfig()">
+                <input type="number" id="nights" value="1" min="0" max="90" inputmode="numeric">
             </div>
             <div class="input-box">
                 <label>👤 SESSO</label>
-                <select id="gender" onchange="Ctrl.syncConfig()">
+                <select id="gender">
                     <option value="M">👨 Maschio</option>
                     <option value="F">👩 Femmina</option>
                 </select>
@@ -86,7 +87,7 @@
         <div class="setup-grid">
             <div class="input-box">
                 <label>🚗 MEZZO</label>
-                <select id="transport" onchange="Ctrl.syncConfig()">
+                <select id="transport">
                     <option value="auto">🚗 Auto</option>
                     <option value="moto">🏍️ Moto</option>
                     <option value="aereo">✈️ Aereo</option>
@@ -96,14 +97,14 @@
             <div class="input-box">
                 <label>🌦️ METEO (Multi)</label>
                 <div class="weather-grid">
-                    <div class="weather-btn" id="w-sun" onclick="Ctrl.toggleWeather('sun')" role="button" aria-pressed="false" tabindex="0">☀️ Sole</div>
-                    <div class="weather-btn" id="w-rain" onclick="Ctrl.toggleWeather('rain')" role="button" aria-pressed="false" tabindex="0">🌧️ Pioggia</div>
-                    <div class="weather-btn" id="w-cold" onclick="Ctrl.toggleWeather('cold')" role="button" aria-pressed="false" tabindex="0">❄️ Freddo</div>
+                    <div class="weather-btn" id="w-sun" role="button" aria-pressed="false" tabindex="0">☀️ Sole</div>
+                    <div class="weather-btn" id="w-rain" role="button" aria-pressed="false" tabindex="0">🌧️ Pioggia</div>
+                    <div class="weather-btn" id="w-cold" role="button" aria-pressed="false" tabindex="0">❄️ Freddo</div>
                 </div>
             </div>
         </div>
         <div id="daytripBanner" class="daytrip-banner">⚡ Modalità gita in giornata — lista ottimizzata automaticamente</div>
-        <div class="toggle-group" id="laundryToggle" onclick="Ctrl.toggleLaundry()" role="button" aria-pressed="false" tabindex="0">
+        <div class="toggle-group" id="laundryToggle" role="button" aria-pressed="false" tabindex="0">
             <div class="toggle-icon">🧺</div>
             <div>
                 <div class="toggle-text-main">Lavanderia disponibile</div>
@@ -112,19 +113,19 @@
         </div>
         <div class="laundry-freq" id="laundryFreqBox">
             <span>Lavo ogni</span>
-            <input type="number" id="laundryFreq" value="3" min="1" max="14" inputmode="numeric" oninput="Ctrl.syncConfig()">
+            <input type="number" id="laundryFreq" value="3" min="1" max="14" inputmode="numeric">
             <span>gg · Buffer +</span>
-            <input type="number" id="laundryBuffer" value="1" min="0" max="5" inputmode="numeric" oninput="Ctrl.syncConfig()">
+            <input type="number" id="laundryBuffer" value="1" min="0" max="5" inputmode="numeric">
             <span>capi extra</span>
         </div>
         <div class="laundry-info" id="laundryInfo"></div>
         <div class="template-row">
             <input type="text" id="templateName" placeholder="Nome template...">
-            <button class="btn-sm" onclick="Ctrl.saveTemplate()">💾 Salva</button>
-            <select id="templateSelect" onchange="if(this.value) Ctrl.loadTemplate(this.value)">
+            <button class="btn-sm" id="saveTemplateBtn">💾 Salva</button>
+            <select id="templateSelect">
                 <option value="">📂 Carica template...</option>
             </select>
-            <button class="btn-sm danger" onclick="Ctrl.deleteTemplate()">🗑️</button>
+            <button class="btn-sm danger" id="deleteTemplateBtn">🗑️</button>
         </div>
     </div>
 
@@ -132,7 +133,7 @@
     <div class="card">
         <div class="section-label">🎯 Attività (Multi-selezione)</div>
         <div class="activity-grid" id="activityGrid"></div>
-        <button class="btn-main" onclick="Ctrl.generate()">🎒 GENERA PACKLIST</button>
+        <button class="btn-main" id="generateBtn">🎒 GENERA PACKLIST</button>
     </div>
 
     <!-- Stats Bar -->
@@ -159,8 +160,8 @@
     <!-- Search -->
     <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchItems" placeholder="Cerca item nella lista..." oninput="Ctrl.filterList()" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="search-clear" id="searchClear" onclick="Ctrl.clearSearch()" aria-label="Cancella ricerca">✕</button>
+        <input type="text" id="searchItems" placeholder="Cerca item nella lista..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" aria-label="Cancella ricerca">✕</button>
     </div>
 
     <!-- Results -->
@@ -171,20 +172,20 @@
 <!-- FAB -->
 <div class="fab-container">
     <div class="fab-menu" id="fabMenu">
-        <button class="fab-item active-filter" onclick="Ctrl.setFilter('all')" id="filter-all"><span class="fab-item-icon">📂</span><span>Tutte le Categorie</span></button>
-        <button class="fab-item" onclick="Ctrl.setFilter('clothing')" id="filter-clothing"><span class="fab-item-icon">👕</span><span>Solo Abbigliamento</span></button>
-        <button class="fab-item" onclick="Ctrl.setFilter('tech')" id="filter-tech"><span class="fab-item-icon">🔌</span><span>Tech & Lavoro</span></button>
-        <button class="fab-item" onclick="Ctrl.setFilter('essentials')" id="filter-essentials"><span class="fab-item-icon">🪪</span><span>Essenziali & Igiene</span></button>
+        <button class="fab-item active-filter" id="filter-all"><span class="fab-item-icon">📂</span><span>Tutte le Categorie</span></button>
+        <button class="fab-item" id="filter-clothing"><span class="fab-item-icon">👕</span><span>Solo Abbigliamento</span></button>
+        <button class="fab-item" id="filter-tech"><span class="fab-item-icon">🔌</span><span>Tech & Lavoro</span></button>
+        <button class="fab-item" id="filter-essentials"><span class="fab-item-icon">🪪</span><span>Essenziali & Igiene</span></button>
         <div style="height:1px; background:var(--border); margin:3px 0;"></div>
-        <button class="fab-item" onclick="Ctrl.copyList(); Ctrl.toggleMenu()"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
-        <button class="fab-item" onclick="Ctrl.exportPDF(); Ctrl.toggleMenu()"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
-        <button class="fab-item" onclick="Ctrl.uncheckAll(); Ctrl.toggleMenu()"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
-        <button class="fab-item" onclick="U.showStatsModal(); Ctrl.toggleMenu()"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
-        <button class="fab-item" style="color:var(--rose)" onclick="Ctrl.resetSession(); Ctrl.toggleMenu()"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+        <button class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
+        <button class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
+        <button class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
+        <button class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
+        <button class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
     </div>
-    <button class="fab-main" id="fabMain" onclick="Ctrl.toggleMenu()" aria-label="Apri menu" aria-expanded="false">⋮</button>
+    <button class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
 </div>
 
-    <script src="./js/app.js" defer></script>
+    <script type="module" src="./js/app.js"></script>
 </body>
 </html>
