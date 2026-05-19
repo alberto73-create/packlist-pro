@@ -1,10 +1,28 @@
-// js/modules/controller.js - Logica di Controllo dell'Applicazione
+// js/modules/controller.js - Logica di Controllo dell'Applicazione - Versione Ottimizzata
 
 import { getDB, getItemById, getActivityName, trackStats, removeItemFromList, updateItemQty, setItemQty, toggleWornStatus } from './db.js';
 import { renderActivities, createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
 
 /**
- * Toggle attività selezionata
+ * Debounce per prevenire chiamate multiple ravvicinate
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Versione debounced di generateListFromDB per evitare refresh multipli
+const debouncedGenerateList = debounce(generateListFromDBCore, 150);
+
+/**
+ * Toggle attività selezionata - Versione Ottimizzata
  */
 export function toggleActivity(actId, isChecked) {
     const db = getDB();
@@ -20,18 +38,25 @@ export function toggleActivity(actId, isChecked) {
     }
     
     saveLocalSettings();
-    generateListFromDB();
+    debouncedGenerateList(); // Usa versione debounced
 }
 
 /**
- * Genera la lista dal database
+ * Genera la lista dal database - Versione Ottimizzata
  */
 export function generateListFromDB() {
+    generateListFromDBCore();
+}
+
+// Funzione core per la generazione della lista (usata anche dalla versione debounced)
+function generateListFromDBCore() {
     const db = getDB();
     const listContainer = document.getElementById('packing-list') || document.getElementById('results');
     if (!listContainer) return;
 
-    listContainer.innerHTML = '';
+    // Usa DocumentFragment per minimizzare i reflow
+    const fragment = document.createDocumentFragment();
+    fragment.innerHTML = '';
     
     const selectedActs = db.settings.selectedActivities || [];
     const hasActivitiesSelected = selectedActs.length > 0;
@@ -59,7 +84,7 @@ export function generateListFromDB() {
             const catHeader = document.createElement('div');
             catHeader.className = 'category-header';
             catHeader.innerHTML = `<span>${cat.icon} ${cat.name}</span>`;
-            listContainer.appendChild(catHeader);
+            fragment.appendChild(catHeader);
         }
 
         // Filtra gli oggetti dentro questa categoria
@@ -75,9 +100,13 @@ export function generateListFromDB() {
 
         itemsForCat.forEach(item => {
             const itemEl = createItemElement(item);
-            listContainer.appendChild(itemEl);
+            fragment.appendChild(itemEl);
         });
     });
+
+    // Svuota e aggiungi tutto in una volta sola
+    listContainer.innerHTML = '';
+    listContainer.appendChild(fragment);
 
     if (listContainer.children.length === 0) {
         showEmptyState(listContainer, "Nessun oggetto da mostrare. Seleziona un'attività o controlla i filtri.");
@@ -87,25 +116,36 @@ export function generateListFromDB() {
 }
 
 /**
- * Calcola e mostra le statistiche
+ * Calcola e mostra le statistiche - Versione Ottimizzata
  */
+const debouncedCalculateStats = debounce(calculateAndDisplayStatsCore, 100);
+
 export function calculateAndDisplayStats() {
+    calculateAndDisplayStatsCore();
+}
+
+function calculateAndDisplayStatsCore() {
     let totalWeight = 0;
     let totalItems = 0;
     let checkedItems = 0;
     let totalPossibleItems = 0;
 
-    document.querySelectorAll('.item-row').forEach(row => {
-        const qtyText = row.querySelector('.qty-display')?.innerText || '0';
-        const qty = parseInt(qtyText);
+    // Cache delle query per migliorare le prestazioni
+    const itemRows = document.querySelectorAll('.item-row');
+    
+    itemRows.forEach(row => {
+        const qtyDisplay = row.querySelector('.qty-display');
+        const qtyText = qtyDisplay?.innerText || '0';
+        const qty = parseInt(qtyText, 10);
         
-        const metaText = row.querySelector('.item-meta')?.innerText || '';
+        const metaEl = row.querySelector('.item-meta');
+        const metaText = metaEl?.innerText || '';
         const weightPart = metaText.split('kg')[0];
         const weight = parseFloat(weightPart);
 
         if (!isNaN(qty) && !isNaN(weight)) {
             totalItems += qty;
-            totalWeight += weight;
+            totalWeight += (weight * qty); // Correzione: moltiplica peso per quantità
             totalPossibleItems += qty;
         }
         

@@ -42,10 +42,14 @@ function setupEventListeners() {
     // Listener per attività
     const activityGrid = document.getElementById('activityGrid');
     if (activityGrid) {
-        activityGrid.addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox') {
-                // Gestito dal controller tramite renderActivities
-            }
+        // Il listener change è già gestito in ui.js dentro renderActivities
+    }
+    
+    // Bottone Genera Packlist
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', () => {
+            generateListFromDB();
         });
     }
     
