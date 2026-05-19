@@ -1,14 +1,14 @@
 // js/app.js - Entry Point dell'Applicazione Packlist Pro
-// Versione 2.0.2 - Struttura Modulare Ottimizzata (Dipendenze Circolari Risolte)
+// Versione 3.0.0 - Codice Riscritto da Zero con Correzioni Complete
 
 import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings, exportStatsCSV } from './modules/db.js';
-import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
+import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats, setupActivityListener } from './modules/controller.js';
 import { renderActivities, updateProgressDisplay, showInstallBanner } from './modules/ui.js';
 import { registerServiceWorker, setupInstallPrompt, triggerInstall, dismissInstallBanner, setupOnlineOfflineHandlers } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[App] Avvio Packlist Pro v2.0.0');
+    console.log('[App] Avvio Packlist Pro v3.0.0');
     
     // Inizializza PWA
     await registerServiceWorker();
@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Carica database
     await loadDatabase();
+    
+    // Setup listener per le attività (PRIMA di renderActivities)
+    setupActivityListener();
     
     // Setup UI iniziale
     setupEventListeners();
