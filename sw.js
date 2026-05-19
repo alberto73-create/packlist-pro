@@ -32,7 +32,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
-    // FIX: Ignora manifest.json per evitare errori 401
+    // FIX: Ignora richieste chrome-extension e manifest.json per evitare errori
+    if (url.startsWith('chrome-extension://')) return;
     if (url.includes('manifest.json')) return;
     if (event.request.method !== 'GET') return;
 

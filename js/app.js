@@ -477,7 +477,7 @@ function toggleMenu() {
     }
 }
 
-// Export per debug/testing
+// Export per debug/testing e accesso globale
 window.App = {
     install,
     dismissInstall,
@@ -495,3 +495,21 @@ window.App = {
     uncheckAll,
     resetSession
 };
+
+// Esponi anche come Ctrl per compatibilità con eventuali handler inline cached
+window.Ctrl = window.App;
+
+// Esponi singole funzioni per compatibilità
+window.syncConfig = syncConfig;
+window.toggleWeather = toggleWeather;
+window.toggleLaundry = toggleLaundry;
+window.saveTemplate = saveTemplate;
+window.loadTemplate = loadTemplate;
+window.deleteTemplate = deleteTemplate;
+window.filterList = filterList;
+window.clearSearch = clearSearch;
+window.setFilter = setFilter;
+window.copyList = copyList;
+window.exportPDF = exportPDF;
+window.uncheckAll = uncheckAll;
+window.resetSession = resetSession;

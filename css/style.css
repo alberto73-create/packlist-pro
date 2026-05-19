@@ -255,7 +255,7 @@
             margin-bottom: 14px;
         }
 
-        .act-btn {
+        .activity-chip {
             background: var(--bg);
             border: 1px solid var(--border);
             padding: 12px 6px;
@@ -267,6 +267,25 @@
             transition: all .2s;
             user-select: none;
             will-change: transform;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .activity-chip input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .activity-chip span {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
 
         .activity-chip:hover { border-color: var(--violet); color: var(--text); }
@@ -278,9 +297,6 @@
             transform: translateY(-2px);
             box-shadow: 0 3px 12px rgba(139, 92, 246, .25);
         }
-
-        .act-btn i { font-size: 1.3rem; display: block; margin-bottom: 6px; font-style: normal; }
-        .act-btn span { font-size: .68rem; font-weight: 700; }
 
         /* ─── TOGGLES ───────────────────────────────────────────── */
         .toggle-group {
