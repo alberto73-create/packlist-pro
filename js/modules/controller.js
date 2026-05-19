@@ -13,6 +13,8 @@ if (typeof window !== 'undefined') {
         } else {
             trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
         }
+        // Rigenera la lista con debounce quando un'attività cambia
+        debouncedGenerateList();
     });
 }
 
