@@ -1,7 +1,6 @@
 // js/modules/ui.js - Gestione dell'Interfaccia Utente - Versione Ottimizzata
 
 import { getDB } from './db.js';
-import { toggleActivity as handleToggleActivity } from './controller.js';
 
 /**
  * Debounce utility per limitare chiamate frequenti
@@ -30,6 +29,26 @@ function throttle(func, limit) {
             setTimeout(() => inThrottle = false, limit);
         }
     };
+}
+
+/**
+ * Toggle attività - funzione interna per evitare dipendenza circolare
+ */
+function toggleActivityInternal(actId, isChecked) {
+    const db = getDB();
+    
+    if (isChecked) {
+        if (!db.settings.selectedActivities.includes(actId)) {
+            db.settings.selectedActivities.push(actId);
+        }
+    } else {
+        db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
+    }
+    
+    localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
+    
+    // Dispatch evento personalizzato per notificare il controller
+    window.dispatchEvent(new CustomEvent('activity-changed', { detail: { actId, isChecked } }));
 }
 
 /**
@@ -70,16 +89,16 @@ export function renderActivities() {
         if (e.target.type === 'checkbox') {
             const actId = e.target.value;
             const isChecked = e.target.checked;
-            toggleActivity(actId, isChecked);
+            toggleActivityInternal(actId, isChecked);
         }
     });
 }
 
 /**
- * Toggle attività - wrapper per la funzione del controller
+ * Toggle attività - wrapper per la funzione del controller (exportato per compatibilità)
  */
-function toggleActivity(actId, isChecked) {
-    handleToggleActivity(actId, isChecked);
+export function toggleActivity(actId, isChecked) {
+    toggleActivityInternal(actId, isChecked);
 }
 
 /**
