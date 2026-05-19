@@ -1,8 +1,22 @@
 ```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+*.bundle.js
+
 # Logs and temp files
 *.log
 *.tmp
-*.swp
+
+# Environment
+.env
+.env.local
+.env.*
 
 # Environment
 .env
@@ -25,6 +39,11 @@ target/
 .vscode/
 .idea/
 
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
 # System
 .DS_Store
 Thumbs.db
@@ -45,6 +64,15 @@ coverage/
 htmlcov/
 .coverage
 
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
 # Compressed files
 *.zip
 *.gz
