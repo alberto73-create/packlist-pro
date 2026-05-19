@@ -1,1 +1,77 @@
-(js/app.js and js/modules/controller.js are source files, no build artifacts, dependencies, or temp files detected in the changes)
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+.env.*
+
+# Build directories
+dist/
+build/
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Test and cache directories
+.mypy_cache/
+.pytest_cache/
+.tox/
+.hypothesis/
+
+# Gradle
+.gradle/
+
+# Temporary files
+*.tmp
+*~
+\#*\#
+```

@@ -1,104 +1,66 @@
-// js/modules/ui.js - Gestione dell'Interfaccia Utente - Versione Ottimizzata
+// js/modules/ui.js - Gestione dell'Interfaccia Utente - Versione Riscritta da Zero
 
 import { getDB } from './db.js';
 
 /**
- * Debounce utility per limitare chiamate frequenti
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-/**
- * Throttle utility per limitare frequenza esecuzione
- */
-function throttle(func, limit) {
-    let inThrottle;
-    return function(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-}
-
-/**
- * Toggle attività - funzione interna per evitare dipendenza circolare
- */
-function toggleActivityInternal(actId, isChecked) {
-    const db = getDB();
-    
-    if (isChecked) {
-        if (!db.settings.selectedActivities.includes(actId)) {
-            db.settings.selectedActivities.push(actId);
-        }
-    } else {
-        db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
-    }
-    
-    localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
-    
-    // Dispatch evento personalizzato per notificare il controller
-    window.dispatchEvent(new CustomEvent('activity-changed', { detail: { actId, isChecked } }));
-}
-
-/**
- * Renderizza la griglia delle attività - Versione corretta con gestione evento change
+ * Renderizza la griglia delle attività con gestione eventi corretta
  */
 export function renderActivities() {
     const db = getDB();
     const container = document.getElementById('activityGrid');
-    if (!container || !db.activities) return;
+    if (!container || !db.activities) {
+        console.warn('[UI] activityGrid non trovato o activities vuoto');
+        return;
+    }
 
-    // Usa DocumentFragment per minimizzare reflow
-    const fragment = document.createDocumentFragment();
+    // Svuota il container
+    container.innerHTML = '';
+    
     const selectedActivities = db.settings.selectedActivities || [];
     
+    // Crea ogni chip attività
     db.activities.forEach(act => {
         const label = document.createElement('label');
         label.className = 'activity-chip';
+        
         const isChecked = selectedActivities.includes(act.id);
         
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = act.id;
-        checkbox.checked = isChecked;
+        label.innerHTML = `
+            <input type="checkbox" value="${act.id}" ${isChecked ? 'checked' : ''}>
+            <span>${act.icon} ${act.name}</span>
+        `;
         
-        const span = document.createElement('span');
-        span.textContent = `${act.icon} ${act.name}`;
-        
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        fragment.appendChild(label);
+        container.appendChild(label);
     });
     
-    container.innerHTML = '';
-    container.appendChild(fragment);
-    
-    // Aggiungi listener per il cambio di stato delle attività
-    container.addEventListener('change', (e) => {
+    // Aggiungi listener DELEGATO per tutti i checkbox
+    container.addEventListener('change', function(e) {
         if (e.target.type === 'checkbox') {
-            const actId = e.target.value;
+            const actId = parseInt(e.target.value);
             const isChecked = e.target.checked;
-            toggleActivityInternal(actId, isChecked);
+            
+            console.log('[UI] Checkbox cambiato:', actId, isChecked);
+            
+            // Aggiorna il database
+            if (isChecked) {
+                if (!db.settings.selectedActivities.includes(actId)) {
+                    db.settings.selectedActivities.push(actId);
+                }
+            } else {
+                db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
+            }
+            
+            // Salva in localStorage
+            localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
+            
+            // Dispatch evento per il controller
+            window.dispatchEvent(new CustomEvent('activity-changed', { 
+                detail: { actId, isChecked } 
+            }));
         }
     });
-}
-
-/**
- * Toggle attività - wrapper per la funzione del controller (exportato per compatibilità)
- */
-export function toggleActivity(actId, isChecked) {
-    toggleActivityInternal(actId, isChecked);
+    
+    console.log('[UI] Attività renderizzate:', db.activities.length);
 }
 
 /**
