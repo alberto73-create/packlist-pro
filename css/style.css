@@ -290,6 +290,8 @@
 
         .activity-chip:hover { border-color: var(--violet); color: var(--text); }
 
+        .activity-chip:hover { border-color: var(--violet); color: var(--text); }
+
         .activity-chip input:checked + span {
             border-color: var(--violet);
             background: rgba(139, 92, 246, .1);
