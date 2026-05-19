@@ -1,10 +1,10 @@
 // js/app.js - Entry Point dell'Applicazione Packlist Pro
 // Versione 2.0.2 - Struttura Modulare Ottimizzata (Dipendenze Circolari Risolte)
 
-import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings } from './modules/db.js';
-import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats, toggleActivity } from './modules/controller.js';
-import { renderActivities, showInstallBanner as uiShowInstallBanner } from './modules/ui.js';
-import { registerServiceWorker, setupInstallPrompt, triggerInstall, dismissInstallBanner, setupOnlineOfflineHandlers, showInstallBanner as pwaShowInstallBanner } from './modules/pwa.js';
+import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings, exportStatsCSV } from './modules/db.js';
+import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
+import { renderActivities, updateProgressDisplay, showInstallBanner } from './modules/ui.js';
+import { registerServiceWorker, setupInstallPrompt, triggerInstall, dismissInstallBanner, setupOnlineOfflineHandlers } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
