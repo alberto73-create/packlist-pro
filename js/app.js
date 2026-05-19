@@ -1,5 +1,5 @@
-// js/app.js - Versione 1.00.17
-const DB_VERSION = "1.00.17";
+// js/app.js - Versione 1.00.18 (Fix Filtro Vuoto)
+const DB_VERSION = "1.00.18";
 let db = {};
 let statsLog = [];
 
@@ -11,34 +11,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderActivities();
     generateListFromDB();
     updateStatsUI();
-    
-    // Carica impostazioni salvate localmente se esistono
     loadLocalSettings();
 });
 
 // --- CARICAMENTO DATABASE ---
 async function loadDatabase() {
     try {
-        // Cache buster per forzare reload nuovo data.json
         const response = await fetch('data.json?t=' + new Date().getTime());
         if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
 
         db = data;
         
-        // Inizializza settings se mancanti
         if (!db.settings) db.settings = { selectedActivities: [], nights: 3, laundryFreq: 0 };
         if (!db.settings.selectedActivities) db.settings.selectedActivities = [];
 
         console.log(`[App] Database caricato: ${db.version || DB_VERSION}`);
         
-        // Aggiorna UI versione
         const versionEl = document.getElementById('app-version');
         if(versionEl) versionEl.innerText = `v${db.version || DB_VERSION}`;
 
     } catch (error) {
         console.error("[App] Errore caricamento DB:", error);
-        // Fallback minimo
         db = { 
             version: DB_VERSION,
             categories: [], 
@@ -49,9 +43,8 @@ async function loadDatabase() {
     }
 }
 
-// --- GESTIONE EVENTI (Delegata per performance) ---
+// --- GESTIONE EVENTI ---
 function setupEventListeners() {
-    // Delega eventi per la lista dinamica
     const listContainer = document.getElementById('packing-list');
     if (listContainer) {
         listContainer.addEventListener('click', (e) => {
@@ -63,14 +56,14 @@ function setupEventListeners() {
             const itemId = row.dataset.id;
             const category = row.dataset.category;
 
-            // Click su Rotella Impostazioni
+            // Rotella Impostazioni
             if (target.classList.contains('btn-gear') || target.closest('.btn-gear')) {
-                e.stopPropagation(); // Previene conflitti
+                e.stopPropagation();
                 openSettingsModal(category, itemId);
                 return;
             }
 
-            // Click su Elimina (X)
+            // Elimina (X)
             if (target.classList.contains('btn-delete') || target.closest('.btn-delete')) {
                 e.stopPropagation();
                 if(confirm(`Eliminare definitivamente "${getItemName(itemId)}"?`)) {
@@ -79,7 +72,7 @@ function setupEventListeners() {
                 return;
             }
             
-            // Click su +/- Quantità
+            // Quantità +/-
             if (target.classList.contains('btn-qty')) {
                 const delta = target.textContent === '+' ? 1 : -1;
                 updateQty(itemId, delta);
@@ -95,7 +88,7 @@ function setupEventListeners() {
         });
     });
 
-    // Input Impostazioni Viaggio (Notti/Lavanderia)
+    // Input Viaggio
     const nightsInput = document.getElementById('nights-input');
     const laundryInput = document.getElementById('laundry-input');
     
@@ -116,7 +109,7 @@ function toggleActivity(actId, isChecked) {
     }
     
     saveLocalSettings();
-    generateListFromDB(); // Rigenera lista con nuovi filtri
+    generateListFromDB();
 }
 
 function renderActivities() {
@@ -137,7 +130,7 @@ function renderActivities() {
     });
 }
 
-// --- GENERAZIONE LISTA (FILTRO CORRETTO) ---
+// --- GENERAZIONE LISTA (LOGICA CORRETTA) ---
 function generateListFromDB() {
     const listContainer = document.getElementById('packing-list');
     if (!listContainer) return;
@@ -147,36 +140,37 @@ function generateListFromDB() {
     const selectedActs = db.settings.selectedActivities || [];
     const hasActivitiesSelected = selectedActs.length > 0;
 
-    // Filtra categorie visibili
+    // 1. Determina quali categorie mostrare
     const visibleCategories = db.categories.filter(cat => {
-        // Categorie essenziali sempre visibili
+        // Le categorie ESSENZIALI si vedono SEMPRE
         if (cat.essential) return true;
         
-        // Se nessuna attività selezionata, nascondi categorie opzionali
+        // Le categorie NON essenziali si vedono SOLO se:
+        // A) È selezionata almeno un'attività
+        // B) La categoria contiene oggetti pertinenti a quelle attività
         if (!hasActivitiesSelected) return false;
 
-        // Mostra categoria se contiene oggetti pertinenti alle attività selezionate
         return db.items.some(item => 
             item.category === cat.id && 
             (item.activities.length === 0 || item.activities.some(a => selectedActs.includes(a)))
         );
     });
 
+    // 2. Genera HTML per ogni categoria visibile
     visibleCategories.forEach(cat => {
-        // Header Categoria
         const catHeader = document.createElement('div');
         catHeader.className = 'category-header';
         catHeader.innerHTML = `<span>${cat.icon} ${cat.name}</span>`;
         listContainer.appendChild(catHeader);
 
-        // Filtra oggetti per questa categoria
+        // Filtra gli oggetti dentro questa categoria
         const itemsForCat = db.items.filter(item => {
             if (item.category !== cat.id) return false;
             
-            // Oggetti senza attività specifica sono sempre inclusi se la categoria è visibile
+            // Oggetti senza attività specifica (generici) -> Sempre inclusi se la categoria è visibile
             if (item.activities.length === 0) return true;
 
-            // Include solo se matching con attività selezionate
+            // Oggetti specifici -> Inclusi solo se matching con attività selezionate
             return item.activities.some(actId => selectedActs.includes(actId));
         });
 
@@ -187,7 +181,7 @@ function generateListFromDB() {
     });
 
     if (listContainer.children.length === 0) {
-        listContainer.innerHTML = '<div class="empty-state">Nessun oggetto da mostrare. Seleziona un\'attività o aggiungi manualmente.</div>';
+        listContainer.innerHTML = '<div class="empty-state">Nessun oggetto da mostrare. Seleziona un\'attività o controlla i filtri.</div>';
     }
     
     updateStatsUI();
@@ -200,12 +194,10 @@ function createItemElement(item) {
     div.dataset.id = item.id;
     div.dataset.category = item.category;
 
-    // Recupera stato salvato
     const savedState = getItemState(item.id);
     const qty = savedState.qty !== undefined ? savedState.qty : item.defaultQty;
     const isWorn = savedState.worn || false;
 
-    // Stile visivo per "Indossato"
     if (isWorn) {
         div.style.opacity = '0.6';
         div.style.borderLeft = '4px solid #4CAF50';
@@ -223,17 +215,17 @@ function createItemElement(item) {
             <span class="qty-display">${qty}</span>
             <button class="btn-icon btn-qty" aria-label="Più">+</button>
             
-            <div style="width:8px;"></div> <!-- Spaziatore -->
+            <div style="width:8px;"></div>
             
-            <button class="btn-icon btn-gear" title="Impostazioni (Peso, Stato, Qty)" aria-label="Impostazioni">⚙️</button>
-            <button class="btn-icon btn-delete" title="Elimina oggetto" aria-label="Elimina">❌</button>
+            <button class="btn-icon btn-gear" title="Impostazioni" aria-label="Impostazioni">⚙️</button>
+            <button class="btn-icon btn-delete" title="Elimina" aria-label="Elimina">❌</button>
         </div>
     `;
 
     return div;
 }
 
-// --- MODALE IMPOSTAZIONI (ROTTELLA) ---
+// --- MODALE IMPOSTAZIONI ---
 function openSettingsModal(category, itemId) {
     const item = db.items.find(i => i.id === itemId);
     if (!item) return;
@@ -254,8 +246,7 @@ function openSettingsModal(category, itemId) {
         `[P] Modifica Peso\n` +
         `[Q] Modifica Quantità\n` +
         `[C] Cancella Oggetto\n` +
-        `--------------------------\n` +
-        `(Lascia vuoto per annullare)`
+        `--------------------------`
     );
 
     if (!action) return;
@@ -266,27 +257,23 @@ function openSettingsModal(category, itemId) {
             trackStats('DESTINAZIONE', itemId, `Cambiato in: ${!isWorn ? 'Indossato' : 'Bagaglio'}`);
             break;
         case 'P':
-            const newWeight = parseFloat(prompt("Inserisci nuovo peso (kg):", currentWeight));
+            const newWeight = parseFloat(prompt("Nuovo peso (kg):", currentWeight));
             if (!isNaN(newWeight) && newWeight >= 0) {
                 updateItemWeight(itemId, newWeight);
                 trackStats('MODIFICA_PESO', itemId, `${currentWeight} -> ${newWeight} kg`);
-            } else {
-                alert("Peso non valido");
-            }
+            } else { alert("Peso non valido"); }
             break;
         case 'Q':
-            const newQty = parseInt(prompt("Inserisci nuova quantità:", currentQty));
+            const newQty = parseInt(prompt("Nuova quantità:", currentQty));
             if (!isNaN(newQty) && newQty >= 0) {
                 updateQtyInternal(itemId, newQty);
                 trackStats('MODIFICA_QTY', itemId, `${currentQty} -> ${newQty}`);
-            } else {
-                alert("Quantità non valida");
-            }
+            } else { alert("Quantità non valida"); }
             break;
         case 'C':
-            if(confirm("Sei sicuro di voler eliminare questo oggetto dalla lista?")) {
+            if(confirm("Eliminare oggetto?")) {
                 removeItemFromList(itemId);
-                trackStats('ELIMINAZIONE_MANUALE', itemId, "Rimosso via menu impostazioni");
+                trackStats('ELIMINAZIONE_MANUALE', itemId);
             }
             break;
         default:
@@ -294,14 +281,13 @@ function openSettingsModal(category, itemId) {
     }
 }
 
-// --- FUNZIONI DI AGGIORNAMENTO STATO ---
+// --- FUNZIONI DI STATO ---
 
 function toggleWornStatus(itemId) {
     const state = getItemState(itemId);
     state.worn = !state.worn;
     saveItemState(itemId, state);
     
-    // Aggiorna UI immediata
     const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
     if (row) {
         row.style.opacity = state.worn ? '0.6' : '1';
@@ -320,7 +306,6 @@ function updateQty(itemId, delta) {
     state.qty = newQty;
     saveItemState(itemId, state);
 
-    // Aggiorna UI immediata
     const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
     if (row) {
         row.querySelector('.qty-display').innerText = newQty;
@@ -370,7 +355,7 @@ function removeItemFromList(itemId) {
     }
 }
 
-// --- IMPOSTAZIONI VIAGGIO & CALCOLO NOTTI ---
+// --- IMPOSTAZIONI VIAGGIO ---
 
 function updateTripSettings() {
     const nightsInput = document.getElementById('nights-input');
@@ -394,8 +379,7 @@ function updateTripSettings() {
         effectiveDays = laundryFreq; 
     }
 
-    console.log(`[App] Viaggio: ${nights} notti, Lavanderia ogni ${laundryFreq} gg. Giorni effettivi: ${effectiveDays}`);
-    
+    console.log(`[App] Viaggio: ${nights} notti, Lavanderia ogni ${laundryFreq} gg.`);
     trackStats('IMPOSTAZIONI_VIAGGIO', 'system', `Notti: ${nights}, Lavanderia: ${laundryFreq}`);
 }
 
@@ -416,7 +400,7 @@ function saveLocalSettings() {
     localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
 }
 
-// --- UTILS & HELPERS ---
+// --- UTILS ---
 
 function getItemState(itemId) {
     const stored = localStorage.getItem(`item_${itemId}`);
@@ -437,7 +421,7 @@ function getActivityName(id) {
     return act ? act.name : id;
 }
 
-// --- STATISTICHE & LOGGING ---
+// --- STATS ---
 
 function trackStats(action, itemId, details = "") {
     const itemObj = db.items.find(i => i.id === itemId);
@@ -484,26 +468,14 @@ function updateStatsUI() {
 }
 
 function exportStatsCSV() {
-    if(statsLog.length === 0) {
-        alert("Nessun dato nei log.");
-        return;
-    }
+    if(statsLog.length === 0) { alert("Nessun dato nei log."); return; }
     
     const headers = ["Data", "Oggetto", "Azione", "Dettagli", "Peso", "Quantità", "Destinazione"];
     const rows = statsLog.map(log => [
-        log.timestamp,
-        log.item,
-        log.action,
-        log.details,
-        log.weight,
-        log.qty,
-        log.destination
+        log.timestamp, log.item, log.action, log.details, log.weight, log.qty, log.destination
     ]);
 
-    let csvContent = "text/csv;charset=utf-8," 
-        + headers.join(",") + "\n" 
-        + rows.map(e => e.join(",")).join("\n");
-
+    let csvContent = "text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
