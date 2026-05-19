@@ -1,5 +1,5 @@
 {
-  "version": "1.00.17",
+  "version": "1.00.18",
   "lastUpdate": "2024-05-23",
   "categories": [
     { "id": "clothing", "name": "Abbigliamento", "icon": "👕", "essential": true },
