@@ -1,5 +1,5 @@
-// sw.js - Service Worker Ottimizzato v17
-const CACHE_NAME = 'packlist-v17';
+// sw.js - Service Worker v18
+const CACHE_NAME = 'packlist-v18';
 const ASSETS = [
     '/',
     '/index.html',
@@ -8,7 +8,6 @@ const ASSETS = [
     '/data.json'
 ];
 
-// Installazione: Cache delle risorse statiche
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -19,7 +18,6 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Attivazione: Pulizia vecchie cache
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
@@ -31,26 +29,18 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch: Gestione richieste
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
-    // FIX CRITICO: Ignora manifest.json per evitare errori 401 su Vercel
-    if (url.includes('manifest.json')) {
-        return; 
-    }
-
-    // Ignora richieste non-GET
+    // FIX: Ignora manifest.json per evitare errori 401
+    if (url.includes('manifest.json')) return;
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
+            if (cachedResponse) return cachedResponse;
 
             return fetch(event.request).then((networkResponse) => {
-                // Controllo se la risposta è valida prima di cachearla
                 if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                     return networkResponse;
                 }
@@ -62,7 +52,6 @@ self.addEventListener('fetch', (event) => {
 
                 return networkResponse;
             }).catch(() => {
-                // Fallback offline generico
                 if (event.request.headers.get('accept').includes('text/html')) {
                     return caches.match('/index.html');
                 }
