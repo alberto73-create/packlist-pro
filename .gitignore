@@ -1,11 +1,1 @@
-#Images
-*.png
-*.jpg
-*.jpeg
-*.bmp
-*.gif
-*.webm
-
-#Icons and screenshots
-icons/
-screenshots/
+Nothing should be ignored since the added files are all JavaScript source files in a modules directory, which are legitimate source code files that should be tracked in version control. No build artifacts, dependencies, or temporary files are present in the changes.
