@@ -2,8 +2,8 @@
 // Versione 2.0.0 - Struttura Modulare Ristrutturata
 
 import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings, exportStatsCSV } from './modules/db.js';
-import { renderActivities, generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
-import { updateProgressDisplay, showInstallBanner } from './modules/ui.js';
+import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
+import { renderActivities, updateProgressDisplay, showInstallBanner } from './modules/ui.js';
 import { registerServiceWorker, setupInstallPrompt, triggerInstall, dismissInstallBanner, setupOnlineOfflineHandlers } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
