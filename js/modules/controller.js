@@ -1,7 +1,20 @@
 // js/modules/controller.js - Logica di Controllo dell'Applicazione - Versione Ottimizzata
 
 import { getDB, getItemById, getActivityName, trackStats, removeItemFromList, updateItemQty, setItemQty, toggleWornStatus } from './db.js';
-import { renderActivities, createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
+import { createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
+
+// Listener per eventi di attività da ui.js (solo se window è disponibile)
+if (typeof window !== 'undefined') {
+    window.addEventListener('activity-changed', (e) => {
+        const { actId, isChecked } = e.detail;
+        // Registra statistiche quando un'attività cambia
+        if (isChecked) {
+            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
+        } else {
+            trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
+        }
+    });
+}
 
 /**
  * Debounce per prevenire chiamate multiple ravvicinate
@@ -22,7 +35,7 @@ function debounce(func, wait) {
 const debouncedGenerateList = debounce(generateListFromDBCore, 150);
 
 /**
- * Toggle attività selezionata - Versione Ottimizzata
+ * Toggle attività selezionata - Versione Ottimizzata (usata solo da app.js)
  */
 export function toggleActivity(actId, isChecked) {
     const db = getDB();

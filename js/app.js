@@ -1,5 +1,5 @@
 // js/app.js - Entry Point dell'Applicazione Packlist Pro
-// Versione 2.0.0 - Struttura Modulare Ristrutturata
+// Versione 2.0.2 - Struttura Modulare Ottimizzata (Dipendenze Circolari Risolte)
 
 import { loadDatabase, getDB, saveLocalSettings, loadLocalSettings, exportStatsCSV } from './modules/db.js';
 import { generateListFromDB, setupListEventListeners, handleSettingsModal, calculateAndDisplayStats } from './modules/controller.js';
@@ -458,7 +458,7 @@ export async function install() {
 
 export function dismissInstall() {
     dismissInstallBanner();
-    showInstallBanner(false);
+    pwaShowInstallBanner(false);
 }
 
 function checkInstallBanner() {
