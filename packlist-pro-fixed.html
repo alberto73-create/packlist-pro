@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Packlist Pro · v9.5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* ══════════════════════════════════════════
+           TOKENS & RESET
+        ══════════════════════════════════════════ */
+        :root {
+            --bg:       #0b0f1a;
+            --surface:  #111827;
+            --surface2: #1a2235;
+            --border:   #1f2d45;
+            --border2:  #2a3f5f;
+            --text:     #e8edf5;
+            --muted:    #4a5a72;
+            --subtle:   #7b8fa8;
+
+            --indigo:   #5a67f2;
+            --indigo-h: #6f7cf5;
+            --violet:   #8b5cf6;
+            --violet-h: #a07bf8;
+            --cyan:     #22d3ee;
+            --emerald:  #10b981;
+            --amber:    #f59e0b;
+            --rose:     #f43f5e;
+
+            --wl: #10b981;
+            --wm: #f59e0b;
+            --wh: #f43f5e;
+
+            --r-sm: 12px;
+            --r-md: 18px;
+            --r-lg: 24px;
+            --r-xl: 30px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--violet);
+            outline-offset: 3px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            padding: 18px;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 110px);
+            min-height: 100vh;
+            line-height: 1.5;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(90,103,242,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 110%, rgba(139,92,246,0.08) 0%, transparent 55%);
+        }
+
+        .container { max-width: 920px; margin: 0 auto; }
+
+        /* HEADER */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--r-sm);
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 16px rgba(90,103,242,0.35);
+        }
+        .app-logo-text {
+            font-size: 1.15rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #e8edf5, #8b9ec5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .app-version {
+            font-size: .6rem;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-xl);
+            padding: 22px;
+            margin-bottom: 16px;
+            transition: border-color .2s;
+        }
+
+        .section-label {
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* FORM GRID */
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 12px 14px;
+            transition: border-color .2s;
+        }
+        .input-box:focus-within { border-color: var(--violet); }
+
+        .input-box label {
+            display: block;
+            font-size: .65rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            width: 100%;
+            font-size: .95rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            outline: none;
+        }
+
+        select option { background: var(--surface2); color: var(--text); }
+
+        /* WEATHER BUTTONS */
+        .weather-grid {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .weather-btn {
+            flex: 1;
+            min-width: 65px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 9px 6px;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            text-align: center;
+            font-size: .78rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            color: var(--subtle);
+            transition: all .2s;
+            user-select: none;
+        }
+        .weather-btn:hover { border-color: var(--amber); color: var(--amber); }
+        .weather-btn.active {
+            border-color: var(--amber);
+            background: rgba(245,158,11,.12);
+            color: var(--amber);
+            box-shadow: 0 2px 10px rgba(245,158,11,.2);
+        }
+
+        /* ACTIVITY GRID */
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .act-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 14px 8px;
+            border-radius: var(--r-md);
+            cursor: pointer;
+            text-align: center;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--subtle);
+            transition: all .25s cubic-bezier(.4,0,.2,1);
+            user-select: none;
+            will-change: transform;
+        }
+        .act-btn:hover { border-color: var(--violet); color: var(--text); }
+        .act-btn.active {
+            border-color: var(--violet);
+            background: rgba(139,92,246,.1);
+            color: var(--text);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(139,92,246,.25);
+        }
+        .act-btn i { font-size: 1.4rem; display: block; margin-bottom: 7px; font-style: normal; }
+        .act-btn span { font-size: .72rem; font-weight: 700; }
+
+        /* LAUNDRY */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg);
+            padding: 12px 14px;
+            border-radius: var(--r-md);
+            margin-top: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all .2s;
+            user-select: none;
+        }
+        .toggle-group:hover { border-color: var(--border2); }
+        .toggle-group.active {
+            border-color: var(--emerald);
+            background: rgba(16,185,129,.08);
+        }
+        .toggle-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(16,185,129,.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .toggle-group.active .toggle-icon { background: rgba(16,185,129,.2); }
+        .toggle-text-main { font-size: .82rem; font-weight: 700; }
+        .toggle-text-sub { font-size: .65rem; color: var(--muted); margin-top: 1px; }
+
+        .laundry-freq {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border-radius: var(--r-sm);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: .78rem;
+            color: var(--subtle);
+        }
+        .laundry-freq.visible { display: flex; }
+        .laundry-freq input {
+            width: 48px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 4px 6px;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: .85rem;
+        }
+
+        /* TEMPLATE ROW */
+        .template-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .template-row input {
+            flex: 1;
+            min-width: 110px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+        }
+        .template-row input:focus { border-color: var(--violet); outline: none; }
+        .template-row select {
+            flex: 1;
+            min-width: 130px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 8px 10px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* BUTTONS */
+        .btn-main {
+            width: 100%;
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: var(--r-md);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            letter-spacing: .3px;
+            cursor: pointer;
+            transition: all .2s;
+            box-shadow: 0 4px 20px rgba(90,103,242,.3);
+            position: relative;
+            z-index: 1;
+        }
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(90,103,242,.45);
+        }
+        .btn-main:active { transform: scale(.98); }
+
+        .btn-sm {
+            background: var(--violet);
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: .82rem;
+            transition: all .2s;
+            white-space: nowrap;
+            position: relative;
+            z-index: 2;
+        }
+        .btn-sm:hover { background: var(--indigo); }
+        .btn-sm.danger { background: rgba(244,63,94,.2); color: var(--rose); border: 1px solid rgba(244,63,94,.3); }
+        .btn-sm.danger:hover { background: rgba(244,63,94,.35); }
+
+        /* STATS BAR (sticky) */
+        .stats-bar {
+            background: rgba(17,24,39,.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border2);
+            border-radius: var(--r-xl);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: none;
+            position: sticky;
+            top: 10px;
+            z-index: 45;
+            box-shadow: 0 10px 32px rgba(0,0,0,.5);
+        }
+        .stats-bar.visible { display: block; }
+
+        .stats-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .stats-label {
+            font-size: .68rem;
+            font-weight: 800;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .stats-chips {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 10px;
+        }
+        .chip-icon { font-size: .8rem; }
+        .chip-val {
+            font-family: 'DM Mono', monospace;
+            font-size: .82rem;
+            font-weight: 500;
+            transition: color .3s;
+        }
+        .chip-val.light { color: var(--wl); }
+        .chip-val.mid   { color: var(--wm); }
+        .chip-val.heavy { color: var(--wh); }
+        .chip-val.neutral { color: var(--subtle); }
+        .chip-label { font-size: .6rem; color: var(--muted); }
+
+        .pct-display {
+            font-family: 'DM Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 500;
+            transition: color .4s;
+            min-width: 58px;
+            text-align: right;
+        }
+        .pct-display.zero  { color: var(--muted); }
+        .pct-display.mid   { color: var(--amber); }
+        .pct-display.done  { color: var(--emerald); }
+
+        .progress-track {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--indigo), var(--violet), var(--cyan));
+            transition: width .5s cubic-bezier(.4,0,.2,1);
+        }
+
+        .weight-track {
+            height: 5px;
+            background: var(--bg);
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .weight-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width .5s cubic-bezier(.4,0,.2,1), background .4s;
+        }
+        .weight-fill.light { background: var(--wl); }
+        .weight-fill.mid   { background: var(--wm); }
+        .weight-fill.heavy { background: var(--wh); }
+
+        .weight-legend {
+            display: flex;
+            gap: 14px;
+            margin-top: 7px;
+        }
+        .w-tick {
+            font-size: .62rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .w-tick::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        .w-tick.tl::before { background: var(--wl); }
+        .w-tick.tm::before { background: var(--wm); }
+        .w-tick.th::before { background: var(--wh); }
+
+        /* DAY-TRIP BADGE */
+        .daytrip-banner {
+            display: none;
+            background: rgba(34,211,238,.08);
+            border: 1px solid rgba(34,211,238,.25);
+            border-radius: var(--r-sm);
+            padding: 9px 14px;
+            font-size: .78rem;
+            color: var(--cyan);
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        .daytrip-banner.visible { display: block; }
+
+        /* SEARCH */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 11px 16px;
+            margin-bottom: 14px;
+            transition: border-color .2s;
+            position: relative;
+            z-index: 1;
+        }
+        .search-box:focus-within { border-color: var(--violet); }
+        .search-box input {
+            flex: 1;
+            font-size: .9rem;
+        }
+        .search-icon { color: var(--muted); font-size: .9rem; }
+
+        /* LIST GRID */
+        .list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cat-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 16px;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .cat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .cat-name {
+            font-size: .75rem;
+            font-weight: 800;
+            color: var(--subtle);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .cat-count {
+            background: rgba(139,92,246,.2);
+            color: var(--violet-h);
+            font-size: .67rem;
+            font-weight: 700;
+            font-family: 'DM Mono', monospace;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* ITEM ROW */
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 10px;
+            border-radius: var(--r-sm);
+            margin-bottom: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all .18s;
+            position: relative;
+            z-index: 2;
+        }
+
+        .item-row.pending:hover {
+            background: var(--surface2);
+            border-color: var(--border2);
+        }
+        .item-row.taken {
+            background: rgba(16,185,129,.07);
+            border-color: rgba(16,185,129,.2);
+            opacity: .85;
+        }
+        .item-row.taken:hover { opacity: 1; }
+        .item-row.taken .item-text {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+        .item-row.taken .qty {
+            background: rgba(16,185,129,.15);
+            color: var(--emerald);
+        }
+        .item-row.taken .item-weight { opacity: .35; }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .qty {
+            font-family: 'DM Mono', monospace;
+            font-size: .72rem;
+            font-weight: 500;
+            color: var(--violet-h);
+            background: rgba(139,92,246,.12);
+            padding: 2px 7px;
+            border-radius: 5px;
+            min-width: 34px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .item-text {
+            flex-grow: 1;
+            font-size: .88rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-weight {
+            font-family: 'DM Mono', monospace;
+            font-size: .62rem;
+            color: var(--muted);
+            flex-shrink: 0;
+            background: var(--bg);
+            padding: 1px 6px;
+            border-radius: 5px;
+            transition: color .2s;
+        }
+        .item-row:hover .item-weight { color: var(--subtle); }
+
+        .badge {
+            font-size: .68rem;
+            margin-left: 2px;
+            cursor: help;
+            opacity: .75;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 1px;
+            align-items: center;
+            margin-left: 4px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .ia-btn {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: .95rem;
+            padding: 5px;
+            border-radius: 7px;
+            opacity: 0;
+            transition: all .15s;
+            min-width: 32px;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 11;
+            pointer-events: auto;
+        }
+        .item-row:hover .ia-btn { opacity: 1; }
+        .ia-btn:hover { opacity: 1; }
+        .ia-btn.worn:hover  { background: rgba(245,158,11,.15); }
+        .ia-btn.edit:hover  { background: rgba(90,103,242,.15); }
+        .ia-btn.del:hover   { background: rgba(244,63,94,.15); }
+
+        /* touch: always visible */
+        @media(hover: none) { .ia-btn { opacity: .9 !important; } }
+
+        /* ADD CUSTOM */
+        .add-custom {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        .add-custom input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: .83rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            transition: border-color .2s;
+        }
+        .add-custom input:focus {
+            outline: none;
+            border-color: var(--violet);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        .empty-state .es-icon {
+            font-size: 3rem;
+            opacity: .3;
+            margin-bottom: 14px;
+        }
+        .empty-state p { font-size: .9rem; }
+
+        /* ══════════════════════════════════════════
+           FAB & MENU (MODIFICATO)
+        ══════════════════════════════════════════ */
+        .fab-container {
+            position: fixed;
+            bottom: calc(env(safe-area-inset-bottom) + 20px);
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        /* Il Menu a Tendina (nascosto di default) */
+        .fab-menu {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--r-lg);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom right;
+            min-width: 180px;
+            z-index: 110;
+        }
+        
+        .fab-menu.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .fab-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--r-sm);
+            color: var(--text);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: 'DM Sans', sans-serif;
+            z-index: 111;
+            position: relative;
+            pointer-events: auto;
+        }
+        
+        .fab-item:hover {
+            background: var(--surface2);
+        }
+        
+        .fab-item.active-filter {
+            background: rgba(139,92,246,0.15);
+            color: var(--violet-h);
+        }
+        
+        .fab-item-icon {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Il Bottone Principale (Tre Pallini) */
+        .fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(90,103,242,0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            color: white;
+            z-index: 101;
+            position: relative;
+            pointer-events: auto;
+        }
+        
+        .fab-main:hover {
+            transform: scale(1.1);
+        }
+        
+        .fab-main.open {
+            transform: rotate(90deg);
+            background: var(--rose);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: calc(env(safe-area-inset-bottom) + 90px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface2);
+            color: var(--text);
+            padding: 11px 18px;
+            border-radius: var(--r-sm);
+            font-size: .85rem;
+            font-weight: 600;
+            box-shadow: 0 8px 28px rgba(0,0,0,.4);
+            z-index: 1000;
+            animation: rowIn .25s ease;
+            border: 1px solid var(--border2);
+            max-width: 90%;
+            cursor: pointer;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .toast.success { border-color: var(--emerald); }
+        .toast.error   { border-color: var(--rose); background: rgba(244,63,94,.12); }
+        .toast.warning { border-color: var(--amber); background: rgba(245,158,11,.1); color: var(--amber); }
+        .toast.undo    { border-color: var(--violet); background: rgba(139,92,246,.15); }
+
+        /* RESPONSIVE */
+        @media(max-width: 768px) {
+            .setup-grid { grid-template-columns: 1fr; }
+            .activity-grid { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); }
+            .list-grid { grid-template-columns: 1fr; }
+            .weather-btn { font-size: .72rem; padding: 8px 5px; }
+            .stats-chips { gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="app-header">
+        <div class="app-logo">
+            <div class="app-logo-icon">🎒</div>
+            <span class="app-logo-text">Packlist Pro</span>
+        </div>
+        <span class="app-version">v9.5</span>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="card">
+        <div class="section-label">🌍 Configurazione Viaggio</div>
+        <div class="setup-grid">
+            <div class="input-box">
+                <label>🌙 NOTTI</label>
+                <input type="number" id="nights" value="1" min="0" max="90" oninput="Ctrl.syncConfig()">
+            </div>
+            <div class="input-box">
+                <label>👤 SESSO</label>
+                <select id="gender" onchange="Ctrl.syncConfig()">
+                    <option value="U">👫 Unisex</option>
+                    <option value="M">👨 Maschio</option>
+                    <option value="F">👩 Femmina</option>
+                </select>
+            </div>
+        </div>
+        <div class="setup-grid">
+            <div class="input-box">
+                <label>🚗 MEZZO</label>
+                <select id="transport" onchange="Ctrl.syncConfig()">
+                    <option value="auto">🚗 Auto</option>
+                    <option value="moto">🏍️ Moto</option>
+                    <option value="aereo">✈️ Aereo</option>
+                    <option value="backpack">🎒 Zaino/Regionale</option>
+                </select>
+            </div>
+            <div class="input-box">
+                <label>🌦️ METEO (Multi)</label>
+                <div class="weather-grid">
+                    <div class="weather-btn" id="w-sun"  onclick="Ctrl.toggleWeather('sun')"  role="button" aria-pressed="false" tabindex="0">☀️ Sole</div>
+                    <div class="weather-btn" id="w-rain" onclick="Ctrl.toggleWeather('rain')" role="button" aria-pressed="false" tabindex="0">🌧️ Pioggia</div>
+                    <div class="weather-btn" id="w-cold" onclick="Ctrl.toggleWeather('cold')" role="button" aria-pressed="false" tabindex="0">❄️ Freddo</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="daytripBanner" class="daytrip-banner">
+            ⚡ Modalità gita in giornata — alcuni item non necessari vengono esclusi automaticamente
+        </div>
+
+        <div class="toggle-group" id="laundryToggle" onclick="Ctrl.toggleLaundry()" role="button" aria-pressed="false" tabindex="0">
+            <div class="toggle-icon">🧺</div>
+            <div>
+                <div class="toggle-text-main">Lavanderia disponibile</div>
+                <div class="toggle-text-sub">Calcola capi con buffer di sicurezza</div>
+            </div>
+        </div>
+        <div class="laundry-freq" id="laundryFreqBox">
+            <span>Lavo ogni</span>
+            <input type="number" id="laundryFreq" value="3" min="1" max="14" onchange="Ctrl.syncConfig()">
+            <span>gg · Buffer +</span>
+            <input type="number" id="laundryBuffer" value="1" min="0" max="5" onchange="Ctrl.syncConfig()">
+            <span>capi extra</span>
+        </div>
+
+        <div class="template-row">
+            <input type="text" id="templateName" placeholder="Nome template...">
+            <button class="btn-sm" onclick="Ctrl.saveTemplate()">💾 Salva</button>
+            <select id="templateSelect" onchange="if(this.value) Ctrl.loadTemplate(this.value)">
+                <option value="">📂 Carica template...</option>
+            </select>
+            <button class="btn-sm danger" onclick="Ctrl.deleteTemplate()">🗑️</button>
+        </div>
+    </div>
+
+    <!-- ATTIVITÀ -->
+    <div class="card">
+        <div class="section-label">🎯 Attività (Multi-selezione)</div>
+        <div class="activity-grid" id="activityGrid"></div>
+        <button class="btn-main" onclick="Ctrl.generate()">🎒 GENERA PACKLIST</button>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stats-top">
+            <span class="stats-label">📦 Progresso packing</span>
+            <div class="stats-chips">
+                <div class="chip">
+                    <span class="chip-icon">📋</span>
+                    <span class="chip-val neutral" id="itemsCount">0/0</span>
+                    <span class="chip-label">item</span>
+                </div>
+                <div class="chip">
+                    <span class="chip-icon">⚖️</span>
+                    <span class="chip-val light" id="weightSuitcase">0 g</span>
+                    <span class="chip-label">in valigia</span>
+                </div>
+                <div class="chip">
+                    <span class="chip-icon">🌍</span>
+                    <span class="chip-val neutral" id="weightTotal">0 g</span>
+                    <span class="chip-label">totale</span>
+                </div>
+                <div class="chip" id="wornChip" style="display:none">
+                    <span class="chip-icon">🧥</span>
+                    <span class="chip-val neutral" id="wornWeight">0 g</span>
+                    <span class="chip-label">indossati</span>
+                </div>
+                <span class="pct-display zero" id="progressPct" aria-live="polite">0%</span>
+            </div>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="weight-track" style="margin-top:8px">
+            <div class="weight-fill light" id="weightFill" style="width:0%"></div>
+        </div>
+        <div class="weight-legend">
+            <span class="w-tick tl">Leggero &lt;5 kg</span>
+            <span class="w-tick tm">Medio 5–10 kg</span>
+            <span class="w-tick th">Pesante &gt;10 kg</span>
+        </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchItems" placeholder="Cerca item nella lista..." oninput="Ctrl.filterList()">
+    </div>
+
+    <!-- LISTA -->
+    <div id="results" class="list-grid"></div>
+</div>
+
+<!-- FAB MENU SYSTEM (MODIFICATO) -->
+<div class="fab-container">
+    <!-- Menu a comparsa -->
+    <div class="fab-menu" id="fabMenu">
+        <!-- Filtri Categorie -->
+        <button class="fab-item active-filter" onclick="Ctrl.setFilter('all')" id="filter-all">
+            <span class="fab-item-icon">📂</span>
+            <span>Tutte le Categorie</span>
+        </button>
+        <button class="fab-item" onclick="Ctrl.setFilter('clothing')" id="filter-clothing">
+            <span class="fab-item-icon">👕</span>
+            <span>Solo Abbigliamento</span>
+        </button>
+        <button class="fab-item" onclick="Ctrl.setFilter('tech')" id="filter-tech">
+            <span class="fab-item-icon">🔌</span>
+            <span>Tech & Lavoro</span>
+        </button>
+        <button class="fab-item" onclick="Ctrl.setFilter('essentials')" id="filter-essentials">
+            <span class="fab-item-icon">🪪</span>
+            <span>Essenziali & Igiene</span>
+        </button>
+        
+        <div style="height:1px; background:var(--border); margin:4px 0;"></div>
+        
+        <!-- Azioni -->
+        <button class="fab-item" onclick="Ctrl.copyList(); Ctrl.toggleMenu()">
+            <span class="fab-item-icon">📋</span>
+            <span>Copia Lista</span>
+        </button>
+        <button class="fab-item" onclick="Ctrl.exportPDF(); Ctrl.toggleMenu()">
+            <span class="fab-item-icon">📄</span>
+            <span>Esporta PDF</span>
+        </button>
+        <button class="fab-item" onclick="Ctrl.clearTaken(); Ctrl.toggleMenu()">
+            <span class="fab-item-icon">🧹</span>
+            <span>Rimuovi Spuntati</span>
+        </button>
+        <button class="fab-item" style="color:var(--rose)" onclick="Ctrl.resetAll(false); Ctrl.toggleMenu()">
+            <span class="fab-item-icon">♻️</span>
+            <span>Reset Sessione</span>
+        </button>
+    </div>
+
+    <!-- Bottone Principale (Tre Pallini) -->
+    <button class="fab-main" id="fabMain" onclick="Ctrl.toggleMenu()" aria-label="Apri menu">
+        ⋮
+    </button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// 1. CONSTANTS & DATA
+// ═══════════════════════════════════════════════════════════════════
+const DEFAULT_CONFIG = {
+    nights: 1, gender: 'U', transport: 'auto',
+    weather: [], activities: [],
+    laundry: false, laundryFreq: 3, laundryBuffer: 1
+};
+
+let STATE = {
+    config: { ...DEFAULT_CONFIG },
+    list: {},
+    lastRemoved: null,
+    filter: 'all'
+};
+
+const ACTIVITIES = [
+    {id:'trekking',        label:'Trekking',       icon:'⛰️'},
+    {id:'nuoto',           label:'Mare/Piscina',   icon:'🏊'},
+    {id:'spiaggia',        label:'Spiaggia',       icon:'🏖️'},
+    {id:'lavoro',          label:'Lavoro',         icon:'💼'},
+    {id:'cena',            label:'Cena Elegante',  icon:'🍽️'},
+    {id:'ciclismo',        label:'Ciclismo',       icon:'🚴'},
+    {id:'sport_invernali', label:'Sport Invernali',icon:'⛷️'},
+    {id:'moto_adv',        label:'Moto Pro',       icon:'🏍️'},
+    {id:'camping',         label:'Campeggio',      icon:'⛺'},
+    {id:'foto',            label:'Fotografia',     icon:'📸'},
+    {id:'fitness',         label:'Palestra/Run',   icon:'🏋️'},
+    {id:'bambini',         label:'Con Bambini',    icon:'👶'},
+    {id:'alpinismo',       label:'Alpinismo',      icon:'🏔️'},
+    {id:'ferrata',         label:'Ferrata',        icon:'🧗'},
+];
+
+const PER_NIGHT = new Set(['trekking','nuoto','lavoro','fitness','ciclismo','sport_invernali','bambini','alpinismo','ferrata']);
+
+const DAYTRIP_EXCLUDE = new Set([
+    'Mutande','Calze','Canottiere/Sottogiacca','T-shirt','Pigiama','Pantaloni casual',
+    'Spazzolino/Dentifricio','Deodorante','Tagliaunghie/Pinzetta','Kit Barba','Trucchi base',
+    'Profumo','Laptop + Caricatore','Camicia','Agenda/Penne','Mouse/Tastiera','Adattatore HDMI',
+    'Abito elegante','Scarpe eleganti','Cintura','Tenda','Sacco a pelo','Tappetino isolante',
+    'Kit cucina camping','Pannolini','Cambio vestiti bimbo','Multipresa viaggio','Cuffie',
+    'Cuscino viaggio','Disinfettante mani','Sacco biancheria sporca','Lucchetto TSA',
+    'Detersivo monodose','Filo stendino viaggio','Sacchetto biancheria','Pigiama'
+]);
+
+const WARNINGS = [
+    {
+        check: s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Coltellino')),
+        msg: '✈️ Attenzione: il coltellino multiuso non è consentito in cabina'
+    },
+    {
+        check: s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Accendino')),
+        msg: '✈️ Attenzione: gli accendini sono vietati in aereo'
+    },
+    {
+        check: s => s.config.nights === 0 && s.config.laundry,
+        msg: '🧺 Lavanderia non necessaria per gite in giornata'
+    },
+    {
+        check: s => s.config.nights > 7 && !s.config.laundry,
+        msg: `👔 Viaggio lungo senza lavanderia: considera l'attivazione per ottimizzare i bagagli`
+    },
+];
+
+const FILTER_MAP = {
+    clothing: ['Abbigliamento Base', 'Abbigliamento', 'Trekking', 'Nuoto', 'Spiaggia', 'Lavoro', 'Ciclismo', 'Sport Invernali', 'Moto Pro', 'Fitness', 'Bambini', 'Tecnico'],
+    tech: ['Tech', 'Lavoro', 'Fotografia', 'Moto', 'Trasporto'],
+    essentials: ['Essenziali', 'Igiene', 'Salute', 'Comfort', 'Zaino', 'Accessori', 'Camping']
+};
+
+const DB = {
+    base: [
+        {n:"Mutande",q:"n",cat:"Abbigliamento Base",s:"U",w:50,v:1},
+        {n:"Calze",q:"n",cat:"Abbigliamento Base",s:"U",w:80,v:1},
+        {n:"Canottiere/Sottogiacca",q:"n",cat:"Abbigliamento Base",s:"U",w:120,v:1},
+        {n:"T-shirt",q:"n",cat:"Abbigliamento Base",s:"U",w:180,v:1},
+        {n:"Pigiama",q:"f",cat:"Abbigliamento Base",s:"U",w:300,v:2},
+        {n:"Pantaloni casual",q:"f",cat:"Abbigliamento Base",s:"U",w:400,v:2,worn:true},
+        {n:"Documenti/Patente",q:"f",cat:"Essenziali",s:"U",w:30,v:1},
+        {n:"Portafoglio/Contanti",q:"f",cat:"Essenziali",s:"U",w:100,v:1},
+        {n:"Cellulare + Cavo",q:"f",cat:"Tech",s:"U",w:250,v:1},
+        {n:"Powerbank",q:"f",cat:"Tech",s:"U",w:250,v:1},
+        {n:"Multipresa viaggio",q:"f",cat:"Tech",s:"U",w:300,v:2},
+        {n:"Cuffie",q:"f",cat:"Tech",s:"U",w:200,v:1},
+        {n:"Spazzolino/Dentifricio",q:"f",cat:"Igiene",s:"U",w:80,v:1},
+        {n:"Deodorante",q:"f",cat:"Igiene",s:"U",w:100,v:1},
+        {n:"Tagliaunghie/Pinzetta",q:"f",cat:"Igiene",s:"U",w:50,v:1},
+        {n:"Kit Barba",q:"f",cat:"Igiene",s:"M",w:200,v:1},
+        {n:"Trucchi base",q:"f",cat:"Igiene",s:"F",w:300,v:2},
+        {n:"Tachipirina/Oki",q:"f",cat:"Salute",s:"U",w:50,v:1},
+        {n:"Cerotti assortiti",q:"f",cat:"Salute",s:"U",w:40,v:1},
+        {n:"Disinfettante mani",q:"f",cat:"Salute",s:"U",w:100,v:1},
+    ],
+    laundry: [
+        {n:"Detersivo monodose",q:"f",cat:"Igiene",s:"U",w:30,v:1},
+        {n:"Filo stendino viaggio",q:"f",cat:"Accessori",s:"U",w:50,v:1},
+        {n:"Sacchetto biancheria",q:"f",cat:"Accessori",s:"U",w:30,v:1},
+    ],
+    weather: {
+        sun: [
+            {n:"Occhiali da sole",q:"f",cat:"Accessori",s:"U",w:80,v:1},
+            {n:"Crema solare SPF50",q:"f",cat:"Salute",s:"U",w:200,v:1},
+            {n:"Cappellino",q:"f",cat:"Accessori",s:"U",w:100,v:1},
+        ],
+        rain: [
+            {n:"Ombrello piccolo",q:"f",cat:"Accessori",s:"U",w:300,v:2},
+            {n:"Guscio/Impermeabile",q:"f",cat:"Abbigliamento",s:"U",w:600,v:2},
+            {n:"Scarpe waterproof",q:"f",cat:"Abbigliamento",s:"U",w:800,v:3},
+            {n:"Sacca impermeabile",q:"f",cat:"Accessori",s:"U",w:150,v:1},
+        ],
+        cold: [
+            {n:"Maglia termica",q:"f",cat:"Abbigliamento",s:"U",w:200,v:2},
+            {n:"Guanti/Berretto",q:"f",cat:"Accessori",s:"U",w:150,v:1},
+            {n:"Burrocacao",q:"f",cat:"Salute",s:"U",w:30,v:1},
+            {n:"Sciarpa",q:"f",cat:"Accessori",s:"U",w:200,v:2},
+            {n:"Giacca pesante",q:"f",cat:"Abbigliamento",s:"U",w:900,v:3,worn:true},
+        ],
+    },
+    transport: {
+        auto: [
+            {n:"Occhiali guida",q:"f",cat:"Trasporto",s:"U",w:80,v:1},
+            {n:"Cavo ricarica auto",q:"f",cat:"Tech",s:"U",w:150,v:1},
+            {n:"Kit emergenza auto",q:"f",cat:"Trasporto",s:"U",w:400,v:2},
+        ],
+        moto: [
+            {n:"Kit foratura",q:"f",cat:"Moto",s:"U",w:300,v:1},
+            {n:"Grasso catena spray",q:"f",cat:"Moto",s:"U",w:200,v:1},
+            {n:"Panno visiera",q:"f",cat:"Moto",s:"U",w:30,v:1},
+            {n:"Bloccadisco",q:"f",cat:"Moto",s:"U",w:400,v:2},
+            {n:"Guanti moto",q:"f",cat:"Moto",s:"U",w:300,v:2,worn:true},
+        ],
+        aereo: [
+            {n:"Passaporto",q:"f",cat:"Essenziali",s:"U",w:50,v:1},
+            {n:"Liquidi <100ml",q:"f",cat:"Igiene",s:"U",w:300,v:1},
+            {n:"Tappi orecchie",q:"f",cat:"Comfort",s:"U",w:20,v:1},
+            {n:"Adattatore prese",q:"f",cat:"Tech",s:"U",w:100,v:1},
+            {n:"Cuscino viaggio",q:"f",cat:"Comfort",s:"U",w:200,v:3},
+        ],
+        backpack: [
+            {n:"Sacco biancheria sporca",q:"f",cat:"Zaino",s:"U",w:60,v:1},
+            {n:"Asciugamano microfibra",q:"f",cat:"Igiene",s:"U",w:200,v:2},
+            {n:"Lucchetto TSA",q:"f",cat:"Zaino",s:"U",w:100,v:1},
+            {n:"Coprizaino pioggia",q:"f",cat:"Zaino",s:"U",w:150,v:1},
+        ],
+    },
+    extra: {
+        trekking: [
+            {n:"Scarponi trekking",q:"f",cat:"Trekking",s:"U",w:1200,v:3,worn:true},
+            {n:"Calze trekking",q:"n",cat:"Trekking",s:"U",w:100,v:1},
+            {n:"Borraccia 1L",q:"f",cat:"Trekking",s:"U",w:250,v:2},
+            {n:"Coltellino multiuso",q:"f",cat:"Trekking",s:"U",w:120,v:1},
+            {n:"Bastoncini",q:"f",cat:"Trekking",s:"U",w:400,v:3},
+            {n:"Kit primo soccorso",q:"f",cat:"Salute",s:"U",w:200,v:1},
+            {n:"Mappa/GPS",q:"f",cat:"Trekking",s:"U",w:80,v:1},
+        ],
+        nuoto: [
+            {n:"Costume",q:"f",cat:"Nuoto",s:"U",w:200,v:1},
+            {n:"Cuffia/Occhialini",q:"f",cat:"Nuoto",s:"U",w:80,v:1},
+            {n:"Infradito",q:"f",cat:"Nuoto",s:"U",w:250,v:2},
+            {n:"Telo mare",q:"f",cat:"Nuoto",s:"U",w:400,v:3},
+            {n:"Maschera snorkeling",q:"f",cat:"Nuoto",s:"U",w:300,v:2},
+        ],
+        spiaggia: [
+            {n:"Costume",q:"f",cat:"Spiaggia",s:"U",w:200,v:1},
+            {n:"Infradito",q:"f",cat:"Spiaggia",s:"U",w:250,v:2},
+            {n:"Telo mare",q:"f",cat:"Spiaggia",s:"U",w:400,v:3},
+            {n:"Borsa termica",q:"f",cat:"Spiaggia",s:"U",w:300,v:3},
+            {n:"Libro/Kindle",q:"f",cat:"Spiaggia",s:"U",w:250,v:1},
+            {n:"Pareo",q:"f",cat:"Spiaggia",s:"U",w:150,v:1},
+        ],
+        lavoro: [
+            {n:"Laptop + Caricatore",q:"f",cat:"Lavoro",s:"U",w:2200,v:2},
+            {n:"Camicia",q:"n",cat:"Lavoro",s:"U",w:250,v:1},
+            {n:"Agenda/Penne",q:"f",cat:"Lavoro",s:"U",w:200,v:1},
+            {n:"Mouse/Tastiera",q:"f",cat:"Lavoro",s:"U",w:400,v:2},
+            {n:"Adattatore HDMI",q:"f",cat:"Lavoro",s:"U",w:80,v:1},
+        ],
+        cena: [
+            {n:"Abito elegante",q:"f",cat:"Abbigliamento",s:"U",w:500,v:2},
+            {n:"Scarpe eleganti",q:"f",cat:"Abbigliamento",s:"U",w:700,v:3,worn:true},
+            {n:"Profumo",q:"f",cat:"Igiene",s:"U",w:150,v:1},
+            {n:"Cintura",q:"f",cat:"Abbigliamento",s:"U",w:100,v:1},
+        ],
+        ciclismo: [
+            {n:"Casco ciclismo",q:"f",cat:"Ciclismo",s:"U",w:300,v:3,worn:true},
+            {n:"Abbigliamento tecnico bici",q:"n",cat:"Ciclismo",s:"U",w:200,v:1},
+            {n:"Guanti ciclismo",q:"f",cat:"Ciclismo",s:"U",w:80,v:1,worn:true},
+            {n:"Kit riparazione bici",q:"f",cat:"Ciclismo",s:"U",w:250,v:1},
+            {n:"Crema antifrizione",q:"f",cat:"Ciclismo",s:"U",w:100,v:1},
+            {n:"Borraccia bici",q:"f",cat:"Ciclismo",s:"U",w:200,v:2},
+        ],
+        sport_invernali: [
+            {n:"Tuta da sci",q:"f",cat:"Sport Invernali",s:"U",w:1500,v:3,worn:true},
+            {n:"Casco sci/neve",q:"f",cat:"Sport Invernali",s:"U",w:400,v:3,worn:true},
+            {n:"Occhiali da neve",q:"f",cat:"Sport Invernali",s:"U",w:150,v:2,worn:true},
+            {n:"Calze termiche sci",q:"n",cat:"Sport Invernali",s:"U",w:120,v:1},
+            {n:"Guanti sci",q:"f",cat:"Sport Invernali",s:"U",w:200,v:2,worn:true},
+            {n:"Scaldacollo",q:"f",cat:"Sport Invernali",s:"U",w:80,v:1,worn:true},
+            {n:"Crema protezione sole neve",q:"f",cat:"Salute",s:"U",w:150,v:1},
+        ],
+        moto_adv: [
+            {n:"Tuta antipioggia intera",q:"f",cat:"Moto Pro",s:"U",w:800,v:3},
+            {n:"Sottotuta tecnico",q:"f",cat:"Moto Pro",s:"U",w:350,v:2},
+            {n:"Interfono carico",q:"f",cat:"Moto Pro",s:"U",w:150,v:1},
+            {n:"Paragambe",q:"f",cat:"Moto Pro",s:"U",w:500,v:2},
+        ],
+        camping: [
+            {n:"Tenda",q:"f",cat:"Camping",s:"U",w:2000,v:3},
+            {n:"Sacco a pelo",q:"f",cat:"Camping",s:"U",w:1200,v:3},
+            {n:"Tappetino isolante",q:"f",cat:"Camping",s:"U",w:500,v:3},
+            {n:"Torcia frontale",q:"f",cat:"Camping",s:"U",w:100,v:1},
+            {n:"Accendino",q:"f",cat:"Camping",s:"U",w:20,v:1},
+            {n:"Borraccia 1L",q:"f",cat:"Camping",s:"U",w:250,v:2},
+            {n:"Kit cucina camping",q:"f",cat:"Camping",s:"U",w:600,v:3},
+            {n:"Repellente insetti",q:"f",cat:"Salute",s:"U",w:150,v:1},
+        ],
+        foto: [
+            {n:"Corpo macchina",q:"f",cat:"Fotografia",s:"U",w:700,v:2},
+            {n:"Obiettivi extra",q:"f",cat:"Fotografia",s:"U",w:500,v:2},
+            {n:"Schede SD extra",q:"f",cat:"Fotografia",s:"U",w:20,v:1},
+            {n:"Batterie extra",q:"f",cat:"Fotografia",s:"U",w:100,v:1},
+            {n:"Treppiede leggero",q:"f",cat:"Fotografia",s:"U",w:800,v:3},
+            {n:"Kit pulizia lenti",q:"f",cat:"Fotografia",s:"U",w:80,v:1},
+        ],
+        fitness: [
+            {n:"Scarpe running",q:"f",cat:"Fitness",s:"U",w:600,v:3,worn:true},
+            {n:"Abbigliamento tecnico",q:"n",cat:"Fitness",s:"U",w:200,v:1},
+            {n:"Fascia sudore",q:"f",cat:"Fitness",s:"U",w:40,v:1},
+            {n:"Bracciale porta-telefono",q:"f",cat:"Fitness",s:"U",w:60,v:1},
+            {n:"Asciugamano palestra",q:"f",cat:"Fitness",s:"U",w:150,v:2},
+        ],
+        bambini: [
+            {n:"Pannolini",q:"n",cat:"Bambini",s:"U",w:50,v:2},
+            {n:"Salviette umidificate",q:"f",cat:"Bambini",s:"U",w:150,v:2},
+            {n:"Cambio vestiti bimbo",q:"n",cat:"Bambini",s:"U",w:300,v:2},
+            {n:"Marsupio/Zaino bimbo",q:"f",cat:"Bambini",s:"U",w:800,v:3},
+            {n:"Termometro",q:"f",cat:"Bambini",s:"U",w:50,v:1},
+            {n:"Giochi viaggio",q:"f",cat:"Bambini",s:"U",w:200,v:2},
+            {n:"Crema solare bimbi",q:"f",cat:"Salute",s:"U",w:150,v:1},
+        ],
+        alpinismo: [
+            {n:"Corda (60m)",q:"f",cat:"Tecnico",s:"U",w:3600,v:3},
+            {n:"Imbrago",q:"f",cat:"Tecnico",s:"U",w:450,v:2},
+            {n:"Casco alpinismo",q:"f",cat:"Tecnico",s:"U",w:350,v:3,worn:true},
+            {n:"Ramponi",q:"f",cat:"Tecnico",s:"U",w:900,v:2},
+            {n:"Piccozza",q:"f",cat:"Tecnico",s:"U",w:500,v:2},
+            {n:"Kit rinvii/moschettoni",q:"f",cat:"Tecnico",s:"U",w:800,v:2},
+            {n:"Kit primo soccorso",q:"f",cat:"Tecnico",s:"U",w:200,v:1},
+        ],
+        ferrata: [
+            {n:"Set Ferrata (Y-longe)",q:"f",cat:"Tecnico",s:"U",w:550,v:2},
+            {n:"Imbrago leggero",q:"f",cat:"Tecnico",s:"U",w:400,v:2},
+            {n:"Casco (ferrata/alpinismo)",q:"f",cat:"Tecnico",s:"U",w:350,v:3,worn:true},
+            {n:"Guanti da ferrata",q:"f",cat:"Tecnico",s:"U",w:100,v:1,worn:true},
+            {n:"Moschettone a ghiera extra",q:"f",cat:"Tecnico",s:"U",w:80,v:1},
+        ],
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 2. UTILS
+// ═══════════════════════════════════════════════════════════════════
+const U = {
+    uid:        () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2,9)}`,
+    weight:     g  => {
+        const grams = (g && !isNaN(g) && g > 0) ? g : 0;
+        return grams < 1000 ? `${grams} g` : `${Number((grams/1000).toFixed(1))} kg`;
+    },
+    esc:        t  => !t ? '' : String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])),
+    stripEmoji: s  => s.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,''),
+    clone:      obj => typeof structuredClone === 'function' ? structuredClone(obj) : JSON.parse(JSON.stringify(obj)),
+    _tid: null,
+    toast(msg, type = 'success', undoCb = null) {
+        clearTimeout(this._tid);
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.textContent = msg;
+        if (undoCb) el.onclick = () => { undoCb(); el.remove(); };
+        document.body.appendChild(el);
+        this._tid = setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(-50%) translateY(10px)';
+            el.style.transition = '.3s';
+            setTimeout(() => el.remove(), 300);
+        }, undoCb ? 4500 : 2600);
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 3. STORAGE
+// ═══════════════════════════════════════════════════════════════════
+const Storage = {
+    KEY: 'packlist_v95',
+    TPL_KEY: 'packlist_tpl_v95',
+    VERSION: 1,
+    _t: null,
+    queueSave() { clearTimeout(this._t); this._t = setTimeout(() => this.save(), 280); },
+    save() {
+        try {
+            localStorage.setItem(this.KEY, JSON.stringify({ v: this.VERSION, list: STATE.list, config: STATE.config }));
+        } catch(e) {
+            if(e.name === 'QuotaExceededError') U.toast('⚠️ Memoria piena! Elimina template o item.', 'error');
+            else U.toast('⚠️ Errore salvataggio.', 'error');
+        }
+    },
+    load() { try { const r = localStorage.getItem(this.KEY); return r ? JSON.parse(r) : null; } catch { return null; } },
+    getTpl() { try { return JSON.parse(localStorage.getItem(this.TPL_KEY) || '{}'); } catch { return {}; } },
+    setTpl(obj) { try { localStorage.setItem(this.TPL_KEY, JSON.stringify(obj)); } catch(e) { U.toast('⚠️ Impossibile salvare template.', 'error'); } }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 4. VIEW
+// ═══════════════════════════════════════════════════════════════════
+const View = {
+    list() {
+        const res = document.getElementById('results');
+        if (!Object.keys(STATE.list).length) {
+            res.innerHTML = `<div class="empty-state"><div class="es-icon">🎒</div><p>Configura il viaggio e clicca "Genera Packlist"!</p></div>`;
+            return;
+        }
+        
+        const frag = document.createDocumentFragment();
+        const filter = STATE.filter;
+        
+        for (const cat in STATE.list) {
+            const items = STATE.list[cat];
+            if (!items?.length) continue;
+            
+            let shouldShow = true;
+            if (filter !== 'all') {
+                const allowedCats = FILTER_MAP[filter] || [];
+                shouldShow = allowedCats.includes(cat);
+            }
+            
+            if (!shouldShow) continue;
+
+            const sorted  = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
+            const pending = sorted.filter(i => !i.checked).length;
+
+            const box = document.createElement('div');
+            box.className = 'cat-box';
+            box.dataset.cat = cat;
+            box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${pending}/${items.length}</span></div>`;
+
+            sorted.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `item-row ${item.checked ? 'taken' : 'pending'}`;
+                row.dataset.uid = item.uid;
+                row.dataset.cat = cat;
+                row.setAttribute('role', 'checkbox');
+                row.setAttribute('aria-checked', item.checked);
+                row.setAttribute('tabindex', '0');
+
+                const bulkBadge      = item.v >= 3  ? `<span class="badge" title="Ingombrante">📦</span>` : '';
+                const wornBadge      = item.worn     ? `<span class="badge" title="Da indossare in viaggio">🧥</span>` : '';
+                const protectedBadge = item.custom   ? `<span class="badge" title="Item personale">⭐</span>` : '';
+                const wDisplay       = U.weight((item.w || 100) * item.q);
+
+                row.innerHTML = `
+                    <div class="item-content">
+                        <span class="qty">${item.q}x</span>
+                        <span class="item-text">${U.esc(item.n)}${bulkBadge}${wornBadge}${protectedBadge}</span>
+                        <span class="item-weight">${wDisplay}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="ia-btn worn"
+                            data-action="worn" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="${item.worn ? 'Metti nello zaino' : 'Segna come indossato'}"
+                            aria-label="Toggle indossato">${item.worn ? '🧥' : '🎒'}</button>
+                        <button class="ia-btn edit"
+                            data-action="edit" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="Modifica peso" aria-label="Modifica peso">⚖️</button>
+                        <button class="ia-btn del"
+                            data-action="del" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="Rimuovi" aria-label="Rimuovi ${U.esc(item.n)}">✕</button>
+                    </div>`;
+                box.appendChild(row);
+            });
+
+            const inputId = `add-${cat.replace(/\W/g,'')}`;
+            const addRow = document.createElement('div');
+            addRow.className = 'add-custom';
+            addRow.innerHTML = `
+                <input type="text" id="${inputId}" placeholder="+ Aggiungi item personalizzato...">
+                <button class="btn-sm" data-action="add" data-cat="${U.esc(cat)}" data-input="${inputId}">+ Add</button>`;
+            box.appendChild(addRow);
+            frag.appendChild(box);
+        }
+        
+        if (frag.children.length === 0) {
+             res.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>Nessun item in questa categoria.</p></div>`;
+        } else {
+            res.innerHTML = '';
+            res.appendChild(frag);
+        }
+    },
+
+    stats() {
+        const bar = document.getElementById('statsBar');
+        const all = Object.values(STATE.list).flat();
+        if (!all.length) { bar.classList.remove('visible'); return; }
+        bar.classList.add('visible');
+
+        const done  = all.filter(i => i.checked).length;
+        const total = all.length;
+        const pct   = total ? Math.round(done / total * 100) : 0;
+
+        document.getElementById('progressFill').style.width = `${pct}%`;
+        const pctEl = document.getElementById('progressPct');
+        pctEl.textContent = `${pct}%`;
+        pctEl.className   = 'pct-display' + (pct === 0 ? ' zero' : pct === 100 ? ' done' : ' mid');
+
+        document.getElementById('itemsCount').textContent = `${done}/${total}`;
+
+        const totalG    = all.reduce((s,i) => s + (i.w||100) * i.q, 0);
+        const wornG     = all.filter(i => i.worn).reduce((s,i) => s + (i.w||100) * i.q, 0);
+        const suitcaseG = all.filter(i => i.checked && !i.worn).reduce((s,i) => s + (i.w||100) * i.q, 0);
+
+        const wClass = suitcaseG >= 10000 ? 'heavy' : suitcaseG >= 5000 ? 'mid' : 'light';
+
+        const sEl = document.getElementById('weightSuitcase');
+        sEl.textContent = U.weight(suitcaseG);
+        sEl.className   = `chip-val ${wClass}`;
+
+        document.getElementById('weightTotal').textContent = U.weight(totalG);
+
+        const wornChip = document.getElementById('wornChip');
+        if (wornG > 0) {
+            wornChip.style.display = 'flex';
+            document.getElementById('wornWeight').textContent = U.weight(wornG);
+        } else {
+            wornChip.style.display = 'none';
+        }
+
+        const fillEl = document.getElementById('weightFill');
+        fillEl.style.width = `${Math.min(suitcaseG / 25000 * 100, 100)}%`;
+        fillEl.className   = `weight-fill ${wClass}`;
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 5. CONTROLLER
+// ═══════════════════════════════════════════════════════════════════
+const Ctrl = {
+
+    rerender() { View.list(); View.stats(); Storage.queueSave(); },
+
+    syncConfig() {
+        STATE.config.nights       = parseInt(document.getElementById('nights').value) || 0;
+        STATE.config.gender       = document.getElementById('gender').value;
+        STATE.config.transport    = document.getElementById('transport').value;
+        STATE.config.laundryFreq  = Math.max(1, parseInt(document.getElementById('laundryFreq').value)   || 3);
+        STATE.config.laundryBuffer= Math.max(0, parseInt(document.getElementById('laundryBuffer').value) || 1);
+        STATE.config.activities   = [...document.querySelectorAll('.act-btn.active')].map(el => el.id.replace('act-',''));
+        const isDaytrip = STATE.config.nights === 0;
+        document.getElementById('daytripBanner').classList.toggle('visible', isDaytrip);
+        Storage.queueSave();
+    },
+
+    toggleWeather(type) {
+        const btn = document.getElementById(`w-${type}`);
+        const idx = STATE.config.weather.indexOf(type);
+        if (idx > -1) { STATE.config.weather.splice(idx,1); btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); }
+        else           { STATE.config.weather.push(type);   btn.classList.add('active');    btn.setAttribute('aria-pressed','true'); }
+        Storage.queueSave();
+    },
+
+    toggleLaundry() {
+        STATE.config.laundry = !STATE.config.laundry;
+        const el = document.getElementById('laundryToggle');
+        el.classList.toggle('active', STATE.config.laundry);
+        el.setAttribute('aria-pressed', STATE.config.laundry);
+        document.getElementById('laundryFreqBox').classList.toggle('visible', STATE.config.laundry);
+        Storage.queueSave();
+    },
+
+    toggleItem(cat, uid) {
+        const item = STATE.list[cat]?.find(i => i.uid === uid);
+        if (!item) return;
+        item.checked = !item.checked;
+        this.rerender();
+    },
+
+    toggleWorn(cat, uid) {
+        const item = STATE.list[cat]?.find(i => i.uid === uid);
+        if (!item) return;
+        item.worn = !item.worn;
+        this.rerender();
+    },
+
+    editWeight(cat, uid) {
+        const item = STATE.list[cat]?.find(i => i.uid === uid);
+        if (!item) return;
+        const val = prompt(`Peso attuale di "${item.n}": ${U.weight(item.w)}\n\nInserisci nuovo peso in grammi:`, item.w);
+        if (val === null) return;
+        const num = parseInt(val);
+        if (isNaN(num) || num <= 0) return U.toast('❌ Peso non valido! Inserisci un numero positivo.', 'error');
+        const old = item.w;
+        item.w = num;
+        this.rerender();
+        U.toast(`⚖️ Peso aggiornato: ${U.weight(old)} → ${U.weight(num)}`);
+    },
+
+    removeItem(cat, uid) {
+        if (!STATE.list[cat]) return;
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (!item) return;
+        if (item.custom && !confirm(`Rimuovere "${item.n}"?\n(Questo è un tuo item personale)`)) return;
+        const idx = STATE.list[cat].findIndex(i => i.uid === uid);
+        STATE.list[cat].splice(idx, 1);
+        if (!STATE.list[cat].length) delete STATE.list[cat];
+        this.rerender();
+        U.toast('🗑️ Item rimosso');
+    },
+
+    addCustom(cat, inputId) {
+        const input   = document.getElementById(inputId);
+        const rawName = input?.value.trim();
+        if (!rawName) return;
+        if (!STATE.list[cat]) STATE.list[cat] = [];
+        STATE.list[cat].push({
+            n: rawName, q: 1, checked: false,
+            uid: U.uid(), w: 100, v: 1,
+            worn: false, custom: true
+        });
+        input.value = '';
+        this.rerender();
+        U.toast('⭐ Item personale aggiunto!');
+        setTimeout(() => document.getElementById(inputId)?.focus(), 40);
+    },
+
+    clearTaken() {
+        let removed = 0;
+        const snapshot = U.clone(STATE.list);
+        for (const c in STATE.list) {
+            const before = STATE.list[c].length;
+            STATE.list[c] = STATE.list[c].filter(i => !i.checked);
+            removed += before - STATE.list[c].length;
+            if (!STATE.list[c].length) delete STATE.list[c];
+        }
+        if (!removed) return U.toast('Nessun item spuntato da rimuovere ℹ️', 'error');
+        STATE.lastRemoved = snapshot;
+        this.rerender();
+        U.toast(`🧹 Rimossi ${removed} item · Clicca qui o CTRL+Z per annullare`, 'undo', () => this.undoDelete());
+    },
+
+    undoDelete() {
+        if (!STATE.lastRemoved) return;
+        STATE.list = U.clone(STATE.lastRemoved);
+        STATE.lastRemoved = null;
+        this.rerender();
+        U.toast('↩️ Lista ripristinata!');
+    },
+
+    resetAll(hard = false) {
+        const msg = hard
+            ? '💣 RESET COMPLETO\n\nEliminare tutto, inclusi i template salvati?'
+            : '♻️ Reset sessione\n\nLa lista verrà eliminata ma i template rimarranno.';
+        if (!confirm(msg)) return;
+        localStorage.removeItem(Storage.KEY);
+        if (hard) { localStorage.removeItem(Storage.TPL_KEY); this.loadTemplateDropdown(); }
+        STATE.list = {}; STATE.config = { ...DEFAULT_CONFIG }; STATE.lastRemoved = null;
+        this.restoreConfig(DEFAULT_CONFIG);
+        document.getElementById('searchItems').value = '';
+        document.getElementById('daytripBanner').classList.remove('visible');
+        this.rerender();
+        U.toast(hard ? '💣 Reset completo effettuato!' : '♻️ Sessione resettata!');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    restoreConfig(cfg) {
+        if (cfg.nights        != null) document.getElementById('nights').value        = cfg.nights;
+        if (cfg.gender)                document.getElementById('gender').value         = cfg.gender;
+        if (cfg.transport)             document.getElementById('transport').value      = cfg.transport;
+        if (cfg.laundryFreq   != null) document.getElementById('laundryFreq').value   = cfg.laundryFreq;
+        if (cfg.laundryBuffer != null) document.getElementById('laundryBuffer').value = cfg.laundryBuffer;
+
+        const lt = document.getElementById('laundryToggle');
+        lt.classList.toggle('active', !!cfg.laundry);
+        lt.setAttribute('aria-pressed', !!cfg.laundry);
+        document.getElementById('laundryFreqBox').classList.toggle('visible', !!cfg.laundry);
+        document.getElementById('daytripBanner').classList.toggle('visible', cfg.nights === 0);
+
+        document.querySelectorAll('.weather-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+        (cfg.weather || []).forEach(w => {
+            const b = document.getElementById(`w-${w}`);
+            if (b) { b.classList.add('active'); b.setAttribute('aria-pressed','true'); }
+        });
+
+        document.querySelectorAll('.act-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+        (cfg.activities || []).forEach(id => {
+            const b = document.getElementById(`act-${id}`);
+            if (b) { b.classList.add('active'); b.setAttribute('aria-pressed','true'); }
+        });
+    },
+
+    saveTemplate() {
+        const name = document.getElementById('templateName').value.trim();
+        if (!name) return U.toast('Inserisci un nome per il template ⚠️', 'error');
+        const tpl = Storage.getTpl();
+        tpl[name] = { config: U.clone(STATE.config), list: U.clone(STATE.list) };
+        Storage.setTpl(tpl);
+        this.loadTemplateDropdown();
+        U.toast(`💾 Template "${name}" salvato!`);
+        document.getElementById('templateName').value = '';
+    },
+
+    loadTemplate(name) {
+        const tpl = Storage.getTpl()[name];
+        if (!tpl) return;
+        if (!confirm(`📂 Caricare il template "${name}"?\n\nLa lista attuale verrà sostituita.`)) {
+            document.getElementById('templateSelect').value = '';
+            return;
+        }
+        STATE.list   = U.clone(tpl.list   || {});
+        STATE.config = U.clone(tpl.config || { ...DEFAULT_CONFIG });
+        Object.values(STATE.list).flat().forEach(i => i.checked = false);
+        this.restoreConfig(STATE.config);
+        this.rerender();
+        U.toast(`📂 "${name}" caricato!`);
+        document.getElementById('templateSelect').value = '';
+    },
+
+    deleteTemplate() {
+        const sel  = document.getElementById('templateSelect');
+        const name = sel.value;
+        if (!name) return U.toast('Seleziona prima un template', 'error');
+        if (!confirm(`Eliminare il template "${name}"?`)) return;
+        const tpl = Storage.getTpl();
+        delete tpl[name];
+        Storage.setTpl(tpl);
+        this.loadTemplateDropdown();
+        U.toast(`🗑️ Template "${name}" eliminato`);
+    },
+
+    loadTemplateDropdown() {
+        const sel = document.getElementById('templateSelect');
+        sel.innerHTML = '<option value="">📂 Carica template...</option>';
+        Object.keys(Storage.getTpl()).forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            sel.appendChild(opt);
+        });
+    },
+
+    filterList() {
+        clearTimeout(this._searchT);
+        this._searchT = setTimeout(() => {
+            const term = document.getElementById('searchItems').value.toLowerCase();
+            document.querySelectorAll('.item-row').forEach(row => {
+                const text = row.querySelector('.item-text')?.textContent.toLowerCase() || '';
+                row.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+            document.querySelectorAll('.cat-box').forEach(box => {
+                box.style.display = [...box.querySelectorAll('.item-row')].some(r => r.style.display !== 'none') ? 'block' : 'none';
+            });
+        }, 180);
+    },
+
+    copyList() {
+        const orig = document.querySelector('.fab-item[onclick*="copyList"] .fab-item-icon').innerHTML;
+        document.querySelector('.fab-item[onclick*="copyList"] .fab-item-icon').innerHTML = '✔️';
+        
+        let text = `🎒 PACKLIST${STATE.config.laundry ? ' 🧺' : ''}\n${'═'.repeat(42)}\n\n`;
+        let suitcaseG = 0;
+        for (const c in STATE.list) {
+            if (!STATE.list[c].length) continue;
+            text += `📦 ${c.toUpperCase()}\n`;
+            [...STATE.list[c]].sort((a,b) => a.checked - b.checked).forEach(i => {
+                text += `  ${i.checked ? '✅' : '⬜'} ${i.q}x ${i.n}${i.worn ? ' 🧥' : ''} (${U.weight((i.w||100)*i.q)})\n`;
+                if (i.checked && !i.worn) suitcaseG += (i.w||100) * i.q;
+            });
+            text += '\n';
+        }
+        const all = Object.values(STATE.list).flat(), done = all.filter(i => i.checked).length;
+        text += `📊 ${done}/${all.length} item (${all.length ? Math.round(done/all.length*100) : 0}%)\n`;
+        text += `⚖️ In valigia: ${U.weight(suitcaseG)}\n`;
+        text += `\nGenerato con Packlist Pro v9.5 ✨`;
+
+        navigator.clipboard.writeText(text)
+            .then(() => U.toast('📋 Lista copiata!'))
+            .catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text; document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                U.toast('📋 Lista copiata!');
+            });
+        setTimeout(() => { 
+            document.querySelector('.fab-item[onclick*="copyList"] .fab-item-icon').innerHTML = orig; 
+        }, 1600);
+    },
+
+    exportPDF() {
+        if (typeof window.jspdf === 'undefined') return U.toast('PDF non disponibile ❌', 'error');
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(18); doc.setTextColor(11,15,26);
+            doc.text('Packlist Pro v9.5', 14, 20);
+            doc.setFontSize(9); doc.setTextColor(100,116,139);
+            doc.text(U.stripEmoji(`Notti: ${STATE.config.nights} · Mezzo: ${STATE.config.transport}${STATE.config.laundry ? ' · Lavanderia' : ''}`), 14, 28);
+            doc.text(`Data: ${new Date().toLocaleDateString('it-IT')}`, 14, 34);
+            let y = 44;
+            for (const cat in STATE.list) {
+                if (!STATE.list[cat].length) continue;
+                const rows = STATE.list[cat].map(i => [
+                    `${i.q}x`,
+                    U.stripEmoji(i.n) + (i.worn ? ' [indossato]' : ''),
+                    U.weight((i.w && !isNaN(i.w) ? i.w : 100) * i.q),
+                    i.checked ? '✓' : '○'
+                ]);
+                doc.autoTable({
+                    startY: y,
+                    head: [[U.stripEmoji(cat.toUpperCase()), '', 'Peso', '']],
+                    body: rows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [90,103,242], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+                    styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+                    columnStyles: { 0:{cellWidth:14}, 2:{cellWidth:24,halign:'right'}, 3:{cellWidth:12,halign:'center'} },
+                    margin: { left: 14, right: 14 },
+                });
+                y = doc.lastAutoTable.finalY + 7;
+                if (y > 260) { doc.addPage(); y = 20; }
+            }
+            const all  = Object.values(STATE.list).flat();
+            const done = all.filter(i => i.checked).length;
+            const bagG = all.filter(i => i.checked && !i.worn).reduce((s,i) => s + ((i.w && !isNaN(i.w) ? i.w : 100) * i.q), 0);
+            doc.setFontSize(9); doc.setTextColor(71,85,105);
+            doc.text(`Progresso: ${done}/${all.length} · In valigia: ${U.weight(bagG)}`, 14, y + 6);
+            doc.setFontSize(7); doc.text('Packlist Pro v9.5', 14, y + 13);
+            doc.save(`Packlist_${new Date().toLocaleDateString('it-IT').replace(/\//g,'-')}.pdf`);
+            U.toast('📄 PDF esportato!');
+        } catch(e) {
+            console.error('PDF export error:', e);
+            U.toast('Errore esportazione PDF ❌', 'error');
+        }
+    },
+
+    generate() {
+        if (Object.values(STATE.list).flat().some(i => i.checked)) {
+            if (!confirm('⚠️ Hai già spuntato degli oggetti.\nRigenerare sovrascriverà la lista (gli item personali vengono mantenuti).\n\nContinuare?')) return;
+        }
+
+        this.syncConfig();
+        const { nights, gender, transport, laundry, laundryFreq, laundryBuffer, weather, activities } = STATE.config;
+        const isDaytrip = nights === 0;
+        const nCalc     = isDaytrip ? 1
+                        : laundry   ? Math.max(Math.ceil(nights / laundryFreq) + laundryBuffer, 3)
+                        :             nights;
+
+        const custom = {};
+        for (const cat in STATE.list)
+            STATE.list[cat].forEach(i => { if (i.custom) { if (!custom[cat]) custom[cat]=[]; custom[cat].push(i); } });
+
+        STATE.list = {};
+
+        const addItems = (arr, mult) => {
+            if (!arr) return;
+            arr.forEach(i => {
+                if (isDaytrip && DAYTRIP_EXCLUDE.has(i.n)) return;
+                if (i.s !== 'U' && i.s !== gender) return;
+                if (!STATE.list[i.cat]) STATE.list[i.cat] = [];
+                STATE.list[i.cat].push({
+                    n: i.n, q: i.q === 'n' ? mult : 1,
+                    checked: false, uid: U.uid(),
+                    w: i.w || 100, v: i.v || 1,
+                    worn: !!i.worn, custom: false
+                });
+            });
+        };
+
+        addItems(DB.base, nCalc);
+        if (laundry && !isDaytrip) addItems(DB.laundry, 1);
+        weather.forEach(w => addItems(DB.weather[w], 1));
+        addItems(DB.transport[transport], 1);
+        activities.forEach(id => {
+            if (DB.extra[id]) addItems(DB.extra[id], PER_NIGHT.has(id) ? nCalc : 1);
+        });
+
+        // ✅ FIX: Preserva sempre il campo 'cat' durante la deduplicazione
+        const seen = new Map();
+        for (const cat in STATE.list) {
+            for (const item of STATE.list[cat]) {
+                const key = `${cat}|${item.n.trim().toLowerCase()}`;
+                if (seen.has(key)) {
+                    seen.get(key).q += item.q;
+                } else {
+                    const newItem = { ...item };
+                    newItem.cat = cat; // ✅ CRITICO: assicura che cat sia sempre presente
+                    seen.set(key, newItem);
+                }
+            }
+        }
+        const deduped = {};
+        seen.forEach(item => {
+            const catName = item.cat || 'Varie'; // fallback di sicurezza
+            if (!deduped[catName]) deduped[catName] = [];
+            deduped[catName].push(item);
+        });
+        STATE.list = deduped;
+
+        for (const cat in custom) {
+            if (!STATE.list[cat]) STATE.list[cat] = [];
+            STATE.list[cat].push(...custom[cat]);
+        }
+        Object.keys(STATE.list).forEach(cat => { if (!STATE.list[cat]?.length) delete STATE.list[cat]; });
+
+        if (!Object.keys(STATE.list).length) return U.toast('Nessun item! Seleziona almeno un\'attività ⚠️', 'error');
+
+        const activeWarnings = WARNINGS.filter(w => w.check(STATE)).map(w => w.msg);
+        if (activeWarnings.length) {
+            activeWarnings.forEach((msg, i) => setTimeout(() => U.toast(msg, 'warning'), i * 600));
+        }
+
+        document.getElementById('searchItems').value = '';
+        this.rerender();
+        const wLabel = weather.length ? ` + ${weather.length} meteo` : '';
+        U.toast(`✅ Lista generata${laundry ? ' 🧺' : ''}${wLabel} · ${nCalc} notti calc.`);
+        setTimeout(() => document.getElementById('statsBar').scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    },
+    
+    toggleMenu() {
+        const menu = document.getElementById('fabMenu');
+        const btn = document.getElementById('fabMain');
+        menu.classList.toggle('open');
+        btn.classList.toggle('open');
+    },
+    
+    setFilter(filterType) {
+        STATE.filter = filterType;
+        
+        document.querySelectorAll('.fab-item').forEach(btn => btn.classList.remove('active-filter'));
+        const activeBtn = document.getElementById(`filter-${filterType}`);
+        if(activeBtn) activeBtn.classList.add('active-filter');
+        
+        if(window.innerWidth < 768) {
+            this.toggleMenu();
+        }
+        
+        this.rerender();
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 6. EVENT DELEGATION (100%)
+// ═══════════════════════════════════════════════════════════════════
+document.getElementById('results').addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (btn) {
+        e.stopPropagation();
+        const { action, cat, uid, input: inputId } = btn.dataset;
+        if (action === 'worn') Ctrl.toggleWorn(cat, uid);
+        else if (action === 'edit') Ctrl.editWeight(cat, uid);
+        else if (action === 'del')  Ctrl.removeItem(cat, uid);
+        else if (action === 'add')  Ctrl.addCustom(cat, inputId);
+        return;
+    }
+    const row = e.target.closest('.item-row');
+    if (row && !e.target.closest('input')) Ctrl.toggleItem(row.dataset.cat, row.dataset.uid);
+});
+
+document.getElementById('results').addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('item-row')) {
+        e.preventDefault();
+        Ctrl.toggleItem(e.target.dataset.cat, e.target.dataset.uid);
+    }
+    if (e.key === 'Enter' && e.target.matches('.add-custom input')) {
+        const cat = e.target.closest('.cat-box')?.dataset.cat;
+        if (cat) { e.preventDefault(); Ctrl.addCustom(cat, e.target.id); }
+    }
+});
+
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        Ctrl.undoDelete();
+    }
+    const el = e.target;
+    if ((el.classList.contains('weather-btn') || el.classList.contains('act-btn') || el.classList.contains('toggle-group'))
+        && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        el.click();
+    }
+    if (e.key === 'Escape') {
+        const menu = document.getElementById('fabMenu');
+        if (menu.classList.contains('open')) Ctrl.toggleMenu();
+    }
+});
+
+const grid = document.getElementById('activityGrid');
+ACTIVITIES.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'act-btn';
+    div.id = `act-${a.id}`;
+    div.setAttribute('role', 'button');
+    div.setAttribute('aria-pressed', 'false');
+    div.setAttribute('tabindex', '0');
+    div.title = a.label;
+    div.innerHTML = `<i>${a.icon}</i><span>${a.label}</span>`;
+    grid.appendChild(div);
+});
+grid.addEventListener('click', e => {
+    const btn = e.target.closest('.act-btn');
+    if (!btn) return;
+    btn.classList.toggle('active');
+    btn.setAttribute('aria-pressed', btn.classList.contains('active'));
+    Ctrl.syncConfig();
+});
+
+document.addEventListener('click', e => {
+    const container = document.querySelector('.fab-container');
+    const menu = document.getElementById('fabMenu');
+    if (menu.classList.contains('open') && !container.contains(e.target)) {
+        Ctrl.toggleMenu();
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// 7. BOOT
+// ═══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+    const data = Storage.load();
+    if (data) {
+        STATE.list   = data.list   || {};
+        STATE.config = data.config || { ...DEFAULT_CONFIG };
+        Ctrl.restoreConfig(STATE.config);
+        if (Object.keys(STATE.list).length) Ctrl.rerender();
+    }
+    Ctrl.loadTemplateDropdown();
+});
+</script>
+</body>
+</html>
