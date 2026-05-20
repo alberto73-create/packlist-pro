@@ -111,21 +111,21 @@ export function getActivityName(id) {
  * Ottiene un item dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getItemById(id) {
-    return itemCache.get(id) || db.items.find(i => i.id === id);
+    return itemCache.get(id) ?? db.items?.find(i => i.id === id) ?? null;
 }
 
 /**
  * Ottiene un'attività dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getActivityById(id) {
-    return activityCache.get(id) || db.activities.find(a => a.id === id);
+    return activityCache.get(id) ?? db.activities?.find(a => a.id === id) ?? null;
 }
 
 /**
  * Ottiene una categoria dato l'ID - Versione Ottimizzata con cache O(1)
  */
 export function getCategoryById(id) {
-    return categoryCache.get(id) || db.categories.find(c => c.id === id);
+    return categoryCache.get(id) ?? db.categories?.find(c => c.id === id) ?? null;
 }
 
 /**
@@ -172,7 +172,7 @@ export function exportStatsCSV() {
     ]);
 
     let csvContent = "text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
-    return encodedUri = encodeURI(csvContent);
+    return encodeURI(csvContent);
 }
 
 /**

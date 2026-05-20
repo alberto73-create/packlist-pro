@@ -461,13 +461,10 @@ export async function install() {
 
 export function dismissInstall() {
     dismissInstallBanner();
-    pwaShowInstallBanner(false);
 }
 
 function checkInstallBanner() {
-    if (!dismissInstallBanner()) {
-        // Banner gestito dall'evento beforeinstallprompt
-    }
+    // Banner gestito dall'evento beforeinstallprompt in setupInstallPrompt()
 }
 
 function toggleMenu() {
