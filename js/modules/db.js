@@ -1,6 +1,46 @@
 // js/modules/db.js - Gestione del Database e Dati - Versione Ottimizzata
 export const DB_VERSION = "1.00.18";
 
+// Dati inline del database (ex data.json)
+const INLINE_DB = {
+  "version": "1.00.18",
+  "lastUpdate": "2024-05-23",
+  "categories": [
+    { "id": "clothing", "name": "Abbigliamento", "icon": "👕", "essential": true },
+    { "id": "shoes", "name": "Scarpe", "icon": "👟", "essential": true },
+    { "id": "toiletries", "name": "Igiene", "icon": "🪥", "essential": true },
+    { "id": "electronics", "name": "Elettronica", "icon": "🔌", "essential": false },
+    { "id": "documents", "name": "Documenti", "icon": "📄", "essential": true },
+    { "id": "firstaid", "name": "Primo Soccorso", "icon": "🩹", "essential": true },
+    { "id": "misc", "name": "Varie", "icon": "🎒", "essential": false }
+  ],
+  "activities": [
+    { "id": "beach", "name": "Mare", "icon": "🏖️", "category": "clothing" },
+    { "id": "mountain", "name": "Montagna", "icon": "🏔️", "category": "clothing" },
+    { "id": "city", "name": "Città", "icon": "🏙️", "category": "clothing" },
+    { "id": "sport", "name": "Sport", "icon": "⚽", "category": "clothing" },
+    { "id": "formal", "name": "Formale", "icon": "👔", "category": "clothing" },
+    { "id": "hiking", "name": "Trekking", "icon": "🥾", "category": "shoes" }
+  ],
+  "items": [
+    { "id": "tshirt", "name": "Maglietta", "category": "clothing", "weight": 0.2, "defaultQty": 3, "activities": ["beach", "city", "sport"] },
+    { "id": "pants", "name": "Pantaloni", "category": "clothing", "weight": 0.5, "defaultQty": 2, "activities": ["city", "mountain", "formal"] },
+    { "id": "jacket", "name": "Giacca", "category": "clothing", "weight": 0.8, "defaultQty": 1, "activities": ["mountain", "city"] },
+    { "id": "swimsuit", "name": "Costume", "category": "clothing", "weight": 0.15, "defaultQty": 1, "activities": ["beach"] },
+    { "id": "hboots", "name": "Scarponi", "category": "shoes", "weight": 1.2, "defaultQty": 1, "activities": ["mountain", "hiking"] },
+    { "id": "sneakers", "name": "Sneakers", "category": "shoes", "weight": 0.6, "defaultQty": 1, "activities": ["city", "sport"] },
+    { "id": "toothbrush", "name": "Spazzolino", "category": "toiletries", "weight": 0.05, "defaultQty": 1, "activities": [] },
+    { "id": "charger", "name": "Caricabatterie", "category": "electronics", "weight": 0.1, "defaultQty": 1, "activities": [] },
+    { "id": "passport", "name": "Passaporto", "category": "documents", "weight": 0.05, "defaultQty": 1, "activities": [] }
+  ],
+  "settings": {
+    "selectedActivities": [],
+    "nights": 3,
+    "laundryFreq": 0,
+    "unit": "kg"
+  }
+};
+
 let db = {};
 let statsLog = [];
 
@@ -10,13 +50,12 @@ let activityCache = new Map();
 let categoryCache = new Map();
 
 /**
- * Carica il database da data.json - Versione Ottimizzata
+ * Carica il database dai dati inline - Versione Ottimizzata
  */
 export async function loadDatabase() {
     try {
-        const response = await fetch('data.json?t=' + new Date().getTime());
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data = await response.json();
+        // Usa i dati inline invece di fetch
+        const data = INLINE_DB;
 
         db = data;
         

@@ -1,120 +1,227 @@
-// ═══════════════════════════════════════════════════════════════════
-// 4. VIEW
-// ═══════════════════════════════════════════════════════════════════
-import { STATE, U, FILTER_MAP } from './db.js';
+// js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente
 
-export const View = {
-    list() {
-        const res = document.getElementById('results');
-        if (!Object.keys(STATE.list).length) {
-            res.innerHTML = `<div class="empty-state"><div class="es-icon">🎒</div><p>Configura il viaggio e clicca "Genera Packlist"!</p></div>`;
-            return;
-        }
+/**
+ * Crea l'elemento DOM per un item
+ */
+export function createItemElement(item) {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.dataset.id = item.id;
+    row.dataset.category = item.category;
+    
+    const weightDisplay = `${item.weight.toFixed(2)} kg`;
+    
+    row.innerHTML = `
+        <div class="item-content">
+            <input type="checkbox" class="item-checkbox" aria-label="Seleziona ${item.name}">
+            <span class="item-name">${item.name}</span>
+            <span class="item-meta">${weightDisplay}</span>
+        </div>
+        <div class="item-actions">
+            <button class="btn-qty btn-minus" aria-label="Diminuisci quantità">−</button>
+            <span class="qty-display">${item.defaultQty}</span>
+            <button class="btn-qty btn-plus" aria-label="Aumenta quantità">+</button>
+            <button class="btn-gear" aria-label="Impostazioni">⚙️</button>
+            <button class="btn-delete" aria-label="Elimina">✕</button>
+        </div>
+    `;
+    
+    return row;
+}
 
-        const frag = document.createDocumentFragment();
-        const filter = STATE.filter;
-
-        for (const cat in STATE.list) {
-            const items = STATE.list[cat];
-            if (!items?.length) continue;
-
-            let shouldShow = true;
-            if (filter !== 'all') {
-                const allowedCats = FILTER_MAP[filter] || [];
-                shouldShow = allowedCats.includes(cat);
-            }
-
-            if (!shouldShow) continue;
-
-            const sorted  = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
-            const pending = sorted.filter(i => !i.checked).length;
-
-            const box = document.createElement('div');
-            box.className = 'cat-box';
-            box.dataset.cat = cat;
-            box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${pending}/${items.length}</span></div>`;
-
-            sorted.forEach(item => {
-                const row = document.createElement('div');
-                row.className = `item-row ${item.checked ? 'taken' : 'pending'}`;
-                row.dataset.uid = item.uid;
-                row.dataset.cat = cat;
-                row.setAttribute('role', 'checkbox');
-                row.setAttribute('aria-checked', item.checked);
-                row.setAttribute('tabindex', '0');
-
-                const bulkBadge      = item.v >= 3  ? `<span class="badge" title="Ingombrante">📦</span>` : '';
-                const wornBadge      = item.worn     ? `<span class="badge" title="Da indossare in viaggio">🧥</span>` : '';
-                const protectedBadge = item.custom   ? `<span class="badge" title="Item personale">⭐</span>` : '';
-                const wDisplay       = U.weight((item.w || 100) * item.q);
-
-                row.innerHTML = `
-                    <div class="item-content">
-                        <span class="qty">${item.q}x</span>
-                        <span class="item-text">${U.esc(item.n)}${bulkBadge}${wornBadge}${protectedBadge}</span>
-                        <span class="item-weight">${wDisplay}</span>
-                    </div>
-                    <div class="item-actions">
-                        <button class="ia-btn worn"
-                            data-action="worn" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                            title="${item.worn ? 'Metti nello zaino' : 'Segna come indossato'}"
-                            aria-label="Toggle indossato">${item.worn ? '🧥' : '🎒'}</button>
-                        <button class="ia-btn edit"
-                            data-action="edit" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                            title="Modifica peso" aria-label="Modifica peso">⚖️</button>
-                        <button class="ia-btn del"
-                            data-action="del" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                            title="Rimuovi" aria-label="Rimuovi ${U.esc(item.n)}">✕</button>
-                    </div>`;
-                box.appendChild(row);
-            });
-
-            const inputId = `add-${cat.replace(/\W/g,'')}`;
-            const addRow = document.createElement('div');
-            addRow.className = 'add-custom';
-            addRow.innerHTML = `
-                <input type="text" id="${inputId}" placeholder="+ Aggiungi item personalizzato...">
-                <button class="btn-sm" data-action="add" data-cat="${U.esc(cat)}" data-input="${inputId}">+ Add</button>`;
-            box.appendChild(addRow);
-            frag.appendChild(box);
-        }
-
-        if (frag.children.length === 0) {
-             res.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>Nessun item in questa categoria.</p></div>`;
-        } else {
-            res.innerHTML = '';
-            res.appendChild(frag);
-        }
-    },
-
-    stats() {
-        const bar = document.getElementById('statsBar');
-        const all = Object.values(STATE.list).flat();
-        if (!all.length) {
-            bar.classList.remove('visible');
-            return;
-        }
-
-        const done = all.filter(i => i.checked).length;
-        const pct  = Math.round(done / all.length * 100);
-        const bagG = all.filter(i => i.checked && !i.worn).reduce((s,i) => s + ((i.w && !isNaN(i.w) ? i.w : 100) * i.q), 0);
-        const wornG = all.filter(i => i.checked && i.worn).reduce((s,i) => s + ((i.w && !isNaN(i.w) ? i.w : 100) * i.q), 0);
-        const totG = bagG + wornG;
-
-        bar.classList.add('visible');
-        document.getElementById('progressPct').textContent = pct;
-        document.getElementById('progressPct').className = `pct-display ${pct === 0 ? 'zero' : pct < 100 ? 'mid' : 'done'}`;
-        document.getElementById('progressFill').style.width = `${pct}%`;
-        document.getElementById('suitcaseWeight').textContent = U.weight(bagG);
-        document.getElementById('totalWeight').textContent = U.weight(totG);
-        document.getElementById('wornWeight').textContent = U.weight(wornG);
-
-        const weightPct = totG / 15000 * 100;
-        const weightFill = document.getElementById('weightFill');
-        weightFill.style.width = `${Math.min(weightPct, 100)}%`;
-        weightFill.className = `weight-fill ${totG < 8000 ? 'light' : totG < 12000 ? 'mid' : 'heavy'}`;
-
-        document.getElementById('suitcaseWeight').className = `chip-val ${bagG < 8000 ? 'light' : bagG < 12000 ? 'mid' : 'heavy'}`;
-        document.getElementById('totalWeight').className = `chip-val ${totG < 8000 ? 'light' : totG < 12000 ? 'mid' : 'heavy'}`;
+/**
+ * Aggiorna una riga item esistente
+ */
+export function updateItemRow(row, item, newQty) {
+    if (!row) return;
+    
+    const qtyDisplay = row.querySelector('.qty-display');
+    if (qtyDisplay) {
+        qtyDisplay.textContent = newQty;
     }
-};
+    
+    // Aggiorna anche i dati meta se necessario
+    const metaEl = row.querySelector('.item-meta');
+    if (metaEl && item) {
+        const weightDisplay = `${item.weight.toFixed(2)} kg`;
+        metaEl.textContent = weightDisplay;
+    }
+}
+
+/**
+ * Applica lo stato "indossato" a una riga
+ */
+export function applyWornStatus(row, isWorn) {
+    if (!row) return;
+    
+    if (isWorn) {
+        row.classList.add('worn');
+        row.classList.remove('checked');
+    } else {
+        row.classList.remove('worn');
+    }
+}
+
+/**
+ * Aggiorna l'UI delle statistiche
+ */
+export function updateStatsUI(totalWeight, totalItems) {
+    // Le statistiche dettagliate sono gestite in controller.js
+    // Questa funzione può essere usata per aggiornamenti specifici
+    console.log(`[UI] Stats aggiornate: ${totalItems} items, ${totalWeight.toFixed(2)} kg`);
+}
+
+/**
+ * Apre il modale impostazioni per un item
+ */
+export function openSettingsModal(item, currentState) {
+    const actions = [
+        'W - Toggle Indossato/Bagaglio',
+        'P - Modifica Peso',
+        'Q - Modifica Quantità',
+        'C - Elimina Oggetto'
+    ].join('\n');
+    
+    const action = prompt(
+        `Impostazioni per: ${item.name}\n\n${actions}\n\nScegli un'azione:`,
+        ''
+    );
+    
+    return action;
+}
+
+/**
+ * Mostra uno stato vuoto quando non ci sono elementi
+ */
+export function showEmptyState(container, message) {
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="empty-state">
+            <div class="es-icon">🎒</div>
+            <p>${message || 'Nessun elemento da mostrare.'}</p>
+        </div>
+    `;
+}
+
+/**
+ * Renderizza le attività nella griglia
+ */
+export async function renderActivities() {
+    const { getDB } = await import('./db.js');
+    const db = getDB();
+    const grid = document.getElementById('activityGrid');
+    
+    if (!grid || !db.activities) return;
+    
+    grid.innerHTML = '';
+    
+    db.activities.forEach(act => {
+        const card = document.createElement('div');
+        card.className = 'activity-card';
+        card.dataset.id = act.id;
+        
+        const isSelected = db.settings.selectedActivities?.includes(act.id);
+        card.classList.toggle('selected', isSelected);
+        
+        card.innerHTML = `
+            <div class="activity-icon">${act.icon}</div>
+            <div class="activity-name">${act.name}</div>
+        `;
+        
+        card.setAttribute('role', 'checkbox');
+        card.setAttribute('aria-checked', isSelected);
+        card.setAttribute('tabindex', '0');
+        
+        grid.appendChild(card);
+    });
+    
+    // Aggiungi listener per il click sulle attività
+    grid.addEventListener('click', handleActivityClick);
+    grid.addEventListener('keydown', handleActivityKeydown);
+}
+
+/**
+ * Gestisce il click su un'attività
+ */
+async function handleActivityClick(e) {
+    const card = e.target.closest('.activity-card');
+    if (!card) return;
+    
+    const actId = card.dataset.id;
+    await toggleActivity(actId);
+}
+
+/**
+ * Gestisce i tasti per le attività (accessibilità)
+ */
+async function handleActivityKeydown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const card = e.target.closest('.activity-card');
+        if (!card) return;
+        
+        const actId = card.dataset.id;
+        await toggleActivity(actId);
+    }
+}
+
+/**
+ * Toggle selezione attività
+ */
+async function toggleActivity(actId) {
+    const { getDB, saveLocalSettings } = await import('./db.js');
+    const db = getDB();
+    
+    if (!db.settings.selectedActivities) {
+        db.settings.selectedActivities = [];
+    }
+    
+    const index = db.settings.selectedActivities.indexOf(actId);
+    const isChecked = index === -1;
+    
+    if (isChecked) {
+        db.settings.selectedActivities.push(actId);
+    } else {
+        db.settings.selectedActivities.splice(index, 1);
+    }
+    
+    saveLocalSettings(db.settings);
+    
+    // Dispatch evento per il controller
+    window.dispatchEvent(new CustomEvent('activity-changed', { 
+        detail: { actId, isChecked } 
+    }));
+    
+    // Aggiorna UI della card
+    const card = document.querySelector(`.activity-card[data-id="${actId}"]`);
+    if (card) {
+        card.classList.toggle('selected', isChecked);
+        card.setAttribute('aria-checked', isChecked);
+    }
+}
+
+/**
+ * Aggiorna il display del progresso
+ */
+export function updateProgressDisplay(pct, weightData) {
+    const fillEl = document.getElementById('progressFill');
+    const weightFillEl = document.getElementById('weightFill');
+    const pctEl = document.getElementById('progressPct');
+    
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (weightFillEl && weightData) {
+        weightFillEl.style.width = `${Math.min(100, (weightData.total / 15) * 100)}%`;
+    }
+    if (pctEl) pctEl.textContent = `${pct}%`;
+}
+
+/**
+ * Mostra il banner di installazione PWA
+ */
+export function showInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (banner) {
+        banner.style.display = 'flex';
+    }
+}
