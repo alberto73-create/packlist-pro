@@ -1,262 +1,120 @@
-// js/modules/ui.js - Gestione dell'Interfaccia Utente - Versione Riscritta da Zero
+// ═══════════════════════════════════════════════════════════════════
+// 4. VIEW
+// ═══════════════════════════════════════════════════════════════════
+import { STATE, U, FILTER_MAP } from './db.js';
 
-import { getDB } from './db.js';
+export const View = {
+    list() {
+        const res = document.getElementById('results');
+        if (!Object.keys(STATE.list).length) {
+            res.innerHTML = `<div class="empty-state"><div class="es-icon">🎒</div><p>Configura il viaggio e clicca "Genera Packlist"!</p></div>`;
+            return;
+        }
 
-/**
- * Renderizza la griglia delle attività con gestione eventi corretta
- */
-export function renderActivities() {
-    const db = getDB();
-    const container = document.getElementById('activityGrid');
-    if (!container || !db.activities) {
-        console.warn('[UI] activityGrid non trovato o activities vuoto');
-        return;
-    }
+        const frag = document.createDocumentFragment();
+        const filter = STATE.filter;
 
-    // Svuota il container
-    container.innerHTML = '';
-    
-    const selectedActivities = db.settings.selectedActivities || [];
-    
-    // Crea ogni chip attività
-    db.activities.forEach(act => {
-        const label = document.createElement('label');
-        label.className = 'activity-chip';
-        
-        const isChecked = selectedActivities.includes(act.id);
-        
-        label.innerHTML = `
-            <input type="checkbox" value="${act.id}" ${isChecked ? 'checked' : ''}>
-            <span>${act.icon} ${act.name}</span>
-        `;
-        
-        container.appendChild(label);
-    });
-    
-    // Aggiungi listener DELEGATO per tutti i checkbox
-    container.addEventListener('change', function(e) {
-        if (e.target.type === 'checkbox') {
-            const actId = parseInt(e.target.value);
-            const isChecked = e.target.checked;
-            
-            console.log('[UI] Checkbox cambiato:', actId, isChecked);
-            
-            // Aggiorna il database
-            if (isChecked) {
-                if (!db.settings.selectedActivities.includes(actId)) {
-                    db.settings.selectedActivities.push(actId);
-                }
-            } else {
-                db.settings.selectedActivities = db.settings.selectedActivities.filter(id => id !== actId);
+        for (const cat in STATE.list) {
+            const items = STATE.list[cat];
+            if (!items?.length) continue;
+
+            let shouldShow = true;
+            if (filter !== 'all') {
+                const allowedCats = FILTER_MAP[filter] || [];
+                shouldShow = allowedCats.includes(cat);
             }
-            
-            // Salva in localStorage
-            localStorage.setItem('packlist_settings', JSON.stringify(db.settings));
-            
-            // Dispatch evento per il controller
-            window.dispatchEvent(new CustomEvent('activity-changed', { 
-                detail: { actId, isChecked } 
-            }));
+
+            if (!shouldShow) continue;
+
+            const sorted  = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
+            const pending = sorted.filter(i => !i.checked).length;
+
+            const box = document.createElement('div');
+            box.className = 'cat-box';
+            box.dataset.cat = cat;
+            box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${pending}/${items.length}</span></div>`;
+
+            sorted.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `item-row ${item.checked ? 'taken' : 'pending'}`;
+                row.dataset.uid = item.uid;
+                row.dataset.cat = cat;
+                row.setAttribute('role', 'checkbox');
+                row.setAttribute('aria-checked', item.checked);
+                row.setAttribute('tabindex', '0');
+
+                const bulkBadge      = item.v >= 3  ? `<span class="badge" title="Ingombrante">📦</span>` : '';
+                const wornBadge      = item.worn     ? `<span class="badge" title="Da indossare in viaggio">🧥</span>` : '';
+                const protectedBadge = item.custom   ? `<span class="badge" title="Item personale">⭐</span>` : '';
+                const wDisplay       = U.weight((item.w || 100) * item.q);
+
+                row.innerHTML = `
+                    <div class="item-content">
+                        <span class="qty">${item.q}x</span>
+                        <span class="item-text">${U.esc(item.n)}${bulkBadge}${wornBadge}${protectedBadge}</span>
+                        <span class="item-weight">${wDisplay}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="ia-btn worn"
+                            data-action="worn" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="${item.worn ? 'Metti nello zaino' : 'Segna come indossato'}"
+                            aria-label="Toggle indossato">${item.worn ? '🧥' : '🎒'}</button>
+                        <button class="ia-btn edit"
+                            data-action="edit" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="Modifica peso" aria-label="Modifica peso">⚖️</button>
+                        <button class="ia-btn del"
+                            data-action="del" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
+                            title="Rimuovi" aria-label="Rimuovi ${U.esc(item.n)}">✕</button>
+                    </div>`;
+                box.appendChild(row);
+            });
+
+            const inputId = `add-${cat.replace(/\W/g,'')}`;
+            const addRow = document.createElement('div');
+            addRow.className = 'add-custom';
+            addRow.innerHTML = `
+                <input type="text" id="${inputId}" placeholder="+ Aggiungi item personalizzato...">
+                <button class="btn-sm" data-action="add" data-cat="${U.esc(cat)}" data-input="${inputId}">+ Add</button>`;
+            box.appendChild(addRow);
+            frag.appendChild(box);
         }
-    });
-    
-    console.log('[UI] Attività renderizzate:', db.activities.length);
-}
 
-/**
- * Crea l'elemento HTML per un item - Versione Ottimizzata
- */
-export function createItemElement(item, state = {}) {
-    const div = document.createElement('div');
-    div.className = 'item-row';
-    div.dataset.id = item.id;
-    div.dataset.category = item.category;
-
-    const qty = state.qty !== undefined ? state.qty : item.defaultQty;
-    const isWorn = state.worn || false;
-
-    if (isWorn) {
-        div.style.opacity = '0.6';
-        div.style.borderLeft = '4px solid #4CAF50';
-    }
-
-    const totalWeight = (item.weight * qty).toFixed(2);
-
-    // Usa createElement invece di innerHTML per migliorare sicurezza e prestazioni
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'item-info';
-    infoDiv.style.flexGrow = '1';
-    
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'item-name';
-    nameDiv.textContent = item.name; // textContent è più sicuro di innerHTML
-    
-    const metaDiv = document.createElement('div');
-    metaDiv.className = 'item-meta';
-    metaDiv.textContent = `${totalWeight}kg • Qty: ${qty}`;
-    
-    infoDiv.appendChild(nameDiv);
-    infoDiv.appendChild(metaDiv);
-    
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'item-controls';
-    controlsDiv.style.display = 'flex';
-    controlsDiv.style.alignItems = 'center';
-    controlsDiv.style.gap = '8px';
-    
-    const btnMinus = document.createElement('button');
-    btnMinus.className = 'btn-icon btn-qty';
-    btnMinus.setAttribute('aria-label', 'Meno');
-    btnMinus.textContent = '-';
-    
-    const qtyDisplay = document.createElement('span');
-    qtyDisplay.className = 'qty-display';
-    qtyDisplay.textContent = qty;
-    
-    const btnPlus = document.createElement('button');
-    btnPlus.className = 'btn-icon btn-qty';
-    btnPlus.setAttribute('aria-label', 'Più');
-    btnPlus.textContent = '+';
-    
-    const spacer = document.createElement('div');
-    spacer.style.width = '8px';
-    
-    const btnGear = document.createElement('button');
-    btnGear.className = 'btn-icon btn-gear';
-    btnGear.setAttribute('title', 'Impostazioni');
-    btnGear.setAttribute('aria-label', 'Impostazioni');
-    btnGear.textContent = '⚙️';
-    
-    const btnDelete = document.createElement('button');
-    btnDelete.className = 'btn-icon btn-delete';
-    btnDelete.setAttribute('title', 'Elimina');
-    btnDelete.setAttribute('aria-label', 'Elimina');
-    btnDelete.textContent = '❌';
-    
-    controlsDiv.appendChild(btnMinus);
-    controlsDiv.appendChild(qtyDisplay);
-    controlsDiv.appendChild(btnPlus);
-    controlsDiv.appendChild(spacer);
-    controlsDiv.appendChild(btnGear);
-    controlsDiv.appendChild(btnDelete);
-    
-    div.appendChild(infoDiv);
-    div.appendChild(controlsDiv);
-
-    return div;
-}
-
-/**
- * Aggiorna la UI di un item specifico
- */
-export function updateItemRow(row, item, newQty) {
-    if (!row) return;
-    
-    row.querySelector('.qty-display').innerText = newQty;
-    const weightSpan = row.querySelector('.item-meta');
-    if (weightSpan) {
-        const totalW = (newQty * item.weight).toFixed(2);
-        weightSpan.innerText = `${totalW}kg • Qty: ${newQty}`;
-    }
-}
-
-/**
- * Applica lo stato "indossato" alla row
- */
-export function applyWornStatus(row, isWorn) {
-    if (!row) return;
-    
-    row.style.opacity = isWorn ? '0.6' : '1';
-    row.style.borderLeft = isWorn ? '4px solid #4CAF50' : 'none';
-}
-
-/**
- * Aggiorna la barra delle statistiche
- */
-export function updateStatsUI(totalWeight, totalItems) {
-    const wEl = document.getElementById('total-weight');
-    const iEl = document.getElementById('total-items');
-    
-    if(wEl) wEl.innerText = `${totalWeight.toFixed(2)} kg`;
-    if(iEl) iEl.innerText = totalItems;
-}
-
-/**
- * Mostra/nasconde il banner di installazione
- */
-export function showInstallBanner(show) {
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-        if (show) {
-            banner.classList.add('visible');
+        if (frag.children.length === 0) {
+             res.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>Nessun item in questa categoria.</p></div>`;
         } else {
-            banner.classList.remove('visible');
+            res.innerHTML = '';
+            res.appendChild(frag);
         }
-    }
-}
+    },
 
-/**
- * Mostra/nasconde la barra delle statistiche
- */
-export function showStatsBar(show) {
-    const bar = document.getElementById('statsBar');
-    if (bar) {
-        if (show) {
-            bar.classList.add('visible');
-        } else {
+    stats() {
+        const bar = document.getElementById('statsBar');
+        const all = Object.values(STATE.list).flat();
+        if (!all.length) {
             bar.classList.remove('visible');
+            return;
         }
+
+        const done = all.filter(i => i.checked).length;
+        const pct  = Math.round(done / all.length * 100);
+        const bagG = all.filter(i => i.checked && !i.worn).reduce((s,i) => s + ((i.w && !isNaN(i.w) ? i.w : 100) * i.q), 0);
+        const wornG = all.filter(i => i.checked && i.worn).reduce((s,i) => s + ((i.w && !isNaN(i.w) ? i.w : 100) * i.q), 0);
+        const totG = bagG + wornG;
+
+        bar.classList.add('visible');
+        document.getElementById('progressPct').textContent = pct;
+        document.getElementById('progressPct').className = `pct-display ${pct === 0 ? 'zero' : pct < 100 ? 'mid' : 'done'}`;
+        document.getElementById('progressFill').style.width = `${pct}%`;
+        document.getElementById('suitcaseWeight').textContent = U.weight(bagG);
+        document.getElementById('totalWeight').textContent = U.weight(totG);
+        document.getElementById('wornWeight').textContent = U.weight(wornG);
+
+        const weightPct = totG / 15000 * 100;
+        const weightFill = document.getElementById('weightFill');
+        weightFill.style.width = `${Math.min(weightPct, 100)}%`;
+        weightFill.className = `weight-fill ${totG < 8000 ? 'light' : totG < 12000 ? 'mid' : 'heavy'}`;
+
+        document.getElementById('suitcaseWeight').className = `chip-val ${bagG < 8000 ? 'light' : bagG < 12000 ? 'mid' : 'heavy'}`;
+        document.getElementById('totalWeight').className = `chip-val ${totG < 8000 ? 'light' : totG < 12000 ? 'mid' : 'heavy'}`;
     }
-}
-
-/**
- * Aggiorna il display della percentuale di progresso
- */
-export function updateProgressDisplay(pct, fillElementId) {
-    const pctEl = document.getElementById('progressPct');
-    const fillEl = document.getElementById(fillElementId);
-    
-    if (pctEl) {
-        pctEl.innerText = `${pct}%`;
-        pctEl.className = 'pct-display';
-        if (pct === 0) pctEl.classList.add('zero');
-        else if (pct >= 100) pctEl.classList.add('done');
-        else if (pct >= 50) pctEl.classList.add('mid');
-    }
-    
-    if (fillEl) {
-        fillEl.style.width = `${pct}%`;
-    }
-}
-
-/**
- * Apre il modale impostazioni (prompt-based)
- */
-export function openSettingsModal(item, currentState) {
-    const currentQty = currentState.qty !== undefined ? currentState.qty : item.defaultQty;
-    const currentWeight = item.weight;
-    const isWorn = currentState.worn || false;
-    const destText = isWorn ? "INDOSSATO" : "IN BAGAGLIO";
-
-    const action = prompt(
-        `IMPOSTAZIONI: ${item.name}\n` +
-        `--------------------------\n` +
-        `Stato: [${destText}]\n` +
-        `Peso: ${currentWeight} kg | Qty: ${currentQty}\n\n` +
-        `Digita una lettera:\n` +
-        `[W] Cambia destinazione (Indossato/Bagaglio)\n` +
-        `[P] Modifica Peso\n` +
-        `[Q] Modifica Quantità\n` +
-        `[C] Cancella Oggetto\n` +
-        `--------------------------`
-    );
-
-    return action;
-}
-
-/**
- * Mostra messaggio empty state
- */
-export function showEmptyState(container, message = "Nessun oggetto da mostrare.") {
-    container.innerHTML = `<div class="empty-state">${message}</div>`;
-}
+};
