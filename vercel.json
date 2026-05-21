@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "devCommand": null,
   "installCommand": null,
-  "framework": "static",
+  "framework": null,
   "routes": [
     {
       "src": "/js/(.*)",

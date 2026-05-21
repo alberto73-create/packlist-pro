@@ -1,50 +1,49 @@
 ```
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
+# Dependencies
+node_modules/
 
 # Environment variables
 .env
 .env.local
-*.env.*
+.env.*
 
-# Editors
-.vscode/
-.idea/
-
-# Dependencies
-node_modules/
-.venv/
-venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
+# Build outputs
 dist/
 build/
 target/
-.gradle/
 
-# Compiled files
+# Python
+__pycache__/
 *.pyc
-*.class
-*.o
-*.exe
-*.dll
-*.so
-*.a
-*.obj
-*.out
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.python-version
 
-# System files
-.DS_Store
-Thumbs.db
+# Logs
+*.log
+
+# Coverage
+.coverage
 coverage/
 htmlcov/
-.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.mypy_cache/
 ```
