@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup UI iniziale
     setupEventListeners();
     setupActivityGrid();
+    setupWeatherButtons();
     
     // Renderizza attività
     View.renderActivities(ACTIVITIES);
@@ -153,24 +154,26 @@ function setupActivityGrid() {
 }
 
 // --- BOTTONI METEO ---
-document.querySelectorAll('.weather-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const weatherType = btn.id.replace('w-', '');
-        // Toggle visivo immediato
-        btn.classList.toggle('active');
-        btn.setAttribute('aria-pressed', btn.classList.contains('active'));
-        Ctrl.toggleWeather(weatherType);
-    });
-    btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
+function setupWeatherButtons() {
+    document.querySelectorAll('.weather-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
             const weatherType = btn.id.replace('w-', '');
+            // Toggle visivo immediato
             btn.classList.toggle('active');
             btn.setAttribute('aria-pressed', btn.classList.contains('active'));
             Ctrl.toggleWeather(weatherType);
-        }
+        });
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const weatherType = btn.id.replace('w-', '');
+                btn.classList.toggle('active');
+                btn.setAttribute('aria-pressed', btn.classList.contains('active'));
+                Ctrl.toggleWeather(weatherType);
+            }
+        });
     });
-});
+}
 
 // --- FUNZIONI DI CONFIGURAZIONE ---
 function syncConfig() {

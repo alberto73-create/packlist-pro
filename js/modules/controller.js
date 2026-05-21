@@ -359,37 +359,7 @@ export function setupEventDelegation() {
         const uid = row.dataset.uid;
         const cat = row.dataset.cat;
         
-        // Checkbox toggle
-        if (target.type === 'checkbox' || target.classList.contains('item-content')) {
-            toggleItemChecked(uid);
-            return;
-        }
-        
-        // Bottone worn
-        if (target.closest('.ia-btn.worn')) {
-            toggleWorn(uid);
-            return;
-        }
-        
-        // Bottone edit peso
-        if (target.closest('.ia-btn.edit')) {
-            const item = STATE.list[cat]?.find(i => i.uid === uid);
-            const newWeight = prompt(`Modifica peso per "${item?.n}" (grammi):`, item?.w || 100);
-            if (newWeight !== null) {
-                editItemWeight(uid, newWeight);
-            }
-            return;
-        }
-        
-        // Bottone delete
-        if (target.closest('.ia-btn.del')) {
-            if (confirm('Eliminare questo item?')) {
-                removeItem(uid);
-            }
-            return;
-        }
-        
-        // Bottone add custom
+        // Bottone add custom - usa data-action
         if (target.closest('[data-action="add"]')) {
             const btn = target.closest('[data-action="add"]');
             const inputId = btn.dataset.input;
@@ -398,6 +368,36 @@ export function setupEventDelegation() {
                 addCustomItem(btn.dataset.cat, input.value);
                 input.value = '';
             }
+            return;
+        }
+        
+        // Bottone worn - usa data-action
+        if (target.closest('[data-action="worn"]')) {
+            toggleWorn(uid);
+            return;
+        }
+        
+        // Bottone edit peso - usa data-action
+        if (target.closest('[data-action="edit"]')) {
+            const item = STATE.list[cat]?.find(i => i.uid === uid);
+            const newWeight = prompt(`Modifica peso per "${item?.n}" (grammi):`, item?.w || 100);
+            if (newWeight !== null) {
+                editItemWeight(uid, newWeight);
+            }
+            return;
+        }
+        
+        // Bottone delete - usa data-action
+        if (target.closest('[data-action="del"]')) {
+            if (confirm('Eliminare questo item?')) {
+                removeItem(uid);
+            }
+            return;
+        }
+        
+        // Checkbox toggle - click su item-content
+        if (target.classList.contains('item-content') || target.closest('.item-content')) {
+            toggleItemChecked(uid);
             return;
         }
     });

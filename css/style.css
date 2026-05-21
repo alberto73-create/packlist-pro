@@ -595,7 +595,7 @@
         .item-row.taken .qty { background: rgba(16, 185, 129, .15); color: var(--emerald); }
         .item-row.taken .item-weight { opacity: .35; }
 
-        .item-content { display: flex; align-items: flex-start; flex-grow: 1; gap: 8px; min-width: 0; }
+        .item-content { display: flex; align-items: flex-start; flex-grow: 1; gap: 8px; min-width: 0; pointer-events: none; }
 
         .qty { font-family: 'DM Mono', monospace; font-size: .68rem; font-weight: 500; color: var(--violet-h); background: rgba(139, 92, 246, .12); padding: 2px 6px; border-radius: 5px; min-width: 26px; text-align: center; flex-shrink: 0; margin-top: 2px; }
         .item-text { flex-grow: 2; font-size: .92rem; font-weight: 500; line-height: 1.45; word-break: break-word; }
@@ -604,7 +604,7 @@
 
         .badge { font-size: .62rem; margin-left: 1px; cursor: help; opacity: .75; }
 
-        .item-actions { display: flex; gap: 3px; align-items: center; margin-left: 5px; position: relative; z-index: 10; flex-shrink: 0; margin-top: 2px; }
+        .item-actions { display: flex; gap: 3px; align-items: center; margin-left: 5px; position: relative; z-index: 10; flex-shrink: 0; margin-top: 2px; pointer-events: auto; }
 
         .ia-btn {
             border: none;
