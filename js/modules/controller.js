@@ -1,282 +1,485 @@
-// js/modules/controller.js - Logica di Controllo dell'Applicazione - Versione Corretta
+// js/modules/controller.js - Logica di Controllo Packlist Pro v9.5 Fixed
+// Architettura STATE-based con gestione completa della lista
 
-import { getDB, getItemById, getActivityName, trackStats, removeItemFromList, updateItemQty, setItemQty, toggleWornStatus } from './db.js';
-import { createItemElement, updateItemRow, applyWornStatus, updateStatsUI, openSettingsModal, showEmptyState } from './ui.js';
+import { STATE, setState, DB, ACTIVITIES, PER_NIGHT, DAYTRIP_EXCLUDE, WARNINGS, FILTER_MAP } from './db.js';
+import { U } from './utils.js';
+import * as View from './ui.js';
 
 /**
- * Debounce per prevenire chiamate multiple ravvicinate
+ * Calcola le quantità degli item in base alla configurazione
  */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function calculateQty(item, config) {
+    const nights = config.nights || 0;
+    const laundry = config.laundry;
+    const laundryFreq = config.laundryFreq || 3;
+    const laundryBuffer = config.laundryBuffer || 1;
+    
+    // Gita in giornata: quantità fissa o 0 se escluso
+    if (nights === 0) {
+        if (DAYTRIP_EXCLUDE.has(item.n)) return 0;
+        return item.q === 'f' ? 1 : (item.v || 1);
+    }
+    
+    // Quantità fissa
+    if (item.q === 'f') {
+        let qty = item.v || 1;
+        
+        // Buffer lavanderia
+        if (laundry && laundryFreq > 0) {
+            const daysNeeded = nights + 1;
+            const washes = Math.floor((daysNeeded - 1) / laundryFreq);
+            if (['Mutande', 'Calze', 'Canottiere/Sottogiacca'].includes(item.n)) {
+                qty += washes * laundryBuffer;
+            }
+        }
+        return qty;
+    }
+    
+    // Quantità per notte
+    if (item.q === 'n') {
+        let baseQty = nights + 1; // notti + 1 giorno
+        
+        // Riduzione per lavanderia
+        if (laundry && laundryFreq > 0 && PER_NIGHT.has(item.n)) {
+            const daysPerLoad = laundryFreq;
+            const loads = Math.ceil((nights + 1) / daysPerLoad);
+            baseQty = loads * laundryBuffer + laundryBuffer;
+        }
+        
+        return Math.max(1, baseQty);
+    }
+    
+    return item.v || 1;
 }
 
 /**
- * Genera la lista dal database - Funzione Core
+ * Genera la lista completa dagli item del database
  */
-function generateListFromDBCore() {
-    const db = getDB();
-    const listContainer = document.getElementById('results');
-    if (!listContainer) {
-        console.warn('[Controller] Container risultati non trovato');
+export function generateList() {
+    const config = STATE.config;
+    const newList = {};
+    
+    // 1. Item base (sempre inclusi)
+    for (const item of DB.base) {
+        const qty = calculateQty(item, config);
+        if (qty <= 0) continue;
+        
+        // Filtro gender
+        if (item.s !== 'U' && item.s !== config.gender) continue;
+        
+        addToCategory(newList, item.cat, { ...item, q: qty, uid: U.uid(), custom: false });
+    }
+    
+    // 2. Item lavanderia (se attiva)
+    if (config.laundry && config.nights > 0) {
+        for (const item of DB.laundry) {
+            addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+        }
+    }
+    
+    // 3. Item meteo
+    for (const weatherType of config.weather) {
+        const items = DB.weather[weatherType] || [];
+        for (const item of items) {
+            addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+        }
+    }
+    
+    // 4. Item trasporto
+    const transportItems = DB.transport[config.transport] || [];
+    for (const item of transportItems) {
+        addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+    }
+    
+    // 5. Item attività extra
+    for (const actId of config.activities) {
+        const items = DB.extra[actId] || [];
+        for (const item of items) {
+            const qty = calculateQty(item, config);
+            if (qty <= 0) continue;
+            addToCategory(newList, item.cat, { ...item, q: qty, uid: U.uid(), custom: false });
+        }
+    }
+    
+    // Aggiorna stato e UI
+    setState({ list: newList });
+    View.list(STATE, U);
+    View.stats(STATE, U);
+    updateWarnings();
+    
+    return newList;
+}
+
+/**
+ * Aggiunge un item a una categoria
+ */
+function addToCategory(list, cat, item) {
+    if (!list[cat]) list[cat] = [];
+    // Evita duplicati basati sul nome
+    const exists = list[cat].some(i => i.n === item.n);
+    if (!exists) {
+        list[cat].push(item);
+    }
+}
+
+/**
+ * Aggiorna gli avvisi in base alla configurazione
+ */
+function updateWarnings() {
+    const warningContainer = document.getElementById('warningsBox');
+    if (!warningContainer) return;
+    
+    warningContainer.innerHTML = '';
+    
+    for (const warning of WARNINGS) {
+        if (warning.check(STATE)) {
+            const div = document.createElement('div');
+            div.className = 'warning-msg';
+            div.textContent = warning.msg;
+            warningContainer.appendChild(div);
+        }
+    }
+}
+
+/**
+ * Toggle checkbox item
+ */
+export function toggleItemChecked(uid) {
+    for (const cat in STATE.list) {
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (item) {
+            item.checked = !item.checked;
+            View.updateItemRow(uid, item.checked);
+            View.stats(STATE, U);
+            saveState();
+            return item.checked;
+        }
+    }
+    return false;
+}
+
+/**
+ * Toggle worn status
+ */
+export function toggleWorn(uid) {
+    for (const cat in STATE.list) {
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (item) {
+            item.worn = !item.worn;
+            View.applyWornStatus(uid, item.worn);
+            View.stats(STATE, U);
+            saveState();
+            return item.worn;
+        }
+    }
+    return false;
+}
+
+/**
+ * Rimuove un item dalla lista
+ */
+export function removeItem(uid) {
+    for (const cat in STATE.list) {
+        const idx = STATE.list[cat].findIndex(i => i.uid === uid);
+        if (idx >= 0) {
+            const removed = STATE.list[cat].splice(idx, 1)[0];
+            setState({ lastRemoved: { cat, item: removed, idx } });
+            
+            // Rimuovi dall'UI
+            const row = document.querySelector(`.item-row[data-uid="${uid}"]`);
+            if (row) row.remove();
+            
+            View.stats(STATE, U);
+            saveState();
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Aggiunge un item custom
+ */
+export function addCustomItem(cat, name, weight = 100, volume = 1) {
+    if (!name.trim()) return null;
+    
+    const item = {
+        n: name.trim(),
+        q: 1,
+        cat: cat,
+        s: 'U',
+        w: parseInt(weight) || 100,
+        v: parseInt(volume) || 1,
+        uid: U.uid(),
+        custom: true,
+        checked: false,
+        worn: false
+    };
+    
+    if (!STATE.list[cat]) STATE.list[cat] = [];
+    STATE.list[cat].push(item);
+    
+    View.list(STATE, U);
+    View.stats(STATE, U);
+    saveState();
+    
+    return item;
+}
+
+/**
+ * Modifica il peso di un item
+ */
+export function editItemWeight(uid, newWeight) {
+    for (const cat in STATE.list) {
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (item) {
+            item.w = parseInt(newWeight) || 100;
+            View.list(STATE, U); // Rerender per aggiornare peso visualizzato
+            View.stats(STATE, U);
+            saveState();
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Salva lo stato in localStorage
+ */
+export function saveState() {
+    try {
+        const toSave = {
+            config: STATE.config,
+            list: STATE.list,
+            filter: STATE.filter
+        };
+        localStorage.setItem('packlist_state', JSON.stringify(toSave));
+    } catch (e) {
+        console.warn('[Controller] Salvataggio fallito:', e);
+    }
+}
+
+/**
+ * Carica lo stato da localStorage
+ */
+export function loadState() {
+    try {
+        const saved = localStorage.getItem('packlist_state');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            setState({
+                config: { ...STATE.config, ...parsed.config },
+                list: parsed.list || {},
+                filter: parsed.filter || 'all'
+            });
+            return true;
+        }
+    } catch (e) {
+        console.warn('[Controller] Caricamento fallito:', e);
+    }
+    return false;
+}
+
+/**
+ * Reset completo dello stato
+ */
+export function resetState() {
+    localStorage.removeItem('packlist_state');
+    setState({
+        config: { ...DB }, // Default config
+        list: {},
+        lastRemoved: null,
+        filter: 'all'
+    });
+    View.showEmptyState('Configura il viaggio e clicca "Genera Packlist"!');
+    View.stats(STATE, U);
+}
+
+/**
+ * Imposta un filtro sulla lista
+ */
+export function setFilter(filterType) {
+    setState({ filter: filterType });
+    View.updateFilterUI(filterType);
+    View.list(STATE, U);
+}
+
+/**
+ * Cerca nella lista
+ */
+export function searchItems(term) {
+    View.filterListBySearch(term);
+}
+
+/**
+ * Esporta statistiche CSV
+ */
+export function exportStatsCSV() {
+    const all = Object.values(STATE.list).flat();
+    if (!all.length) {
+        U.toast('Nessun dato da esportare');
         return;
     }
-
-    // Usa DocumentFragment per minimizzare i reflow
-    const fragment = document.createDocumentFragment();
     
-    const selectedActs = db.settings.selectedActivities || [];
-    const hasActivitiesSelected = selectedActs.length > 0;
-
-    // 1. Determina quali categorie mostrare
-    const visibleCategories = db.categories.filter(cat => {
-        // Le categorie ESSENZIALI si vedono SEMPRE
-        if (cat.essential) return true;
-        
-        // Le categorie NON essenziali si vedono SOLO se:
-        // A) È selezionata almeno un'attività
-        // B) La categoria contiene oggetti pertinenti a quelle attività
-        if (!hasActivitiesSelected) return false;
-
-        return db.items.some(item => 
-            item.category === cat.id && 
-            (item.activities.length === 0 || item.activities.some(a => selectedActs.includes(a)))
-        );
-    });
-
-    // 2. Genera elementi per ogni categoria visibile
-    visibleCategories.forEach(cat => {
-        // Filtra gli oggetti dentro questa categoria
-        const itemsForCat = db.items.filter(item => {
-            if (item.category !== cat.id) return false;
-            
-            // Oggetti senza attività specifica (generici) -> Sempre inclusi se la categoria è visibile
-            if (item.activities.length === 0) return true;
-
-            // Oggetti specifici -> Inclusi solo se matching con attività selezionate
-            return item.activities.some(actId => selectedActs.includes(actId));
-        });
-
-        itemsForCat.forEach(item => {
-            const itemEl = createItemElement(item);
-            fragment.appendChild(itemEl);
-        });
-    });
-
-    // Svuota e aggiungi tutto in una volta sola
-    listContainer.innerHTML = '';
-    listContainer.appendChild(fragment);
-
-    if (listContainer.children.length === 0) {
-        showEmptyState(listContainer, "Nessun oggetto da mostrare. Seleziona un'attività o controlla i filtri.");
-    }
+    const headers = ['Categoria', 'Item', 'Quantità', 'Peso (g)', 'Volume', 'Preso', 'Indossato'];
+    const rows = all.map(item => [
+        item.cat,
+        item.n,
+        item.q,
+        item.w,
+        item.v,
+        item.checked ? 'Sì' : 'No',
+        item.worn ? 'Sì' : 'No'
+    ]);
     
-    calculateAndDisplayStatsCore();
-}
-
-// Versione debounced di generateListFromDB per evitare refresh multipli
-const debouncedGenerateList = debounce(generateListFromDBCore, 150);
-
-/**
- * Setup listener per eventi di attività - DA CHIAMARE DOPO IL DOMContentLoaded
- */
-export function setupActivityListener() {
-    window.addEventListener('activity-changed', (e) => {
-        const { actId, isChecked } = e.detail;
-        
-        // Registra statistiche quando un'attività cambia
-        if (isChecked) {
-            trackStats('ATTIVITA_AGGIUNTA', actId, `Attività: ${getActivityName(actId)}`);
-        } else {
-            trackStats('ATTIVITA_RIMOSSA', actId, `Attività: ${getActivityName(actId)}`);
-        }
-        
-        // Rigenera la lista con debounce quando un'attività cambia
-        console.log('[Controller] Attività cambiata:', actId, isChecked);
-        debouncedGenerateList();
-    });
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `packlist_stats_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    U.toast('Statistiche esportate!');
 }
 
 /**
- * Calcola e mostra le statistiche - Versione Corretta
+ * Inizializza i listener per gli eventi
  */
-const debouncedCalculateStats = debounce(calculateAndDisplayStatsCore, 100);
-
-export function calculateAndDisplayStats() {
-    calculateAndDisplayStatsCore();
-}
-
-function calculateAndDisplayStatsCore() {
-    let totalWeight = 0;
-    let totalItems = 0;
-    let checkedItems = 0;
-    let totalPossibleItems = 0;
-
-    // Cache delle query per migliorare le prestazioni
-    const itemRows = document.querySelectorAll('.item-row');
+export function setupEventDelegation() {
+    const results = document.getElementById('results');
+    if (!results) return;
     
-    itemRows.forEach(row => {
-        const qtyDisplay = row.querySelector('.qty-display');
-        const qtyText = qtyDisplay?.innerText || '0';
-        const qty = parseInt(qtyText, 10);
-        
-        const metaEl = row.querySelector('.item-meta');
-        const metaText = metaEl?.innerText || '';
-        const weightPart = metaText.split('kg')[0];
-        const weight = parseFloat(weightPart);
-
-        if (!isNaN(qty) && !isNaN(weight)) {
-            totalItems += qty;
-            totalWeight += (weight * qty);
-            totalPossibleItems += qty;
-        }
-        
-        if (row.classList.contains('checked')) {
-            checkedItems += qty;
-        }
-    });
-
-    // Aggiorna UI statistiche
-    updateStatsUI(totalWeight, totalItems);
-    
-    // Aggiorna progress bar
-    const pct = totalPossibleItems > 0 ? Math.round((checkedItems / totalPossibleItems) * 100) : 0;
-    
-    const fillEl = document.getElementById('progressFill');
-    const weightFillEl = document.getElementById('weightFill');
-    
-    if (fillEl) fillEl.style.width = `${pct}%`;
-    if (weightFillEl) {
-        weightFillEl.style.width = `${Math.min(100, (totalWeight / 15) * 100)}%`;
-    }
-    
-    // Aggiorna chips statistiche
-    const itemsCountEl = document.getElementById('itemsCount');
-    const weightSuitcaseEl = document.getElementById('weightSuitcase');
-    const weightTotalEl = document.getElementById('weightTotal');
-    
-    if (itemsCountEl) itemsCountEl.innerText = `${checkedItems}/${totalPossibleItems}`;
-    if (weightSuitcaseEl) weightSuitcaseEl.innerText = `${(totalWeight * 1000).toFixed(0)} g`;
-    if (weightTotalEl) weightTotalEl.innerText = `${(totalWeight * 1000).toFixed(0)} g`;
-}
-
-/**
- * Genera la lista dal database - Export pubblico
- */
-export function generateListFromDB() {
-    generateListFromDBCore();
-}
-
-/**
- * Setup event listeners per la lista
- */
-export function setupListEventListeners(callbacks) {
-    const listContainer = document.getElementById('results');
-    if (!listContainer) return;
-
-    listContainer.addEventListener('click', (e) => {
+    results.addEventListener('click', (e) => {
         const target = e.target;
         const row = target.closest('.item-row');
-        
         if (!row) return;
         
-        const itemId = row.dataset.id;
-        const category = row.dataset.category;
-
-        // Rotella Impostazioni
-        if (target.classList.contains('btn-gear') || target.closest('.btn-gear')) {
-            e.stopPropagation();
-            if (callbacks.onSettings) callbacks.onSettings(category, itemId);
+        const uid = row.dataset.uid;
+        const cat = row.dataset.cat;
+        
+        // Checkbox toggle
+        if (target.type === 'checkbox' || target.classList.contains('item-content')) {
+            toggleItemChecked(uid);
             return;
         }
-
-        // Elimina (X)
-        if (target.classList.contains('btn-delete') || target.closest('.btn-delete')) {
-            e.stopPropagation();
-            if (confirm(`Eliminare definitivamente "${getItemById(itemId)?.name || itemId}"?`)) {
-                removeItemFromList(itemId);
-                if (callbacks.onDelete) callbacks.onDelete(itemId);
+        
+        // Bottone worn
+        if (target.closest('.ia-btn.worn')) {
+            toggleWorn(uid);
+            return;
+        }
+        
+        // Bottone edit peso
+        if (target.closest('.ia-btn.edit')) {
+            const item = STATE.list[cat]?.find(i => i.uid === uid);
+            const newWeight = prompt(`Modifica peso per "${item?.n}" (grammi):`, item?.w || 100);
+            if (newWeight !== null) {
+                editItemWeight(uid, newWeight);
             }
             return;
         }
         
-        // Quantità +/-
-        if (target.classList.contains('btn-qty')) {
-            const delta = target.textContent === '+' ? 1 : -1;
-            const newQty = updateItemQty(itemId, delta);
-            
-            const item = getItemById(itemId);
-            updateItemRow(row, item, newQty);
-            
-            if (callbacks.onQtyChange) callbacks.onQtyChange(itemId, delta);
+        // Bottone delete
+        if (target.closest('.ia-btn.del')) {
+            if (confirm('Eliminare questo item?')) {
+                removeItem(uid);
+            }
             return;
         }
         
-        // Toggle checkbox item
-        if (target.type === 'checkbox' || row.querySelector('input[type="checkbox"]')?.contains(target)) {
-            row.classList.toggle('checked');
-            if (callbacks.onCheck) callbacks.onCheck(itemId, row.classList.contains('checked'));
+        // Bottone add custom
+        if (target.closest('[data-action="add"]')) {
+            const btn = target.closest('[data-action="add"]');
+            const inputId = btn.dataset.input;
+            const input = document.getElementById(inputId);
+            if (input && input.value.trim()) {
+                addCustomItem(btn.dataset.cat, input.value);
+                input.value = '';
+            }
             return;
+        }
+    });
+    
+    // Keyboard navigation
+    results.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const row = e.target.closest('.item-row');
+            if (row && e.target.classList.contains('item-content')) {
+                e.preventDefault();
+                toggleItemChecked(row.dataset.uid);
+            }
         }
     });
 }
 
 /**
- * Gestisce il modale impostazioni
+ * Aggiorna l'UI in base alla configurazione corrente
  */
-export function handleSettingsModal(category, itemId) {
-    const item = getItemById(itemId);
-    if (!item) return;
+export function updateConfigUI() {
+    const config = STATE.config;
+    
+    // Banner daytrip
+    View.updateDaytripBanner(config.nights === 0);
+    
+    // Toggle lavanderia
+    View.updateLaundryToggle(config.laundry);
+    
+    // Bottoni meteo
+    View.updateWeatherButtons(config.weather);
+    
+    // Bottoni attività
+    View.updateActivityButtons(config.activities);
+}
 
-    const currentState = {
-        qty: parseInt(localStorage.getItem(`item_${itemId}_qty`)) || item.defaultQty,
-        worn: localStorage.getItem(`item_${itemId}_worn`) === 'true'
-    };
+/**
+ * Imposta la configurazione
+ */
+export function setConfig(newConfig) {
+    setState({ config: { ...STATE.config, ...newConfig } });
+    saveState();
+    updateConfigUI();
+}
 
-    const action = openSettingsModal(item, currentState);
-
-    if (!action) return;
-
-    switch(action.toUpperCase()) {
-        case 'W':
-            const isWorn = toggleWornStatus(itemId);
-            trackStats('DESTINAZIONE', itemId, `Cambiato in: ${isWorn ? 'Indossato' : 'Bagaglio'}`);
-            
-            const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-            applyWornStatus(row, isWorn);
-            break;
-        case 'P':
-            const newWeight = parseFloat(prompt("Nuovo peso (kg):", item.weight));
-            if (!isNaN(newWeight) && newWeight >= 0) {
-                trackStats('MODIFICA_PESO', itemId, `${item.weight} -> ${newWeight} kg`);
-            } else { alert("Peso non valido"); }
-            break;
-        case 'Q':
-            const newQty = parseInt(prompt("Nuova quantità:", currentState.qty));
-            if (!isNaN(newQty) && newQty >= 0) {
-                setItemQty(itemId, newQty);
-                trackStats('MODIFICA_QTY', itemId, `${currentState.qty} -> ${newQty}`);
-                
-                const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
-                updateItemRow(row, item, newQty);
-            } else { alert("Quantità non valida"); }
-            break;
-        case 'C':
-            if(confirm("Eliminare oggetto?")) {
-                removeItemFromList(itemId);
-                trackStats('ELIMINAZIONE_MANUALE', itemId);
-            }
-            break;
-        default:
-            alert("Comando non riconosciuto");
+/**
+ * Attiva/disattiva un'attività
+ */
+export function toggleActivity(actId) {
+    const activities = [...STATE.config.activities];
+    const idx = activities.indexOf(actId);
+    
+    if (idx >= 0) {
+        activities.splice(idx, 1);
+    } else {
+        activities.push(actId);
     }
     
-    calculateAndDisplayStats();
+    setConfig({ activities });
+    generateList();
+}
+
+/**
+ * Attiva/disattiva meteo
+ */
+export function toggleWeather(weatherType) {
+    const weather = [...STATE.config.weather];
+    const idx = weather.indexOf(weatherType);
+    
+    if (idx >= 0) {
+        weather.splice(idx, 1);
+    } else {
+        weather.push(weatherType);
+    }
+    
+    setConfig({ weather });
+    generateList();
+}
+
+/**
+ * Attiva/disattiva lavanderia
+ */
+export function toggleLaundry() {
+    setConfig({ laundry: !STATE.config.laundry });
+    generateList();
 }
