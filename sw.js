@@ -4,8 +4,7 @@ const ASSETS = [
     '/',
     '/index.html',
     '/js/app.js',
-    '/css/style.css',
-    '/data.json'
+    '/css/style.css'
 ];
 
 self.addEventListener('install', (event) => {
