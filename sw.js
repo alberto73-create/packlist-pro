@@ -1,12 +1,10 @@
 // sw.js - Service Worker v19
 const CACHE_NAME = 'packlist-v19';
 const ASSETS = [
-    './',
-    './index.html',
-    './js/app.js',
-    './js/main.js',
-    './css/style.css',
-    './manifest.json'
+    '/',
+    '/index.html',
+    '/js/app.js',
+    '/css/style.css'
 ];
 
 self.addEventListener('install', (event) => {
