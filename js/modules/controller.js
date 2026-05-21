@@ -456,7 +456,10 @@ export function toggleActivity(actId) {
     }
     
     setConfig({ activities });
-    generateList();
+    // Rigenera la lista solo se è già stata generata
+    if (Object.keys(STATE.list).length > 0) {
+        generateList();
+    }
 }
 
 /**
@@ -473,7 +476,10 @@ export function toggleWeather(weatherType) {
     }
     
     setConfig({ weather });
-    generateList();
+    // Rigenera la lista solo se è già stata generata
+    if (Object.keys(STATE.list).length > 0) {
+        generateList();
+    }
 }
 
 /**
@@ -481,5 +487,8 @@ export function toggleWeather(weatherType) {
  */
 export function toggleLaundry() {
     setConfig({ laundry: !STATE.config.laundry });
-    generateList();
+    // Rigenera la lista solo se è già stata generata
+    if (Object.keys(STATE.list).length > 0) {
+        generateList();
+    }
 }
