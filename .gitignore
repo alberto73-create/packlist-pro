@@ -4,7 +4,12 @@
 *.tmp
 *.swp
 
-# Environment
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Environment variables
 .env
 .env.local
 *.env.*
