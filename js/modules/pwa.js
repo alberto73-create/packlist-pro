@@ -1,13 +1,28 @@
 // js/modules/pwa.js - Gestione PWA e Service Worker
 
 /**
- * Registra il Service Worker
+ * Registra il Service Worker - FIX per Vercel
  */
 export async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
-            const registration = await navigator.serviceWorker.register('./sw.js');
+            // Usa percorso relativo corretto per Vercel
+            const swUrl = './sw.js';
+            const registration = await navigator.serviceWorker.register(swUrl, { scope: './' });
             console.log('[PWA] Service Worker registrato:', registration.scope);
+            
+            // Gestione update
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('[PWA] Nuovo Service Worker trovato');
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('[PWA] Nuovo contenuto disponibile, ricarica la pagina');
+                    }
+                });
+            });
+            
             return registration;
         } catch (error) {
             console.error('[PWA] Errore registrazione SW:', error);

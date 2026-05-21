@@ -1,10 +1,12 @@
-// sw.js - Service Worker v18
-const CACHE_NAME = 'packlist-v18';
+// sw.js - Service Worker v19
+const CACHE_NAME = 'packlist-v19';
 const ASSETS = [
-    '/',
-    '/index.html',
-    '/js/app.js',
-    '/css/style.css'
+    './',
+    './index.html',
+    './js/app.js',
+    './js/main.js',
+    './css/style.css',
+    './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -41,7 +43,7 @@ self.addEventListener('fetch', (event) => {
             if (cachedResponse) return cachedResponse;
 
             return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                if (!networkResponse || networkResponse.status !== 200) {
                     return networkResponse;
                 }
 
@@ -52,8 +54,8 @@ self.addEventListener('fetch', (event) => {
 
                 return networkResponse;
             }).catch(() => {
-                if (event.request.headers.get('accept').includes('text/html')) {
-                    return caches.match('/index.html');
+                if (event.request.headers.get('accept')?.includes('text/html')) {
+                    return caches.match('./index.html');
                 }
             });
         })
