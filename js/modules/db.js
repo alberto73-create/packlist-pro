@@ -65,6 +65,8 @@ export let STATE = {
 
 export function setState(newState) {
   STATE = { ...STATE, ...newState };
+}
+
 /**
  * Carica il database dai dati inline - Versione Ottimizzata
  */

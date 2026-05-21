@@ -1,5 +1,7 @@
 // js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente - Versione v9.5 Fixed
 
+import { FILTER_MAP } from './db.js';
+
 /**
  * Renderizza la lista degli item
  */
@@ -19,7 +21,7 @@ export function list(state, U) {
 
         let shouldShow = true;
         if (filter !== 'all') {
-            const allowedCats = window.FILTER_MAP?.[filter] || [];
+            const allowedCats = FILTER_MAP?.[filter] || [];
             shouldShow = allowedCats.includes(cat);
         }
 
@@ -409,7 +411,13 @@ export function toggleFabMenu() {
     if (menu && btn) {
         menu.classList.toggle('open');
         btn.classList.toggle('open');
-export async function renderActivities() {
+    }
+}
+
+/**
+ * Renderizza le attività nella griglia - Versione con DB inline
+ */
+export async function renderActivitiesFromDB() {
     const { getDB } = await import('./db.js');
     const db = getDB();
     const grid = document.getElementById('activityGrid');
