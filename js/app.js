@@ -154,7 +154,7 @@ async function handleControlClick(event) {
     };
     if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
     else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
-    else if (fabItem.id === 'exportPdfBtn') Ctrl.exportPDF();
+    else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();

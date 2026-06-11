@@ -22,6 +22,7 @@ assert.equal((html.match(/<link rel="stylesheet"/g) || []).length, 1, 'the runti
 assert.equal((html.match(/<script type="module"/g) || []).length, 1, 'the runtime must load exactly one module entry point');
 const app = readFileSync('js/app.js', 'utf8');
 const db = readFileSync('js/modules/db.js', 'utf8');
+const controller = readFileSync('js/modules/controller.js', 'utf8');
 const pwa = readFileSync('js/modules/pwa.js', 'utf8');
 const sw = readFileSync('sw.js', 'utf8');
 const css = readFileSync('css/style.css', 'utf8');
@@ -47,8 +48,12 @@ assert.doesNotMatch(sw, /client => client\.navigate\(client\.url\)/, 'activation
 assert.match(screenshot, /previewUrl\(port\)/, 'visual regression screenshot must render representative item rows');
 assert.match(screenshot, /dbus\|UPower/i, 'headless environment noise must be filtered');
 assert.match(screenshot, /child\.kill\('SIGKILL'\)/, 'screenshot capture must have a timeout');
+assert.match(css, /\.fab-container \{[\s\S]*pointer-events: none;/);
+assert.match(css, /\.fab-menu \{[\s\S]*position: absolute;/);
 assert.match(css, /\.modern-switch:checked::after/);
 assert.match(html, /id="itemWeight"/);
+assert.match(controller, /doc\.textWithLink\('Packlist Pro'/);
+assert.match(controller, /url\.hash = await encodeSharedState/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
 const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);

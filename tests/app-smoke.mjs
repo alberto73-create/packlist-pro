@@ -51,7 +51,7 @@ globalThis.localStorage = {
 };
 Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => {} } }, configurable: true });
 let printCalled = false;
-globalThis.window = { jspdf: null, print() { printCalled = true; } };
+globalThis.window = { jspdf: null, location: new URL('https://packlist.example/index.html?old=1'), history: { replaceState() {} }, print() { printCalled = true; } };
 let alertCalled = false;
 globalThis.alert = () => { alertCalled = true; };
 globalThis.confirm = () => true;
@@ -121,8 +121,21 @@ assert.deepEqual(db.STATE.config.weather, ['sun'], 'multi-select values must be 
 assert.equal(Object.values(db.STATE.list).flat().find(item => item.uid === firstUid)?.checked, true, 'regeneration must preserve packing progress');
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Voce prova' && item.custom), true, 'regeneration must preserve custom items');
 
-assert.equal(Ctrl.exportPDF(), true);
+assert.equal(await Ctrl.exportPDF(), true);
 assert.equal(printCalled, true);
+const shareUrl = await Ctrl.createShareUrl();
+assert.match(shareUrl, /^https:\/\/packlist\.example\/[#][gb]\./);
+assert.doesNotMatch(shareUrl, /[?&]list=/, 'compact links must use the shorter hash format');
+let pdfLink = '';
+class FakePdf {
+    setFontSize() {} text() {} autoTable() {} getNumberOfPages() { return 1; } setPage() {} setTextColor() {}
+    textWithLink(text, x, y, options) { pdfLink = options.url; }
+    save() {}
+}
+window.jspdf = { jsPDF: FakePdf };
+assert.equal(await Ctrl.exportPDF(), true);
+assert.equal(pdfLink, shareUrl, 'PDF footer must link to the editable shared list');
+window.jspdf = null;
 
 for (const filter of ['all', 'clothing', 'tech', 'essentials']) {
     Ctrl.setFilter(filter);

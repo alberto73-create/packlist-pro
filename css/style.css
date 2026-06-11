@@ -712,12 +712,15 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 10px;
-            pointer-events: auto;
-            width: auto;
+            pointer-events: none;
+            width: 52px;
             max-width: 220px;
         }
 
         .fab-menu {
+            position: absolute;
+            right: 0;
+            bottom: 62px;
             background: var(--surface);
             border: 1px solid var(--border2);
             border-radius: var(--r-lg);

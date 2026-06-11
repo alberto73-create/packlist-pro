@@ -515,7 +515,7 @@ export function showStatsSummary() {
     ].join('\n'));
 }
 
-export function exportPDF() {
+export async function exportPDF() {
     const all = getAllItems();
     if (!all.length) {
         U.toast('Nessuna lista da esportare');
@@ -552,15 +552,29 @@ export function exportPDF() {
             head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']],
             body: rows,
             startY: 34,
+            margin: { bottom: 16 },
             styles: { fontSize: 8 }
         });
     } else {
         let y = 36;
         rows.forEach(row => {
-            if (y > 280) { doc.addPage(); y = 20; }
+            if (y > 275) { doc.addPage(); y = 20; }
             doc.text(row.join(' · '), 14, y);
             y += 6;
         });
+    }
+
+    const shareUrl = await createShareUrl();
+    const pageCount = doc.getNumberOfPages?.() || 1;
+    for (let page = 1; page <= pageCount; page += 1) {
+        doc.setPage?.(page);
+        doc.setFontSize(8);
+        doc.setTextColor?.(90, 103, 242);
+        const footer = 'Modifica ora la tua lista gratuitamente su ';
+        doc.text(footer, 14, 290);
+        const linkX = 14 + (doc.getTextWidth?.(footer) || 68);
+        if (typeof doc.textWithLink === 'function') doc.textWithLink('Packlist Pro', linkX, 290, { url: shareUrl });
+        else doc.text('Packlist Pro', linkX, 290);
     }
 
     doc.save(`packlist_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -635,19 +649,38 @@ async function decodeSharedState(value) {
     return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+function compactItem(item) {
+    const values = [item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0];
+    while (values[values.length - 1] === 0) values.pop();
+    return values;
+}
+
 function compactSharedState() {
-    return {
-        v: 1,
-        c: STATE.config,
-        l: Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(item => [
-            item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0
-        ])])
-    };
+    const config = STATE.config;
+    return [
+        2,
+        [config.nights, config.gender, config.transport, config.weather, config.activities, config.laundry ? 1 : 0, config.laundryFreq, config.laundryBuffer],
+        Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(compactItem)])
+    ];
+}
+
+function expandSharedState(shared) {
+    if (Array.isArray(shared) && shared[0] === 2) {
+        const config = shared[1] || [];
+        return {
+            c: { nights: config[0], gender: config[1], transport: config[2], weather: config[3], activities: config[4], laundry: Boolean(config[5]), laundryFreq: config[6], laundryBuffer: config[7] },
+            l: shared[2]
+        };
+    }
+    if (shared?.v === 1) return { c: shared.c, l: shared.l };
+    throw new Error('Formato lista non valido');
 }
 
 export async function createShareUrl() {
     const url = new URL(window.location.href);
-    url.searchParams.set('list', await encodeSharedState(compactSharedState()));
+    url.search = '';
+    if (url.pathname.endsWith('/index.html')) url.pathname = url.pathname.slice(0, -'index.html'.length);
+    url.hash = await encodeSharedState(compactSharedState());
     return url.toString();
 }
 
@@ -679,11 +712,11 @@ export async function shareList() {
 
 export async function loadSharedListFromUrl() {
     const url = new URL(window.location.href);
-    const encoded = url.searchParams.get('list');
+    const encoded = url.hash.slice(1) || url.searchParams.get('list');
     if (!encoded) return false;
     try {
-        const shared = await decodeSharedState(encoded);
-        if (shared?.v !== 1 || !Array.isArray(shared.l)) throw new Error('Formato lista non valido');
+        const shared = expandSharedState(await decodeSharedState(encoded));
+        if (!Array.isArray(shared.l)) throw new Error('Formato lista non valido');
         const list = Object.fromEntries(shared.l.map(([cat, items]) => [String(cat), items.map((values) => ({
             n: String(values[0]), q: Math.max(1, Number(values[1]) || 1), w: Math.max(1, Number(values[2]) || 100),
             checked: Boolean(values[3]), worn: Boolean(values[4]), bulky: Boolean(values[5]), custom: Boolean(values[6]),
@@ -692,6 +725,7 @@ export async function loadSharedListFromUrl() {
         setState({ config: normalizeConfig(shared.c), list: normalizeList(list), filter: 'all' });
         saveState();
         url.searchParams.delete('list');
+        url.hash = '';
         window.history.replaceState({}, '', url);
         U.toast('Lista condivisa importata');
         return true;
