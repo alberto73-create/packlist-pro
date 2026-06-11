@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Setup UI iniziale
     setupEventListeners();
+    setupGlobalControls();
     setupActivityGrid();
     setupWeatherButtons();
     
@@ -66,19 +67,9 @@ function setupEventListeners() {
         }
     });
     
-    // Toggle lavanderia
-    const laundryToggle = document.getElementById('laundryToggle');
-    if (laundryToggle) {
-        laundryToggle.addEventListener('click', () => {
-            Ctrl.toggleLaundry();
-        });
-        laundryToggle.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                Ctrl.toggleLaundry();
-            }
-        });
-    }
+    // Banner installazione PWA
+    document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
+    document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
     
     // Banner installazione PWA
     document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
@@ -92,6 +83,8 @@ function setupEventListeners() {
         });
     }
     
+    // Template viaggio
+    setupTemplateActions();
     // FAB Main
     const fabMain = document.getElementById('fabMain');
     if (fabMain) {
@@ -177,58 +170,126 @@ function setupTemplateActions() {
     });
 }
 
-// --- SETUP GRIGLIA ATTIVITÀ ---
-function setupActivityGrid() {
-    const grid = document.getElementById('activityGrid');
-    if (!grid) return;
-    
-    grid.addEventListener('click', (e) => {
-        const btn = e.target.closest('.act-btn');
-        if (!btn) return;
-        
-        const actId = btn.id.replace('act-', '');
-        // Toggle visivo immediato
-        btn.classList.toggle('active');
-        btn.setAttribute('aria-pressed', btn.classList.contains('active'));
-        // Aggiorna stato e rigenera lista se necessario
-        Ctrl.toggleActivity(actId);
+
+function setupTemplateActions() {
+    Ctrl.loadTemplateDropdown();
+
+    document.getElementById('saveTemplateBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('templateName')?.value || '';
+        Ctrl.saveTemplate(name);
     });
-    
-    // Keyboard support
-    grid.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            const btn = e.target.closest('.act-btn');
-            if (btn) {
-                e.preventDefault();
-                const actId = btn.id.replace('act-', '');
-                btn.classList.toggle('active');
-                btn.setAttribute('aria-pressed', btn.classList.contains('active'));
-                Ctrl.toggleActivity(actId);
-            }
+
+    document.getElementById('templateSelect')?.addEventListener('change', (e) => {
+        if (e.target.value) Ctrl.loadTemplate(e.target.value);
+    });
+
+    document.getElementById('deleteTemplateBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('templateSelect')?.value || '';
+        if (name && confirm(`Eliminare il template "${name}"?`)) {
+            Ctrl.deleteTemplate(name);
         }
     });
 }
 
-// --- BOTTONI METEO ---
-function setupWeatherButtons() {
-    document.querySelectorAll('.weather-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const weatherType = btn.id.replace('w-', '');
-            // Toggle visivo immediato
-            btn.classList.toggle('active');
-            btn.setAttribute('aria-pressed', btn.classList.contains('active'));
-            Ctrl.toggleWeather(weatherType);
-        });
-        btn.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const weatherType = btn.id.replace('w-', '');
-                btn.classList.toggle('active');
-                btn.setAttribute('aria-pressed', btn.classList.contains('active'));
-                Ctrl.toggleWeather(weatherType);
-            }
-        });
+// --- CONTROLLI GLOBALI ---
+function setupGlobalControls() {
+    document.addEventListener('click', async (e) => {
+        const weatherBtn = e.target.closest('.weather-btn');
+        if (weatherBtn) {
+            e.preventDefault();
+            Ctrl.toggleWeather(weatherBtn.id.replace('w-', ''));
+            return;
+        }
+
+        const activityBtn = e.target.closest('.act-btn');
+        if (activityBtn) {
+            e.preventDefault();
+            Ctrl.toggleActivity(activityBtn.id.replace('act-', ''));
+            return;
+        }
+
+        if (e.target.closest('#laundryToggle')) {
+            e.preventDefault();
+            Ctrl.toggleLaundry();
+            return;
+        }
+
+        if (e.target.closest('#fabMain')) {
+            e.preventDefault();
+            toggleFabMenu();
+            return;
+        }
+
+        const fabAction = e.target.closest('.fab-item');
+        if (fabAction) {
+            await handleFabAction(fabAction);
+            return;
+        }
+
+        const menu = document.getElementById('fabMenu');
+        const container = document.querySelector('.fab-container');
+        if (menu?.classList.contains('open') && container && !container.contains(e.target)) {
+            toggleFabMenu(false);
+        }
     });
+
+    document.addEventListener('keydown', async (e) => {
+        if (e.key === 'Escape') {
+            toggleFabMenu(false);
+            return;
+        }
+
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+
+        const weatherBtn = e.target.closest('.weather-btn');
+        const activityBtn = e.target.closest('.act-btn');
+        const laundryToggle = e.target.closest('#laundryToggle');
+        const fabMain = e.target.closest('#fabMain');
+        const fabAction = e.target.closest('.fab-item');
+
+        if (weatherBtn) {
+            e.preventDefault();
+            Ctrl.toggleWeather(weatherBtn.id.replace('w-', ''));
+        } else if (activityBtn) {
+            e.preventDefault();
+            Ctrl.toggleActivity(activityBtn.id.replace('act-', ''));
+        } else if (laundryToggle) {
+            e.preventDefault();
+            Ctrl.toggleLaundry();
+        } else if (fabMain) {
+            e.preventDefault();
+            toggleFabMenu();
+        } else if (fabAction) {
+            e.preventDefault();
+            await handleFabAction(fabAction);
+        }
+    });
+}
+
+async function handleFabAction(btn) {
+    const id = btn.id;
+    const filters = {
+        'filter-all': 'all',
+        'filter-clothing': 'clothing',
+        'filter-tech': 'tech',
+        'filter-essentials': 'essentials'
+    };
+
+    if (filters[id]) {
+        Ctrl.setFilter(filters[id]);
+    } else if (id === 'copyListBtn') {
+        await Ctrl.copyList();
+    } else if (id === 'exportPdfBtn') {
+        Ctrl.exportPDF();
+    } else if (id === 'uncheckAllBtn') {
+        Ctrl.uncheckAll();
+    } else if (id === 'showStatsBtn') {
+        Ctrl.showStatsSummary();
+    } else if (id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) {
+        Ctrl.resetState();
+    }
+
+    toggleFabMenu(false);
 }
 
 // --- FUNZIONI DI CONFIGURAZIONE ---
@@ -244,14 +305,14 @@ function syncConfig() {
 }
 
 // --- FAB MENU ---
-function toggleFabMenu() {
+function toggleFabMenu(forceOpen) {
     const menu = document.getElementById('fabMenu');
     const btn = document.getElementById('fabMain');
     if (menu && btn) {
-        const isOpen = menu.classList.contains('open');
-        menu.classList.toggle('open', !isOpen);
-        btn.classList.toggle('open', !isOpen);
-        btn.setAttribute('aria-expanded', !isOpen);
+        const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !menu.classList.contains('open');
+        menu.classList.toggle('open', nextOpen);
+        btn.classList.toggle('open', nextOpen);
+        btn.setAttribute('aria-expanded', String(nextOpen));
     }
 }
 

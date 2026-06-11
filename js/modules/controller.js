@@ -595,8 +595,9 @@ export function setupEventDelegation() {
             return;
         }
         
-        // Checkbox toggle - click su item-content
-        if (target.classList.contains('item-content') || target.closest('.item-content')) {
+        // Checkbox toggle: .item-content ha pointer-events:none, quindi spesso
+        // il target reale è direttamente la .item-row. Escludiamo solo azioni e campi.
+        if (!target.closest('.item-actions, button, input, select, textarea, .add-custom')) {
             toggleItemChecked(uid);
             return;
         }
@@ -606,7 +607,7 @@ export function setupEventDelegation() {
     results.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             const row = e.target.closest('.item-row');
-            if (row && e.target.classList.contains('item-content')) {
+            if (row && !e.target.closest('button, input, select, textarea')) {
                 e.preventDefault();
                 toggleItemChecked(row.dataset.uid);
             }
