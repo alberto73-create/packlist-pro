@@ -1,5 +1,5 @@
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.2.3";
+export const APP_VERSION = "1.3.0";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -60,6 +60,9 @@ let statsLog = [];
 export let STATE = {
   config: { ...DEFAULT_CONFIG },
   list: {},
+  listName: '',
+  baggages: [{ id: 'b1', name: 'Bagaglio 1', limit: 0 }],
+  baggageSetup: false,
   lastRemoved: null,
   filter: 'all'
 };

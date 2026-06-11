@@ -1,16 +1,17 @@
-// sw.js - Service Worker v32
-const CACHE_NAME = 'packlist-v32';
+// sw.js - Service Worker v34
+const CACHE_NAME = 'packlist-v34';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js?v=1.2.3',
+    '/js/app.js?v=1.3.0',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.2.3',
-    '/manifest.json'
+    '/css/style.css?v=1.3.0',
+    '/manifest.json',
+    '/icons/icon-backpack.svg'
 ];
 
 self.addEventListener('install', event => {

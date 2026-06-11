@@ -30,7 +30,7 @@ function element(id = '') {
 const ids = [
     'results', 'statsBar', 'progressFill', 'progressPct', 'itemsCount', 'weightSuitcase', 'weightTotal',
     'wornChip', 'wornWeight', 'weightFill', 'daytripBanner', 'laundryToggle', 'laundryFreqBox', 'nights',
-    'gender', 'transport', 'laundryFreq', 'laundryBuffer', 'warningsBox', 'templateSelect', 'templateName',
+    'gender', 'transport', 'laundryFreq', 'laundryBuffer', 'warningsBox', 'templateSelect', 'templateName', 'itemBaggage', 'baggageSetupModal', 'baggageSetupNames',
     'w-sun', 'w-rain', 'w-cold', 'act-trekking', 'act-nuoto'
 ];
 const elements = new Map(ids.map(id => [id, element(id)]));
@@ -121,21 +121,49 @@ assert.deepEqual(db.STATE.config.weather, ['sun'], 'multi-select values must be 
 assert.equal(Object.values(db.STATE.list).flat().find(item => item.uid === firstUid)?.checked, true, 'regeneration must preserve packing progress');
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Voce prova' && item.custom), true, 'regeneration must preserve custom items');
 
+const baggages = Ctrl.configureBaggages(['Zaino 40L', 'Trolley 10kg']);
+assert.equal(baggages.length, 2);
+assert.equal(Object.values(db.STATE.list).flat().every(item => item.baggageId === baggages[0].id), true, 'initial setup assigns all items to the first baggage');
+assert.equal(Ctrl.updateBaggage(baggages[1].id, { name: 'Trolley cabina', limit: 10 }), true);
+assert.equal(Ctrl.updateItemOptions(firstUid, { quantity: 5, weight: 275, worn: false, bulky: true, baggageId: baggages[1].id }), true);
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.uid === firstUid).baggageId, baggages[1].id, 'item options move an item between baggages');
+assert.equal(Ctrl.moveAllBaggageItems(baggages[1].id, baggages[0].id), true);
+assert.equal(Object.values(db.STATE.list).flat().every(item => item.baggageId === baggages[0].id), true, 'bulk move reassigns all baggage items');
+Ctrl.updateItemOptions(firstUid, { quantity: 5, weight: 275, worn: false, bulky: true, baggageId: baggages[1].id });
+
 assert.equal(await Ctrl.exportPDF(), true);
 assert.equal(printCalled, true);
+assert.equal(Ctrl.saveTemplate('Rio'), true);
+assert.equal(db.STATE.listName, 'Rio', 'saved template name must become the list name');
+assert.equal(JSON.parse(localStorage.getItem('packlist_state')).listName, 'Rio', 'list name must be persisted');
 const shareUrl = await Ctrl.createShareUrl();
 assert.match(shareUrl, /^https:\/\/packlist\.example\/[#][gb]\./);
 assert.doesNotMatch(shareUrl, /[?&]list=/, 'compact links must use the shorter hash format');
+assert.match(shareUrl, /[#][gb]\./, 'multi-baggage shared state must remain compact');
 let pdfLink = '';
+let pdfLinkRegion = null;
+let pdfFilename = '';
+let pdfTitle = '';
 class FakePdf {
-    setFontSize() {} text() {} autoTable() {} getNumberOfPages() { return 1; } setPage() {} setTextColor() {}
-    textWithLink(text, x, y, options) { pdfLink = options.url; }
-    save() {}
+    setFontSize() {} autoTable() {} addPage() {} getNumberOfPages() { return 1; } setPage() {} setTextColor() {} setFillColor() {} roundedRect() {}
+    text(text, x, y) { if (x === 14 && y === 18) pdfTitle = text; }
+    link(x, y, width, height, options) { pdfLink = options.url; pdfLinkRegion = { x, y, width, height }; }
+    save(filename) { pdfFilename = filename; }
 }
 window.jspdf = { jsPDF: FakePdf };
 assert.equal(await Ctrl.exportPDF(), true);
-assert.equal(pdfLink, shareUrl, 'PDF footer must link to the editable shared list');
+assert.equal(pdfLink, shareUrl, 'the entire PDF call-to-action must link to the editable shared list');
+assert.deepEqual(pdfLinkRegion, { x: 14, y: 278, width: 182, height: 12 }, 'the PDF link must cover the whole call-to-action row');
+assert.equal(pdfTitle, 'Packlist Pro · Rio', 'the saved list name must appear in the PDF');
+assert.match(pdfFilename, /^packlist_Rio_\d{4}-\d{2}-\d{2}\.pdf$/, 'the saved list name must appear in the PDF filename');
 window.jspdf = null;
+
+window.location = new URL(shareUrl);
+assert.equal(await Ctrl.loadSharedListFromUrl(), true, 'shared multi-baggage list must load');
+assert.deepEqual(db.STATE.baggages.map(bag => [bag.name, bag.limit]), [['Zaino 40L', 0], ['Trolley cabina', 10]], 'shared URL must preserve baggage names and limits');
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.baggageId === db.STATE.baggages[1].id), true, 'shared URL must preserve item baggage assignments');
+const temporaryBag = Ctrl.addBaggage('Temporaneo');
+assert.equal(Ctrl.deleteBaggage(temporaryBag.id, db.STATE.baggages[0].id), true, 'empty baggage can be deleted');
 
 for (const filter of ['all', 'clothing', 'tech', 'essentials']) {
     Ctrl.setFilter(filter);

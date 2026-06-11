@@ -78,6 +78,8 @@ function setupEventListeners() {
     setupTemplateActions();
     setupFabActions();
     setupItemOptions();
+    setupBaggageModals();
+    if (!STATE.baggageSetup) View.openBaggageSetup();
 }
 
 function setupItemOptions() {
@@ -94,9 +96,39 @@ function setupItemOptions() {
             quantity: document.getElementById('itemQuantity')?.value,
             weight: document.getElementById('itemWeight')?.value,
             worn: document.getElementById('itemWornToggle')?.checked,
-            bulky: document.getElementById('itemBulkyToggle')?.checked
+            bulky: document.getElementById('itemBulkyToggle')?.checked,
+            baggageId: document.getElementById('itemBaggage')?.value
         });
         View.closeItemOptions();
+    });
+}
+
+function setupBaggageModals() {
+    const count = document.getElementById('baggageCount');
+    document.getElementById('baggageQuickCount')?.addEventListener('click', event => {
+        const button = event.target.closest?.('[data-count]'); if (!button) return;
+        count.value = button.dataset.count; View.renderBaggageSetupFields(count.value);
+    });
+    count?.addEventListener('input', () => View.renderBaggageSetupFields(count.value));
+    document.getElementById('baggageSetupSave')?.addEventListener('click', () => {
+        const names = [...document.querySelectorAll('.baggage-setup-name')].map(input => input.value);
+        Ctrl.configureBaggages(names); View.closeBaggageSetup();
+    });
+    document.getElementById('baggageManagerClose')?.addEventListener('click', View.closeBaggageManager);
+    document.getElementById('baggageAddBtn')?.addEventListener('click', () => { Ctrl.addBaggage(); View.openBaggageManager(STATE, U); });
+    document.getElementById('baggageManagerSave')?.addEventListener('click', () => {
+        document.querySelectorAll('.baggage-manage-row').forEach(row => Ctrl.updateBaggage(row.dataset.baggageId, { name: row.querySelector('[data-field="name"]')?.value, limit: row.querySelector('[data-field="limit"]')?.value }));
+        View.closeBaggageManager();
+    });
+    document.getElementById('baggageManagerRows')?.addEventListener('click', event => {
+        const action = event.target.closest?.('[data-baggage-action]')?.dataset.baggageAction; if (!action) return;
+        const row = event.target.closest('.baggage-manage-row'); const id = row.dataset.baggageId; const target = row.querySelector('[data-field="target"]')?.value;
+        if (action === 'move' && target) Ctrl.moveAllBaggageItems(id, target);
+        if (action === 'delete') {
+            const hasItems = Object.values(STATE.list).flat().some(item => item.baggageId === id);
+            if (!hasItems || confirm(target ? 'Eliminare il bagaglio e spostare gli articoli nel bagaglio selezionato?' : 'Eliminare il bagaglio e tutti gli articoli contenuti?')) Ctrl.deleteBaggage(id, target || null);
+        }
+        View.openBaggageManager(STATE, U);
     });
 }
 
@@ -153,6 +185,7 @@ async function handleControlClick(event) {
         'filter-essentials': 'essentials'
     };
     if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
+    else if (fabItem.id === 'manageBaggagesBtn') View.openBaggageManager(STATE, U);
     else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
     else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();

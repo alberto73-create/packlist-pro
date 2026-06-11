@@ -13,49 +13,35 @@ export function list(state, U) {
     }
 
     const frag = document.createDocumentFragment();
-    const filter = state.filter;
+    const allowedCats = state.filter === 'all' ? null : FILTER_MAP?.[state.filter] || [];
+    for (const bag of state.baggages) {
+        const bagItems = Object.values(state.list).flat().filter(item => item.baggageId === bag.id && (!allowedCats || allowedCats.includes(item.cat)));
+        if (!bagItems.length) continue;
+        const weight = bagItems.filter(item => !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+        const overLimit = bag.limit > 0 && weight > bag.limit * 1000;
+        const section = document.createElement('section');
+        section.className = `baggage-section${overLimit ? ' over-limit' : ''}`;
+        section.dataset.baggageId = bag.id;
+        section.innerHTML = `<div class="baggage-header"><div><span class="baggage-kicker">🎒 Bagaglio</span><h2>${U.esc(bag.name)}</h2></div><div class="baggage-weight${overLimit ? ' over-limit' : ''}">${U.weight(weight)}${bag.limit ? `<small> / ${bag.limit} kg</small>` : ''}</div></div>`;
 
-    for (const cat in state.list) {
-        const items = state.list[cat];
-        if (!items?.length) continue;
-
-        let shouldShow = true;
-        if (filter !== 'all') {
-            const allowedCats = FILTER_MAP?.[filter] || [];
-            shouldShow = allowedCats.includes(cat);
+        for (const cat in state.list) {
+            if (allowedCats && !allowedCats.includes(cat)) continue;
+            const items = state.list[cat].filter(item => item.baggageId === bag.id);
+            if (!items.length) continue;
+            const sorted = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
+            const box = document.createElement('div');
+            box.className = 'cat-box'; box.dataset.cat = cat;
+            box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${sorted.filter(i => !i.checked).length}/${items.length}</span></div>`;
+            sorted.forEach(item => box.appendChild(createItemRow(item, cat, U)));
+            const addRow = document.createElement('div'); addRow.className = 'add-custom';
+            addRow.innerHTML = `<input type="text" placeholder="+ Aggiungi item personalizzato..." aria-label="Nuovo item in ${U.esc(cat)}"><button type="button" class="btn-sm" data-action="add">+ Aggiungi</button>`;
+            box.appendChild(addRow); section.appendChild(box);
         }
-
-        if (!shouldShow) continue;
-
-        const sorted  = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
-        const pending = sorted.filter(i => !i.checked).length;
-
-        const box = document.createElement('div');
-        box.className = 'cat-box';
-        box.dataset.cat = cat;
-        box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${pending}/${items.length}</span></div>`;
-
-        sorted.forEach(item => {
-            const row = createItemRow(item, cat, U);
-            box.appendChild(row);
-        });
-
-        const inputId = `add-${cat.replace(/\W/g,'')}`;
-        const addRow = document.createElement('div');
-        addRow.className = 'add-custom';
-        addRow.innerHTML = `
-            <input type="text" id="${inputId}" placeholder="+ Aggiungi item personalizzato..." aria-label="Nuovo item in ${U.esc(cat)}">
-            <button type="button" class="btn-sm" data-action="add">+ Aggiungi</button>`;
-        box.appendChild(addRow);
-        frag.appendChild(box);
+        frag.appendChild(section);
     }
-
-    if (frag.children.length === 0) {
-         res.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>Nessun item in questa categoria.</p></div>`;
-    } else {
-        res.innerHTML = '';
-        res.appendChild(frag);
-    }
+    res.innerHTML = '';
+    if (frag.children.length) res.appendChild(frag);
+    else res.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><p>Nessun item in questa categoria.</p></div>`;
 }
 
 /**
@@ -95,7 +81,7 @@ export function createItemRow(item, cat, U) {
     return row;
 }
 
-export function openItemOptions(item) {
+export function openItemOptions(item, baggages = [], U) {
     const modal = document.getElementById('itemOptionsModal');
     if (!modal || !item) return;
     modal.dataset.uid = item.uid;
@@ -104,6 +90,11 @@ export function openItemOptions(item) {
     document.getElementById('itemWeight').value = item.w || 100;
     document.getElementById('itemWornToggle').checked = Boolean(item.worn);
     document.getElementById('itemBulkyToggle').checked = Boolean(item.bulky);
+    const baggageSelect = document.getElementById('itemBaggage');
+    if (baggageSelect) {
+        baggageSelect.innerHTML = baggages.map(bag => `<option value="${bag.id}">${U?.esc(bag.name) || bag.name}</option>`).join('');
+        baggageSelect.value = item.baggageId || baggages[0]?.id || '';
+    }
     modal.classList.add('visible');
     modal.setAttribute('aria-hidden', 'false');
     document.getElementById('itemQuantity').focus();
@@ -149,6 +140,39 @@ export function applyWornStatus(uid, worn) {
             btn.setAttribute('aria-label', btn.title);
         }
     }
+}
+
+export function openBaggageSetup() {
+    const modal = document.getElementById('baggageSetupModal');
+    if (!modal) return;
+    renderBaggageSetupFields(1);
+    modal.classList.add('visible'); modal.setAttribute('aria-hidden', 'false');
+}
+
+export function renderBaggageSetupFields(count) {
+    const container = document.getElementById('baggageSetupNames'); if (!container) return;
+    const total = Math.max(1, Math.min(12, Number(count) || 1));
+    container.innerHTML = Array.from({ length: total }, (_, index) => `<label>Nome bagaglio ${index + 1}<input class="baggage-setup-name" value="Bagaglio ${index + 1}" placeholder="Es. Trolley 10kg"></label>`).join('');
+}
+
+export function closeBaggageSetup() {
+    const modal = document.getElementById('baggageSetupModal'); modal?.classList.remove('visible'); modal?.setAttribute('aria-hidden', 'true');
+}
+
+export function openBaggageManager(state, U) {
+    const modal = document.getElementById('baggageManagerModal'); const rows = document.getElementById('baggageManagerRows');
+    if (!modal || !rows) return;
+    const all = Object.values(state.list).flat();
+    rows.innerHTML = state.baggages.map(bag => {
+        const count = all.filter(item => item.baggageId === bag.id).length;
+        const options = state.baggages.filter(other => other.id !== bag.id).map(other => `<option value="${other.id}">${U.esc(other.name)}</option>`).join('');
+        return `<div class="baggage-manage-row" data-baggage-id="${bag.id}"><div class="baggage-manage-fields"><label>Nome<input data-field="name" value="${U.esc(bag.name)}"></label><label>Limite kg<input data-field="limit" type="number" min="0" step="0.1" value="${bag.limit || ''}" placeholder="Nessuno"></label></div><div class="baggage-manage-meta">${count} articoli</div><div class="baggage-manage-actions"><select data-field="target" ${options ? '' : 'disabled'}><option value="">Sposta tutto in…</option>${options}</select><button class="btn-secondary" data-baggage-action="move" ${options ? '' : 'disabled'}>Sposta tutto</button><button class="btn-secondary danger" data-baggage-action="delete" ${state.baggages.length > 1 ? '' : 'disabled'}>Elimina</button></div></div>`;
+    }).join('');
+    modal.classList.add('visible'); modal.setAttribute('aria-hidden', 'false');
+}
+
+export function closeBaggageManager() {
+    const modal = document.getElementById('baggageManagerModal'); modal?.classList.remove('visible'); modal?.setAttribute('aria-hidden', 'true');
 }
 
 /**
