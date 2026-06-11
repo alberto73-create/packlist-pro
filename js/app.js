@@ -8,11 +8,12 @@ import * as View from './modules/ui.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('[App] Avvio Packlist Pro v9.5 Fixed');
 
     // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
     Ctrl.loadState();
+    await Ctrl.loadSharedListFromUrl();
     const versionElement = document.getElementById('appVersion');
     if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
     document.documentElement.dataset.appVersion = APP_VERSION;
@@ -75,6 +76,23 @@ function setupEventListeners() {
 
     setupTemplateActions();
     setupFabActions();
+    setupItemOptions();
+}
+
+function setupItemOptions() {
+    const modal = document.getElementById('itemOptionsModal');
+    document.getElementById('itemOptionsClose')?.addEventListener('click', View.closeItemOptions);
+    document.getElementById('itemOptionsCancel')?.addEventListener('click', View.closeItemOptions);
+    modal?.addEventListener('click', event => { if (event.target === modal) View.closeItemOptions(); });
+    document.getElementById('itemOptionsSave')?.addEventListener('click', () => {
+        if (!modal?.dataset.uid) return;
+        Ctrl.updateItemOptions(modal.dataset.uid, {
+            quantity: document.getElementById('itemQuantity')?.value,
+            worn: document.getElementById('itemWornToggle')?.checked,
+            bulky: document.getElementById('itemBulkyToggle')?.checked
+        });
+        View.closeItemOptions();
+    });
 }
 
 function setupTemplateActions() {
@@ -132,6 +150,7 @@ async function handleControlClick(event) {
     if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
     else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
     else if (fabItem.id === 'exportPdfBtn') Ctrl.exportPDF();
+    else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();

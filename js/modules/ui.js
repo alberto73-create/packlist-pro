@@ -70,30 +70,50 @@ export function createItemRow(item, cat, U) {
     row.setAttribute('aria-checked', item.checked);
     row.setAttribute('tabindex', '0');
 
-    const bulkBadge      = item.v >= 3  ? `<span class="badge" title="Ingombrante">📦</span>` : '';
-    const wornBadge      = item.worn     ? `<span class="badge" title="Da indossare in viaggio">🧥</span>` : '';
-    const protectedBadge = item.custom   ? `<span class="badge" title="Item personale">⭐</span>` : '';
-    const wDisplay       = U.weight((item.w || 100) * item.q);
+    const badges = [
+        item.worn ? '<span class="item-badge worn-badge">Indossato</span>' : '',
+        item.bulky ? '<span class="item-badge bulky-badge">Voluminoso</span>' : '',
+        item.custom ? '<span class="item-badge custom-badge">Personale</span>' : ''
+    ].join('');
 
     row.innerHTML = `
         <div class="item-content">
-            <span class="qty">${item.q}x</span>
-            <span class="item-text">${U.esc(item.n)}${bulkBadge}${wornBadge}${protectedBadge}</span>
-            <span class="item-weight">${wDisplay}</span>
+            <span class="qty">${item.q}×</span>
+            <span class="item-main">
+                <span class="item-text">${U.esc(item.n)}</span>
+                <span class="item-meta"><span class="item-weight">${U.weight((item.w || 100) * item.q)}</span>${badges}</span>
+            </span>
         </div>
         <div class="item-actions">
-            <button class="ia-btn worn"
-                data-action="worn" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                title="${item.worn ? 'Metti nello zaino' : 'Segna come indossato'}"
-                aria-label="Toggle indossato">${item.worn ? '🧥' : '🎒'}</button>
-            <button class="ia-btn edit"
-                data-action="edit" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                title="Modifica peso" aria-label="Modifica peso">⚖️</button>
-            <button class="ia-btn del"
-                data-action="del" data-cat="${U.esc(cat)}" data-uid="${item.uid}"
-                title="Rimuovi" aria-label="Rimuovi ${U.esc(item.n)}">✕</button>
+            <button type="button" class="ia-btn options" data-action="options" title="Opzioni articolo" aria-label="Opzioni per ${U.esc(item.n)}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.5 1A8 8 0 0 0 15 6l-.4-2.6h-4L10 6a8 8 0 0 0-1.5 1L6 6 4 9.4 6.1 11a7 7 0 0 0 0 2L4 14.6 6 18l2.5-1a8 8 0 0 0 1.5 1l.5 2.6h4L15 18a8 8 0 0 0 1.5-1l2.5 1 2-3.4-2.1-1.6a7 7 0 0 0 .1-1Z"/></svg>
+            </button>
+            <button type="button" class="ia-btn del" data-action="del" title="Elimina" aria-label="Elimina ${U.esc(item.n)}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>
+            </button>
         </div>`;
     return row;
+}
+
+export function openItemOptions(item) {
+    const modal = document.getElementById('itemOptionsModal');
+    if (!modal || !item) return;
+    modal.dataset.uid = item.uid;
+    document.getElementById('itemOptionsTitle').textContent = item.n;
+    document.getElementById('itemQuantity').value = item.q;
+    document.getElementById('itemWornToggle').checked = Boolean(item.worn);
+    document.getElementById('itemBulkyToggle').checked = Boolean(item.bulky);
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('itemQuantity').focus();
+}
+
+export function closeItemOptions() {
+    const modal = document.getElementById('itemOptionsModal');
+    if (!modal) return;
+    modal.classList.remove('visible');
+    modal.setAttribute('aria-hidden', 'true');
+    delete modal.dataset.uid;
 }
 
 /**

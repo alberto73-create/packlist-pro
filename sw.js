@@ -1,21 +1,24 @@
-// sw.js - Service Worker v28
-const CACHE_NAME = 'packlist-v28';
+// sw.js - Service Worker v29
+const CACHE_NAME = 'packlist-v29';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js?v=1.1.1',
+    '/js/app.js?v=1.2.0',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.1.1',
+    '/css/style.css?v=1.2.0',
     '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-    self.skipWaiting();
+});
+
+self.addEventListener('message', event => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
