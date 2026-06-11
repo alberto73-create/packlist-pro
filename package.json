@@ -2,7 +2,8 @@
   "name": "packlist-pro",
   "private": true,
   "scripts": {
-    "test": "node tests/app-smoke.mjs"
+    "test": "node tests/no-conflict-markers.mjs && node tests/app-smoke.mjs",
+    "check:conflicts": "node tests/no-conflict-markers.mjs"
   },
   "type": "module"
 }
