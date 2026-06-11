@@ -565,11 +565,11 @@ export function setupEventDelegation() {
 
         // Bottone add custom: si trova fuori da .item-row, quindi va gestito prima.
         if (target.closest('[data-action="add"]')) {
-            const btn = target.closest('[data-action="add"]');
-            const inputId = btn.dataset.input;
-            const input = document.getElementById(inputId);
-            if (input && input.value.trim()) {
-                addCustomItem(btn.dataset.cat, input.value);
+            const addRow = target.closest('.add-custom');
+            const category = addRow?.closest('.cat-box')?.dataset.cat;
+            const input = addRow?.querySelector('input');
+            if (category && input?.value.trim()) {
+                addCustomItem(category, input.value);
                 input.value = '';
             }
             return;
@@ -617,10 +617,11 @@ export function setupEventDelegation() {
     results.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.matches('.add-custom input')) {
             const addRow = e.target.closest('.add-custom');
-            const button = addRow?.querySelector('[data-action="add"]');
-            if (button && e.target.value.trim()) {
+            const category = addRow?.closest('.cat-box')?.dataset.cat;
+            if (category && e.target.value.trim()) {
                 e.preventDefault();
-                addCustomItem(button.dataset.cat, e.target.value);
+                addCustomItem(category, e.target.value);
+                e.target.value = '';
             }
             return;
         }

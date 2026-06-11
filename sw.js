@@ -1,15 +1,15 @@
-// sw.js - Service Worker v25
-const CACHE_NAME = 'packlist-v25';
+// sw.js - Service Worker v27
+const CACHE_NAME = 'packlist-v27';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js',
+    '/js/app.js?v=1.1.0',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css',
+    '/css/style.css?v=1.1.0',
     '/manifest.json'
 ];
 
@@ -19,12 +19,15 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(keys => Promise.all(
-            keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-        ))
-    );
-    self.clients.claim();
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
+        await self.clients.claim();
+
+        // Forza anche le pagine ancora aperte con il vecchio JS/CSS a caricare la nuova build.
+        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        await Promise.all(clients.map(client => client.navigate(client.url)));
+    })());
 });
 
 self.addEventListener('fetch', event => {
