@@ -84,22 +84,40 @@ assert.equal(underwear.q, 16);
 Ctrl.toggleLaundry();
 underwear = Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande');
 assert.equal(underwear.q, 4, 'laundry must reduce daily clothes to frequency + buffer');
+Ctrl.setConfig({ nights: 6, laundry: false, laundryFreq: 3, laundryBuffer: 0 });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 7, 'without laundry daily clothes must cover every travel day');
+Ctrl.toggleLaundry();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 3, 'with laundry and zero buffer daily clothes must match laundry frequency');
 
 const initialItems = Object.values(db.STATE.list).flat().length;
 Ctrl.setupEventDelegation();
 const input = element('custom-input');
 input.value = 'Voce prova';
 elements.set('custom-input', input);
+const categoryBox = element('category-box');
+categoryBox.dataset = { cat: 'Essenziali' };
+const addRow = element('add-row');
+addRow.querySelector = selector => selector === 'input' ? input : null;
+addRow.closest = selector => selector === '.cat-box' ? categoryBox : null;
 const addButton = element('add-button');
-addButton.dataset = { cat: 'Essenziali', input: 'custom-input' };
 const clickTarget = element('target');
-clickTarget.closest = selector => selector === '[data-action="add"]' ? addButton : null;
+clickTarget.closest = selector => selector === '[data-action="add"]' ? addButton : selector === '.add-custom' ? addRow : null;
 elements.get('results').listeners.click({ target: clickTarget });
 assert.equal(Object.values(db.STATE.list).flat().length, initialItems + 1);
 
 const firstItem = Object.values(db.STATE.list).flat()[0];
-assert.equal(Ctrl.toggleItemChecked(firstItem.uid), true);
+const firstUid = firstItem.uid;
+assert.equal(Ctrl.toggleItemChecked(firstUid), true);
 assert.equal(Object.values(db.STATE.list).flat().filter(item => item.checked).length, 1);
+Ctrl.setConfig({ nights: 999, laundryFreq: 0, laundryBuffer: 99, weather: ['sun', 'sun'] });
+Ctrl.generateList();
+assert.equal(db.STATE.config.nights, 90, 'nights must respect the UI maximum');
+assert.equal(db.STATE.config.laundryFreq, 1, 'laundry frequency must respect the UI minimum');
+assert.equal(db.STATE.config.laundryBuffer, 5, 'laundry buffer must respect the UI maximum');
+assert.deepEqual(db.STATE.config.weather, ['sun'], 'multi-select values must be deduplicated');
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.uid === firstUid)?.checked, true, 'regeneration must preserve packing progress');
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Voce prova' && item.custom), true, 'regeneration must preserve custom items');
 
 assert.equal(Ctrl.exportPDF(), true);
 assert.equal(printCalled, true);
@@ -107,7 +125,10 @@ assert.equal(printCalled, true);
 for (const filter of ['all', 'clothing', 'tech', 'essentials']) {
     Ctrl.setFilter(filter);
     assert.equal(db.STATE.filter, filter);
+    assert.equal(JSON.parse(localStorage.getItem('packlist_state')).filter, filter, 'filters must be persisted');
 }
+Ctrl.setFilter('invalid-filter');
+assert.equal(db.STATE.filter, 'all');
 assert.equal(await Ctrl.copyList(), true);
 Ctrl.showStatsSummary();
 assert.equal(alertCalled, true);
@@ -134,8 +155,10 @@ assert.match(app, /function setupFabActions\(\)/);
 assert.doesNotMatch(app, /function setupGlobalControls\(\)/);
 assert.equal((app.match(/function setupTemplateActions\(\)/g) || []).length, 1);
 assert.equal((app.match(/function setupFabActions\(\)/g) || []).length, 1);
-assert.match(app, /button\.addEventListener\('click', \(\) => Ctrl\.toggleWeather/);
-assert.match(app, /button\.addEventListener\('click', \(\) => Ctrl\.toggleActivity/);
+assert.match(app, /function handleControlClick\(event\)/);
+assert.match(app, /Ctrl\.toggleWeather\(weatherButton\.dataset\.weather\)/);
+assert.match(app, /Ctrl\.toggleActivity\(activityButton\.dataset\.activity\)/);
+assert.match(app, /const fabItem = event\.target\.closest/);
 assert.match(html, /data-weather="sun"/);
 assert.match(readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8'), /button\.dataset\.activity = a\.id/);
 

@@ -8,7 +8,15 @@ export async function registerServiceWorker() {
         try {
             // Usa percorso relativo corretto per Vercel
             const swUrl = './sw.js';
-            const registration = await navigator.serviceWorker.register(swUrl, { scope: './' });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            });
+
+            const registration = await navigator.serviceWorker.register(swUrl, { scope: './', updateViaCache: 'none' });
+            await registration.update();
             console.log('[PWA] Service Worker registrato:', registration.scope);
             
             // Gestione update

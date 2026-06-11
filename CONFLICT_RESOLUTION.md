@@ -1,25 +1,17 @@
-# Risoluzione conflitti PR
+# Architettura runtime canonica
 
-La versione da mantenere nei conflitti della PR è quella del ramo corrente (`codex/fix-recent-functionality-issues-y2my4a`), senza combinare entrambe le sezioni.
+Questo repository contiene una sola applicazione web e un solo entry point runtime:
 
-## `js/app.js`
+- `index.html` carica `css/style.css` e `js/app.js`;
+- `js/app.js` inizializza l'interfaccia e usa event delegation per meteo, attività e FAB;
+- `sw.js` gestisce la cache PWA e deve essere aggiornato insieme alla versione applicazione;
+- `vercel.json` impedisce a HTML, JavaScript, CSS e Service Worker obsoleti di restare nella cache HTTP.
 
-- Mantenere l'inizializzazione UI immediata e la registrazione PWA in background.
-- Mantenere una sola chiamata per i listener installazione e una sola `setupTemplateActions()`.
-- Mantenere gli handler diretti per meteo, attività, lavanderia e FAB definiti in `setupEventListeners()` / `setupFabActions()`.
-- Non reintrodurre `setupGlobalControls()`: causava sovrapposizioni e conflitti con gli handler diretti.
-- Mantenere `button.dataset.weather` e `button.dataset.activity`, coerenti con i pulsanti semantici generati dall'HTML/UI.
+Non aggiungere seconde pagine HTML, copie degli asset o handler diretti paralleli a `handleControlClick()`. In caso di conflitto, mantenere la versione che supera `npm test`: il test `runtime-integrity.mjs` verifica entry point unico, ID univoci, versione coerente e configurazione anti-cache.
 
-## `css/style.css`
+Quando cambia codice o stile visibile:
 
-- Mantenere la scheda attività da `82px`, centrata, con `width: 100%`, reset `appearance` e spunta `.act-btn.active::after`.
-
-## `js/modules/controller.js`
-
-- Mantenere il fallback `window.print()` quando jsPDF non è disponibile, così “Esporta PDF” resta utilizzabile.
-
-## `sw.js`
-
-- Mantenere integralmente il service worker corrente `packlist-v24`, con strategia network-first e fallback cache.
-
-Dopo la risoluzione non devono essere presenti righe che iniziano con `<<<<<<<`, `=======` o `>>>>>>>`. Eseguire `npm test` prima del merge.
+1. aggiornare `APP_VERSION` in `js/modules/db.js`;
+2. usare la stessa versione nelle query asset di `index.html` e `sw.js`;
+3. incrementare `CACHE_NAME` in `sw.js`;
+4. eseguire `npm test`.

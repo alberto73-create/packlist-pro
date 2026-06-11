@@ -1,0 +1,24 @@
+name: Visual smoke test
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - run: npm run screenshot
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packlist-home-screenshot
+          path: artifacts/packlist-home.png

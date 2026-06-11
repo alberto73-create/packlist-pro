@@ -231,7 +231,7 @@
             flex: 1;
             min-width: 60px;
             background: var(--bg);
-            border: 1px solid var(--border);
+            border: 2px solid var(--border);
             padding: 8px 5px;
             border-radius: var(--r-sm);
             cursor: pointer;
@@ -246,21 +246,22 @@
             -webkit-appearance: none;
         }
 
-        .weather-btn:hover { border-color: var(--amber); color: var(--amber); }
-        .weather-btn.active { border-color: var(--amber); background: rgba(245,158,11,.12); color: var(--amber); box-shadow: 0 1px 8px rgba(245,158,11,.2); transform: translateY(-1px); }
+        .weather-btn:hover, .weather-btn:focus-visible { border-color: var(--amber); color: var(--amber); outline: none; transform: translateY(-1px); }
+        .weather-btn.active { border-color: var(--amber); background: rgba(245,158,11,.18); color: var(--amber); box-shadow: 0 2px 12px rgba(245,158,11,.3); transform: translateY(-2px); }
+        .weather-btn:active { transform: scale(.97); }
 
         /* ─── ACTIVITIES ────────────────────────────────────────── */
         .activity-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-            gap: 8px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 10px 0 18px;
         }
 
         .activity-grid > .act-btn {
-            background: linear-gradient(145deg, var(--bg), var(--surface2));
-            border: 1px solid var(--border2);
-            padding: 14px 10px;
+            background: var(--surface2);
+            border: 2px solid rgba(148, 163, 184, .5);
+            padding: 16px 12px;
             border-radius: var(--r-md);
             cursor: pointer;
             text-align: center;
@@ -274,8 +275,9 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
-            min-height: 82px;
+            min-height: 96px;
             width: 100%;
+            box-shadow: inset 0 1px rgba(255,255,255,.05), 0 4px 14px rgba(0,0,0,.18);
             position: relative;
             appearance: none;
             -webkit-appearance: none;
@@ -283,17 +285,28 @@
 
         .activity-grid > .act-btn:hover,
         .activity-grid > .act-btn:focus-visible {
-            border-color: var(--violet);
+            border-color: var(--violet-h);
             color: var(--text);
-            outline: none;
+            outline: 3px solid rgba(139, 92, 246, .2);
+            outline-offset: 2px;
+            transform: translateY(-2px);
         }
 
+        .activity-grid > .act-btn:active { transform: scale(.97); }
+
         .activity-grid > .act-btn.active {
-            border-color: var(--violet);
-            background: rgba(139, 92, 246, .1);
+            border-color: var(--violet-h);
+            background: linear-gradient(145deg, rgba(90, 103, 242, .32), rgba(139, 92, 246, .2));
             color: var(--text);
             transform: translateY(-2px);
             box-shadow: 0 3px 12px rgba(139, 92, 246, .25);
+            animation: activity-selected .25s ease-out;
+        }
+
+        @keyframes activity-selected {
+            0% { transform: scale(.94); }
+            70% { transform: translateY(-3px) scale(1.02); }
+            100% { transform: translateY(-2px) scale(1); }
         }
 
         .activity-grid > .act-btn.active::after {
@@ -310,15 +323,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
+            font-size: 1.75rem;
             font-style: normal;
             line-height: 1;
         }
 
         .activity-grid > .act-btn span {
-            font-size: .72rem;
-            font-weight: 700;
-            line-height: 1.15;
+            font-size: .78rem;
+            font-weight: 800;
+            line-height: 1.2;
         }
 
         /* ─── TOGGLES ───────────────────────────────────────────── */
@@ -699,7 +712,7 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 10px;
-            pointer-events: none;
+            pointer-events: auto;
             width: auto;
             max-width: 220px;
         }

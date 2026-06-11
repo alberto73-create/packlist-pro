@@ -1,4 +1,5 @@
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
+export const APP_VERSION = "1.1.0";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -85,9 +86,6 @@ export async function loadDatabase() {
         // Costruisci cache per lookup più veloci
         rebuildCaches();
         
-        const versionEl = document.getElementById('appVersion');
-        if(versionEl) versionEl.innerText = `v${db.version || DB_VERSION}`;
-
     } catch (error) {
         console.error("[DB] Errore caricamento DB:", error);
         db = { 
