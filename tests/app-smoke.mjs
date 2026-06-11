@@ -98,8 +98,17 @@ elements.get('results').listeners.click({ target: clickTarget });
 assert.equal(Object.values(db.STATE.list).flat().length, initialItems + 1);
 
 const firstItem = Object.values(db.STATE.list).flat()[0];
-assert.equal(Ctrl.toggleItemChecked(firstItem.uid), true);
+const firstUid = firstItem.uid;
+assert.equal(Ctrl.toggleItemChecked(firstUid), true);
 assert.equal(Object.values(db.STATE.list).flat().filter(item => item.checked).length, 1);
+Ctrl.setConfig({ nights: 999, laundryFreq: 0, laundryBuffer: 99, weather: ['sun', 'sun'] });
+Ctrl.generateList();
+assert.equal(db.STATE.config.nights, 90, 'nights must respect the UI maximum');
+assert.equal(db.STATE.config.laundryFreq, 1, 'laundry frequency must respect the UI minimum');
+assert.equal(db.STATE.config.laundryBuffer, 5, 'laundry buffer must respect the UI maximum');
+assert.deepEqual(db.STATE.config.weather, ['sun'], 'multi-select values must be deduplicated');
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.uid === firstUid)?.checked, true, 'regeneration must preserve packing progress');
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Voce prova' && item.custom), true, 'regeneration must preserve custom items');
 
 assert.equal(Ctrl.exportPDF(), true);
 assert.equal(printCalled, true);
@@ -107,7 +116,10 @@ assert.equal(printCalled, true);
 for (const filter of ['all', 'clothing', 'tech', 'essentials']) {
     Ctrl.setFilter(filter);
     assert.equal(db.STATE.filter, filter);
+    assert.equal(JSON.parse(localStorage.getItem('packlist_state')).filter, filter, 'filters must be persisted');
 }
+Ctrl.setFilter('invalid-filter');
+assert.equal(db.STATE.filter, 'all');
 assert.equal(await Ctrl.copyList(), true);
 Ctrl.showStatsSummary();
 assert.equal(alertCalled, true);

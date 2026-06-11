@@ -105,6 +105,13 @@ export function updateItemRow(uid, checked) {
         row.classList.toggle('taken', checked);
         row.classList.toggle('pending', !checked);
         row.setAttribute('aria-checked', checked);
+        const box = row.closest('.cat-box');
+        const count = box?.querySelector('.cat-count');
+        if (count) {
+            const rows = box.querySelectorAll('.item-row');
+            const pending = [...rows].filter(itemRow => !itemRow.classList.contains('taken')).length;
+            count.textContent = `${pending}/${rows.length}`;
+        }
     }
 }
 
@@ -115,7 +122,11 @@ export function applyWornStatus(uid, worn) {
     const row = document.querySelector(`.item-row[data-uid="${uid}"]`);
     if (row) {
         const btn = row.querySelector('.ia-btn.worn');
-        if (btn) btn.innerHTML = worn ? '🧥' : '🎒';
+        if (btn) {
+            btn.textContent = worn ? '🧥' : '🎒';
+            btn.title = worn ? 'Metti nello zaino' : 'Segna come indossato';
+            btn.setAttribute('aria-label', btn.title);
+        }
     }
 }
 
