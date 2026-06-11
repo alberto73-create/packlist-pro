@@ -102,6 +102,7 @@ function setupTemplateActions() {
         if (name && confirm(`Eliminare il template "${name}"?`)) {
             Ctrl.deleteTemplate(name);
         }
+        closeMenu();
     });
 }
 
