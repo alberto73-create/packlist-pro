@@ -1,0 +1,8 @@
+{
+  "name": "packlist-pro",
+  "private": true,
+  "scripts": {
+    "test": "node tests/app-smoke.mjs"
+  },
+  "type": "module"
+}

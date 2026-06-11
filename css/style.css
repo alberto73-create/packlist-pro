@@ -242,10 +242,12 @@
             color: var(--subtle);
             transition: all .2s;
             user-select: none;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         .weather-btn:hover { border-color: var(--amber); color: var(--amber); }
-        .weather-btn.selected { border-color: var(--amber); background: rgba(245,158,11,.12); color: var(--amber); box-shadow: 0 1px 8px rgba(245,158,11,.2); }
+        .weather-btn.active { border-color: var(--amber); background: rgba(245,158,11,.12); color: var(--amber); box-shadow: 0 1px 8px rgba(245,158,11,.2); transform: translateY(-1px); }
 
         /* ─── ACTIVITIES ────────────────────────────────────────── */
         .activity-grid {
@@ -255,7 +257,7 @@
             margin-bottom: 14px;
         }
 
-        .activity-chip {
+        .act-btn {
             background: var(--bg);
             border: 1px solid var(--border);
             padding: 12px 6px;
@@ -271,33 +273,52 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 5px;
+            min-height: 82px;
+            width: 100%;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
-        .activity-chip input[type="checkbox"] {
-            position: absolute;
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .act-btn:hover,
+        .act-btn:focus-visible {
+            border-color: var(--violet);
+            color: var(--text);
+            outline: none;
         }
 
-        .activity-chip span {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .activity-chip:hover { border-color: var(--violet); color: var(--text); }
-
-        .activity-chip:hover { border-color: var(--violet); color: var(--text); }
-
-        .activity-chip input:checked + span {
+        .act-btn.active {
             border-color: var(--violet);
             background: rgba(139, 92, 246, .1);
             color: var(--text);
             transform: translateY(-2px);
             box-shadow: 0 3px 12px rgba(139, 92, 246, .25);
+        }
+
+        .act-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            color: var(--violet-h);
+            font-size: .72rem;
+            font-weight: 900;
+        }
+
+        .act-btn i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-style: normal;
+            line-height: 1;
+        }
+
+        .act-btn span {
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1.15;
         }
 
         /* ─── TOGGLES ───────────────────────────────────────────── */

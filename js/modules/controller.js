@@ -1,7 +1,7 @@
 // js/modules/controller.js - Logica di Controllo Packlist Pro v9.5 Fixed
 // Architettura STATE-based con gestione completa della lista
 
-import { STATE, setState, DB, ACTIVITIES, PER_NIGHT, DAYTRIP_EXCLUDE, WARNINGS, FILTER_MAP } from './db.js';
+import { STATE, setState, DEFAULT_CONFIG, DB, PER_NIGHT, DAYTRIP_EXCLUDE, WARNINGS } from './db.js';
 import { U } from './utils.js';
 import * as View from './ui.js';
 
@@ -268,7 +268,7 @@ export function loadState() {
         if (saved) {
             const parsed = JSON.parse(saved);
             setState({
-                config: { ...STATE.config, ...parsed.config },
+                config: normalizeConfig(parsed.config),
                 list: parsed.list || {},
                 filter: parsed.filter || 'all'
             });
@@ -286,13 +286,16 @@ export function loadState() {
 export function resetState() {
     localStorage.removeItem('packlist_state');
     setState({
-        config: { ...DB }, // Default config
+        config: { ...DEFAULT_CONFIG },
         list: {},
         lastRemoved: null,
         filter: 'all'
     });
+    updateConfigUI();
+    View.updateFilterUI('all');
     View.showEmptyState('Configura il viaggio e clicca "Genera Packlist"!');
     View.stats(STATE, U);
+    U.toast('Sessione resettata');
 }
 
 /**
@@ -309,6 +312,203 @@ export function setFilter(filterType) {
  */
 export function searchItems(term) {
     View.filterListBySearch(term);
+}
+
+
+const TEMPLATE_KEY = 'packlist_templates';
+
+function getTemplates() {
+    try {
+        return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '{}');
+    } catch (e) {
+        console.warn('[Controller] Lettura template fallita:', e);
+        return {};
+    }
+}
+
+function saveTemplates(templates) {
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+}
+
+function getAllItems() {
+    return Object.values(STATE.list).flat();
+}
+
+export function loadTemplateDropdown() {
+    View.loadTemplateDropdown(getTemplates);
+}
+
+export function saveTemplate(name) {
+    const cleanName = name.trim();
+    if (!cleanName) {
+        U.toast('Inserisci un nome per il template');
+        return false;
+    }
+
+    const templates = getTemplates();
+    templates[cleanName] = { ...STATE.config };
+    saveTemplates(templates);
+    loadTemplateDropdown();
+
+    const input = document.getElementById('templateName');
+    if (input) input.value = '';
+    U.toast(`Template "${cleanName}" salvato`);
+    return true;
+}
+
+export function loadTemplate(name) {
+    const template = getTemplates()[name];
+    if (!template) {
+        U.toast('Template non trovato');
+        return false;
+    }
+
+    setConfig({ ...DEFAULT_CONFIG, ...template });
+    const nights = document.getElementById('nights');
+    const gender = document.getElementById('gender');
+    const transport = document.getElementById('transport');
+    const laundryFreq = document.getElementById('laundryFreq');
+    const laundryBuffer = document.getElementById('laundryBuffer');
+
+    if (nights) nights.value = STATE.config.nights;
+    if (gender) gender.value = STATE.config.gender;
+    if (transport) transport.value = STATE.config.transport;
+    if (laundryFreq) laundryFreq.value = STATE.config.laundryFreq;
+    if (laundryBuffer) laundryBuffer.value = STATE.config.laundryBuffer;
+
+    generateList();
+    U.toast(`Template "${name}" caricato`);
+    return true;
+}
+
+export function deleteTemplate(name) {
+    const templates = getTemplates();
+    if (!templates[name]) return false;
+
+    delete templates[name];
+    saveTemplates(templates);
+    loadTemplateDropdown();
+    U.toast(`Template "${name}" eliminato`);
+    return true;
+}
+
+export function uncheckAll() {
+    getAllItems().forEach(item => {
+        item.checked = false;
+    });
+    View.list(STATE, U);
+    View.stats(STATE, U);
+    saveState();
+    U.toast('Spunte azzerate');
+}
+
+export async function copyList() {
+    const all = getAllItems();
+    if (!all.length) {
+        U.toast('Nessuna lista da copiare');
+        return false;
+    }
+
+    const lines = ['Packlist Pro', ''];
+    Object.entries(STATE.list).forEach(([cat, items]) => {
+        lines.push(cat);
+        items.forEach(item => {
+            const check = item.checked ? '✓' : '□';
+            const worn = item.worn ? ' (indossato)' : '';
+            lines.push(`${check} ${item.q}x ${item.n}${worn}`);
+        });
+        lines.push('');
+    });
+
+    const text = lines.join('\n').trim();
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+    }
+    U.toast('Lista copiata');
+    return true;
+}
+
+export function showStatsSummary() {
+    const all = getAllItems();
+    if (!all.length) {
+        U.toast('Nessuna statistica disponibile');
+        return;
+    }
+
+    const done = all.filter(i => i.checked).length;
+    const wornG = all.filter(i => i.worn).reduce((s, i) => s + (i.w || 100) * i.q, 0);
+    const totalG = all.reduce((s, i) => s + (i.w || 100) * i.q, 0);
+    const suitcaseG = all.filter(i => !i.worn).reduce((s, i) => s + (i.w || 100) * i.q, 0);
+
+    alert([
+        '📊 Statistiche Packlist',
+        `Item: ${done}/${all.length}`,
+        `Peso totale: ${U.weight(totalG)}`,
+        `In valigia: ${U.weight(suitcaseG)}`,
+        `Indossato: ${U.weight(wornG)}`
+    ].join('\n'));
+}
+
+export function exportPDF() {
+    const all = getAllItems();
+    if (!all.length) {
+        U.toast('Nessuna lista da esportare');
+        return false;
+    }
+
+    const jsPDF = window.jspdf?.jsPDF;
+    if (!jsPDF) {
+        U.toast('Modulo PDF non disponibile: apro la stampa per salvare come PDF');
+        window.print();
+        return true;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('Packlist Pro', 14, 18);
+    doc.setFontSize(10);
+    doc.text(`${STATE.config.nights} notti · ${STATE.config.transport}`, 14, 26);
+
+    const rows = [];
+    Object.entries(STATE.list).forEach(([cat, items]) => {
+        items.forEach(item => rows.push([
+            cat,
+            item.n,
+            `${item.q}`,
+            U.weight((item.w || 100) * item.q),
+            item.checked ? 'Sì' : 'No',
+            item.worn ? 'Sì' : 'No'
+        ]));
+    });
+
+    if (typeof doc.autoTable === 'function') {
+        doc.autoTable({
+            head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']],
+            body: rows,
+            startY: 34,
+            styles: { fontSize: 8 }
+        });
+    } else {
+        let y = 36;
+        rows.forEach(row => {
+            if (y > 280) { doc.addPage(); y = 20; }
+            doc.text(row.join(' · '), 14, y);
+            y += 6;
+        });
+    }
+
+    doc.save(`packlist_${new Date().toISOString().slice(0, 10)}.pdf`);
+    U.toast('PDF esportato');
+    return true;
 }
 
 /**
@@ -353,13 +553,8 @@ export function setupEventDelegation() {
     
     results.addEventListener('click', (e) => {
         const target = e.target;
-        const row = target.closest('.item-row');
-        if (!row) return;
-        
-        const uid = row.dataset.uid;
-        const cat = row.dataset.cat;
-        
-        // Bottone add custom - usa data-action
+
+        // Bottone add custom: si trova fuori da .item-row, quindi va gestito prima.
         if (target.closest('[data-action="add"]')) {
             const btn = target.closest('[data-action="add"]');
             const inputId = btn.dataset.input;
@@ -370,6 +565,12 @@ export function setupEventDelegation() {
             }
             return;
         }
+
+        const row = target.closest('.item-row');
+        if (!row) return;
+        
+        const uid = row.dataset.uid;
+        const cat = row.dataset.cat;
         
         // Bottone worn - usa data-action
         if (target.closest('[data-action="worn"]')) {
@@ -395,8 +596,9 @@ export function setupEventDelegation() {
             return;
         }
         
-        // Checkbox toggle - click su item-content
-        if (target.classList.contains('item-content') || target.closest('.item-content')) {
+        // Checkbox toggle: .item-content ha pointer-events:none, quindi spesso
+        // il target reale è direttamente la .item-row. Escludiamo solo azioni e campi.
+        if (!target.closest('.item-actions, button, input, select, textarea, .add-custom')) {
             toggleItemChecked(uid);
             return;
         }
@@ -404,9 +606,19 @@ export function setupEventDelegation() {
     
     // Keyboard navigation
     results.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('.add-custom input')) {
+            const addRow = e.target.closest('.add-custom');
+            const button = addRow?.querySelector('[data-action="add"]');
+            if (button && e.target.value.trim()) {
+                e.preventDefault();
+                addCustomItem(button.dataset.cat, e.target.value);
+            }
+            return;
+        }
+
         if (e.key === 'Enter' || e.key === ' ') {
             const row = e.target.closest('.item-row');
-            if (row && e.target.classList.contains('item-content')) {
+            if (row && !e.target.closest('button, input, select, textarea')) {
                 e.preventDefault();
                 toggleItemChecked(row.dataset.uid);
             }
@@ -419,6 +631,18 @@ export function setupEventDelegation() {
  */
 export function updateConfigUI() {
     const config = STATE.config;
+
+    const nights = document.getElementById('nights');
+    const gender = document.getElementById('gender');
+    const transport = document.getElementById('transport');
+    const laundryFreq = document.getElementById('laundryFreq');
+    const laundryBuffer = document.getElementById('laundryBuffer');
+
+    if (nights) nights.value = config.nights;
+    if (gender) gender.value = config.gender;
+    if (transport) transport.value = config.transport;
+    if (laundryFreq) laundryFreq.value = config.laundryFreq;
+    if (laundryBuffer) laundryBuffer.value = config.laundryBuffer;
     
     // Banner daytrip
     View.updateDaytripBanner(config.nights === 0);
@@ -436,8 +660,19 @@ export function updateConfigUI() {
 /**
  * Imposta la configurazione
  */
+function normalizeConfig(config = {}) {
+    const normalized = { ...DEFAULT_CONFIG, ...STATE.config, ...config };
+    normalized.weather = Array.isArray(normalized.weather) ? normalized.weather : [];
+    normalized.activities = Array.isArray(normalized.activities) ? normalized.activities : [];
+    normalized.nights = Number.isFinite(parseInt(normalized.nights)) ? parseInt(normalized.nights) : DEFAULT_CONFIG.nights;
+    normalized.laundryFreq = Number.isFinite(parseInt(normalized.laundryFreq)) ? parseInt(normalized.laundryFreq) : DEFAULT_CONFIG.laundryFreq;
+    normalized.laundryBuffer = Number.isFinite(parseInt(normalized.laundryBuffer)) ? parseInt(normalized.laundryBuffer) : DEFAULT_CONFIG.laundryBuffer;
+    normalized.laundry = Boolean(normalized.laundry);
+    return normalized;
+}
+
 export function setConfig(newConfig) {
-    setState({ config: { ...STATE.config, ...newConfig } });
+    setState({ config: normalizeConfig(newConfig) });
     saveState();
     updateConfigUI();
 }
