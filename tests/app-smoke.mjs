@@ -61,16 +61,30 @@ const Ctrl = await import('../js/modules/controller.js');
 const db = await import('../js/modules/db.js');
 
 Ctrl.toggleWeather('sun');
+Ctrl.toggleWeather('rain');
+Ctrl.toggleWeather('cold');
 Ctrl.toggleActivity('trekking');
 Ctrl.toggleLaundry();
-assert.deepEqual(db.STATE.config.weather, ['sun']);
+assert.deepEqual(db.STATE.config.weather, ['sun', 'rain', 'cold']);
 assert.deepEqual(db.STATE.config.activities, ['trekking']);
 assert.equal(db.STATE.config.laundry, true);
 assert.equal(elements.get('w-sun').classList.contains('active'), true);
+assert.equal(elements.get('w-rain').classList.contains('active'), true);
+assert.equal(elements.get('w-cold').classList.contains('active'), true);
 assert.equal(elements.get('act-trekking').classList.contains('active'), true);
 assert.equal(elements.get('laundryToggle').classList.contains('active'), true);
 
+Ctrl.setConfig({ nights: 15, laundry: false, laundryFreq: 3, laundryBuffer: 1 });
 Ctrl.generateList();
+for (const fixedName of ['Pigiama', 'Pantaloni casual', 'Multipresa viaggio']) {
+    assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === fixedName).q, 1, `${fixedName} must be a fixed 1x item`);
+}
+let underwear = Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande');
+assert.equal(underwear.q, 16);
+Ctrl.toggleLaundry();
+underwear = Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande');
+assert.equal(underwear.q, 4, 'laundry must reduce daily clothes to frequency + buffer');
+
 const initialItems = Object.values(db.STATE.list).flat().length;
 Ctrl.setupEventDelegation();
 const input = element('custom-input');
@@ -116,6 +130,12 @@ for (const [id, action] of Object.entries(fab)) {
     assert.match(controller, new RegExp(`function ${action}\\b`));
 }
 assert.match(app, /searchClear\?\.addEventListener\('click'/);
+assert.match(app, /function setupFabActions\(\)/);
+assert.doesNotMatch(app, /function setupGlobalControls\(\)/);
+assert.equal((app.match(/function setupTemplateActions\(\)/g) || []).length, 1);
+assert.equal((app.match(/function setupFabActions\(\)/g) || []).length, 1);
+assert.match(app, /button\.addEventListener\('click', \(\) => Ctrl\.toggleWeather/);
+assert.match(app, /button\.addEventListener\('click', \(\) => Ctrl\.toggleActivity/);
 assert.match(html, /data-weather="sun"/);
 assert.match(readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8'), /button\.dataset\.activity = a\.id/);
 

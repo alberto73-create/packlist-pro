@@ -1,7 +1,7 @@
 // js/modules/controller.js - Logica di Controllo Packlist Pro v9.5 Fixed
 // Architettura STATE-based con gestione completa della lista
 
-import { STATE, setState, DEFAULT_CONFIG, DB, PER_NIGHT, DAYTRIP_EXCLUDE, WARNINGS } from './db.js';
+import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS } from './db.js';
 import { U } from './utils.js';
 import * as View from './ui.js';
 
@@ -9,47 +9,25 @@ import * as View from './ui.js';
  * Calcola le quantità degli item in base alla configurazione
  */
 function calculateQty(item, config) {
-    const nights = config.nights || 0;
-    const laundry = config.laundry;
-    const laundryFreq = config.laundryFreq || 3;
-    const laundryBuffer = config.laundryBuffer || 1;
-    
-    // Gita in giornata: quantità fissa o 0 se escluso
+    const nights = Math.max(0, Number(config.nights) || 0);
+    const totalDays = nights + 1;
+
     if (nights === 0) {
         if (DAYTRIP_EXCLUDE.has(item.n)) return 0;
-        return item.q === 'f' ? 1 : (item.v || 1);
+        return 1;
     }
-    
-    // Quantità fissa
-    if (item.q === 'f') {
-        let qty = item.v || 1;
-        
-        // Buffer lavanderia
-        if (laundry && laundryFreq > 0) {
-            const daysNeeded = nights + 1;
-            const washes = Math.floor((daysNeeded - 1) / laundryFreq);
-            if (['Mutande', 'Calze', 'Canottiere/Sottogiacca'].includes(item.n)) {
-                qty += washes * laundryBuffer;
-            }
-        }
-        return qty;
-    }
-    
-    // Quantità per notte
+
     if (item.q === 'n') {
-        let baseQty = nights + 1; // notti + 1 giorno
-        
-        // Riduzione per lavanderia
-        if (laundry && laundryFreq > 0 && PER_NIGHT.has(item.n)) {
-            const daysPerLoad = laundryFreq;
-            const loads = Math.ceil((nights + 1) / daysPerLoad);
-            baseQty = loads * laundryBuffer + laundryBuffer;
-        }
-        
-        return Math.max(1, baseQty);
+        if (!config.laundry) return totalDays;
+
+        // Con lavanderia servono capi sufficienti fino al prossimo lavaggio,
+        // più il buffer scelto, mai più dei giorni totali del viaggio.
+        const laundryFreq = Math.max(1, Number(config.laundryFreq) || 3);
+        const laundryBuffer = Math.max(0, Number(config.laundryBuffer) || 0);
+        return Math.max(1, Math.min(totalDays, laundryFreq + laundryBuffer));
     }
-    
-    return item.v || 1;
+
+    return 1;
 }
 
 /**
@@ -73,7 +51,7 @@ export function generateList() {
     // 2. Item lavanderia (se attiva)
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
-            addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+            addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
         }
     }
     
@@ -81,14 +59,14 @@ export function generateList() {
     for (const weatherType of config.weather) {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
-            addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+            addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
         }
     }
     
     // 4. Item trasporto
     const transportItems = DB.transport[config.transport] || [];
     for (const item of transportItems) {
-        addToCategory(newList, item.cat, { ...item, q: item.v || 1, uid: U.uid(), custom: false });
+        addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
     }
     
     // 5. Item attività extra
@@ -106,6 +84,7 @@ export function generateList() {
     View.list(STATE, U);
     View.stats(STATE, U);
     updateWarnings();
+    saveState();
     
     return newList;
 }
@@ -649,6 +628,15 @@ export function updateConfigUI() {
     
     // Toggle lavanderia
     View.updateLaundryToggle(config.laundry);
+    const laundryInfo = document.getElementById('laundryInfo');
+    if (laundryInfo) {
+        const totalDays = config.nights + 1;
+        const laundryQty = Math.min(totalDays, config.laundryFreq + config.laundryBuffer);
+        laundryInfo.textContent = config.laundry
+            ? `Con lavaggio ogni ${config.laundryFreq} giorni: massimo ${laundryQty} capi per ogni elemento giornaliero.`
+            : '';
+        laundryInfo.classList.toggle('visible', config.laundry && config.nights > 0);
+    }
     
     // Bottoni meteo
     View.updateWeatherButtons(config.weather);

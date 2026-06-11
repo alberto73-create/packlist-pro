@@ -14,7 +14,7 @@ export const DEFAULT_CONFIG = {
 };
 // Dati inline del database (ex data.json)
 const INLINE_DB = {
-  "version": "1.00.20",
+  "version": "1.00.21",
   "lastUpdate": "2024-05-23",
   "categories": [
     { "id": "clothing", "name": "Abbigliamento", "icon": "👕", "essential": true },

@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Ctrl.loadState();
     View.renderActivities(ACTIVITIES);
     setupEventListeners();
-    setupGlobalControls();
     Ctrl.updateConfigUI();
 
     if (Object.keys(STATE.list).length > 0) {
@@ -34,44 +33,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- SETUP EVENT LISTENERS ---
 function setupEventListeners() {
-    // Event delegation per la lista
     Ctrl.setupEventDelegation();
-    
-    // Bottone Genera Packlist
-    const generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) {
-        generateBtn.addEventListener('click', () => {
-            Ctrl.generateList();
-        });
-    }
-    
-    // Input configurazione
-    const nightsInput = document.getElementById('nights');
-    const genderInput = document.getElementById('gender');
-    const transportInput = document.getElementById('transport');
-    const laundryFreqInput = document.getElementById('laundryFreq');
-    const laundryBufferInput = document.getElementById('laundryBuffer');
-    
-    [nightsInput, genderInput, transportInput, laundryFreqInput, laundryBufferInput].forEach(input => {
-        if (input) {
-            input.addEventListener('change', syncConfig);
-            input.addEventListener('input', syncConfig);
+
+    document.getElementById('generateBtn')?.addEventListener('click', () => Ctrl.generateList());
+
+    ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
+        const input = document.getElementById(id);
+        input?.addEventListener('change', syncConfig);
+        if (input?.tagName === 'INPUT') input.addEventListener('input', syncConfig);
+    });
+
+    document.querySelectorAll('.weather-btn').forEach(button => {
+        button.addEventListener('click', () => Ctrl.toggleWeather(button.dataset.weather));
+    });
+
+    document.querySelectorAll('.act-btn').forEach(button => {
+        button.addEventListener('click', () => Ctrl.toggleActivity(button.dataset.activity));
+    });
+
+    const laundryToggle = document.getElementById('laundryToggle');
+    laundryToggle?.addEventListener('click', () => Ctrl.toggleLaundry());
+    laundryToggle?.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            Ctrl.toggleLaundry();
         }
     });
-    
-    // Banner installazione PWA
+
     document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
     document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
-    
-    // Search
+
     const searchInput = document.getElementById('searchItems');
     const searchClear = document.getElementById('searchClear');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            Ctrl.searchItems(e.target.value);
-            searchClear?.classList.toggle('visible', Boolean(e.target.value));
-        });
-    }
+    searchInput?.addEventListener('input', event => {
+        Ctrl.searchItems(event.target.value);
+        searchClear?.classList.toggle('visible', Boolean(event.target.value));
+    });
     searchClear?.addEventListener('click', () => {
         if (!searchInput) return;
         searchInput.value = '';
@@ -79,88 +76,69 @@ function setupEventListeners() {
         searchClear.classList.remove('visible');
         searchInput.focus();
     });
-    
-    // Template viaggio
-    setupTemplateActions();
-}
 
+    setupTemplateActions();
+    setupFabActions();
+}
 
 function setupTemplateActions() {
     Ctrl.loadTemplateDropdown();
 
     document.getElementById('saveTemplateBtn')?.addEventListener('click', () => {
-        const name = document.getElementById('templateName')?.value || '';
-        Ctrl.saveTemplate(name);
+        Ctrl.saveTemplate(document.getElementById('templateName')?.value || '');
     });
-
-    document.getElementById('templateSelect')?.addEventListener('change', (e) => {
-        if (e.target.value) Ctrl.loadTemplate(e.target.value);
+    document.getElementById('templateSelect')?.addEventListener('change', event => {
+        if (event.target.value) Ctrl.loadTemplate(event.target.value);
     });
-
     document.getElementById('deleteTemplateBtn')?.addEventListener('click', () => {
         const name = document.getElementById('templateSelect')?.value || '';
-        if (name && confirm(`Eliminare il template "${name}"?`)) {
-            Ctrl.deleteTemplate(name);
-        }
-        closeMenu();
+        if (name && confirm(`Eliminare il template "${name}"?`)) Ctrl.deleteTemplate(name);
     });
 }
 
-// --- CONTROLLI GLOBALI ---
-function setupGlobalControls() {
-    document.addEventListener('click', async (e) => {
-        const weatherBtn = e.target.closest('.weather-btn');
-        if (weatherBtn) {
-            e.preventDefault();
-            Ctrl.toggleWeather(weatherBtn.dataset.weather);
-            return;
-        }
+function setupFabActions() {
+    document.getElementById('fabMain')?.addEventListener('click', () => toggleFabMenu());
 
-        const activityBtn = e.target.closest('.act-btn');
-        if (activityBtn) {
-            e.preventDefault();
-            Ctrl.toggleActivity(activityBtn.dataset.activity);
-            return;
-        }
-
-        if (e.target.closest('#laundryToggle')) {
-            e.preventDefault();
-            Ctrl.toggleLaundry();
-            return;
-        }
-
-        if (e.target.closest('#fabMain')) {
-            e.preventDefault();
-            toggleFabMenu();
-            return;
-        }
-
-        const fabAction = e.target.closest('.fab-item');
-        if (fabAction) {
-            await handleFabAction(fabAction);
-            return;
-        }
-
-        const menu = document.getElementById('fabMenu');
-        const container = document.querySelector('.fab-container');
-        if (menu?.classList.contains('open') && container && !container.contains(e.target)) {
+    const filters = {
+        'filter-all': 'all',
+        'filter-clothing': 'clothing',
+        'filter-tech': 'tech',
+        'filter-essentials': 'essentials'
+    };
+    Object.entries(filters).forEach(([id, filter]) => {
+        document.getElementById(id)?.addEventListener('click', () => {
+            Ctrl.setFilter(filter);
             toggleFabMenu(false);
-        }
+        });
     });
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            toggleFabMenu(false);
-            return;
-        }
+    document.getElementById('copyListBtn')?.addEventListener('click', async () => {
+        await Ctrl.copyList();
+        toggleFabMenu(false);
+    });
+    document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
+        Ctrl.exportPDF();
+        toggleFabMenu(false);
+    });
+    document.getElementById('uncheckAllBtn')?.addEventListener('click', () => {
+        Ctrl.uncheckAll();
+        toggleFabMenu(false);
+    });
+    document.getElementById('showStatsBtn')?.addEventListener('click', () => {
+        Ctrl.showStatsSummary();
+        toggleFabMenu(false);
+    });
+    document.getElementById('resetSessionBtn')?.addEventListener('click', () => {
+        if (confirm('Resettare tutta la sessione?')) Ctrl.resetState();
+        toggleFabMenu(false);
+    });
 
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-
-        const laundryToggle = e.target.closest('#laundryToggle');
-        if (laundryToggle) {
-            e.preventDefault();
-            Ctrl.toggleLaundry();
-        }
+    document.addEventListener('click', event => {
+        const container = document.querySelector('.fab-container');
+        if (container && !container.contains(event.target)) toggleFabMenu(false);
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') toggleFabMenu(false);
     });
 }
 

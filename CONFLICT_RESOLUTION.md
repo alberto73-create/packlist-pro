@@ -5,9 +5,10 @@ La versione da mantenere nei conflitti della PR è quella del ramo corrente (`co
 ## `js/app.js`
 
 - Mantenere l'inizializzazione UI immediata e la registrazione PWA in background.
-- Mantenere una sola chiamata per i listener installazione, una sola `setupTemplateActions()` e una sola `setupGlobalControls()`.
-- Non reintrodurre `setupActivityGrid()`, `setupWeatherButtons()` o `setupFabActions()`: le azioni sono già centralizzate in `setupGlobalControls()`.
-- Mantenere `weatherBtn.dataset.weather` e `activityBtn.dataset.activity`, coerenti con i pulsanti semantici generati dall'HTML/UI.
+- Mantenere una sola chiamata per i listener installazione e una sola `setupTemplateActions()`.
+- Mantenere gli handler diretti per meteo, attività, lavanderia e FAB definiti in `setupEventListeners()` / `setupFabActions()`.
+- Non reintrodurre `setupGlobalControls()`: causava sovrapposizioni e conflitti con gli handler diretti.
+- Mantenere `button.dataset.weather` e `button.dataset.activity`, coerenti con i pulsanti semantici generati dall'HTML/UI.
 
 ## `css/style.css`
 
@@ -19,6 +20,6 @@ La versione da mantenere nei conflitti della PR è quella del ramo corrente (`co
 
 ## `sw.js`
 
-- Mantenere integralmente il service worker corrente `packlist-v23`, con strategia network-first e fallback cache.
+- Mantenere integralmente il service worker corrente `packlist-v24`, con strategia network-first e fallback cache.
 
 Dopo la risoluzione non devono essere presenti righe che iniziano con `<<<<<<<`, `=======` o `>>>>>>>`. Eseguire `npm test` prima del merge.
