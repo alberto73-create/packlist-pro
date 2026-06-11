@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup UI iniziale
     setupEventListeners();
     setupGlobalControls();
+    setupActivityGrid();
+    setupWeatherButtons();
     
     // Aggiorna UI configurazione
     Ctrl.updateConfigUI();
@@ -69,6 +71,10 @@ function setupEventListeners() {
     document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
     document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
     
+    // Banner installazione PWA
+    document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
+    document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
+    
     // Search
     const searchInput = document.getElementById('searchItems');
     if (searchInput) {
@@ -79,6 +85,89 @@ function setupEventListeners() {
     
     // Template viaggio
     setupTemplateActions();
+    // FAB Main
+    const fabMain = document.getElementById('fabMain');
+    if (fabMain) {
+        fabMain.addEventListener('click', toggleFabMenu);
+    }
+    
+    // Filtri e azioni FAB
+    setupFabActions();
+    
+    // Template viaggio
+    setupTemplateActions();
+}
+
+
+function setupFabActions() {
+    const closeMenu = () => {
+        const menu = document.getElementById('fabMenu');
+        if (menu?.classList.contains('open')) toggleFabMenu();
+    };
+
+    const filterMap = {
+        'filter-all': 'all',
+        'filter-clothing': 'clothing',
+        'filter-tech': 'tech',
+        'filter-essentials': 'essentials'
+    };
+
+    Object.entries(filterMap).forEach(([id, filter]) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                Ctrl.setFilter(filter);
+                closeMenu();
+            });
+        }
+    });
+
+    document.getElementById('copyListBtn')?.addEventListener('click', async () => {
+        await Ctrl.copyList();
+        closeMenu();
+    });
+
+    document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
+        Ctrl.exportPDF();
+        closeMenu();
+    });
+
+    document.getElementById('uncheckAllBtn')?.addEventListener('click', () => {
+        Ctrl.uncheckAll();
+        closeMenu();
+    });
+
+    document.getElementById('showStatsBtn')?.addEventListener('click', () => {
+        Ctrl.showStatsSummary();
+        closeMenu();
+    });
+
+    document.getElementById('resetSessionBtn')?.addEventListener('click', () => {
+        if (confirm('Resettare tutta la sessione?')) {
+            Ctrl.resetState();
+        }
+        closeMenu();
+    });
+}
+
+function setupTemplateActions() {
+    Ctrl.loadTemplateDropdown();
+
+    document.getElementById('saveTemplateBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('templateName')?.value || '';
+        Ctrl.saveTemplate(name);
+    });
+
+    document.getElementById('templateSelect')?.addEventListener('change', (e) => {
+        if (e.target.value) Ctrl.loadTemplate(e.target.value);
+    });
+
+    document.getElementById('deleteTemplateBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('templateSelect')?.value || '';
+        if (name && confirm(`Eliminare il template "${name}"?`)) {
+            Ctrl.deleteTemplate(name);
+        }
+    });
 }
 
 

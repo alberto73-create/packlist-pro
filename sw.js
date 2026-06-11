@@ -1,5 +1,5 @@
-// sw.js - Service Worker v21
-const CACHE_NAME = 'packlist-v21';
+// sw.js - Service Worker v20
+const CACHE_NAME = 'packlist-v20';
 const ASSETS = [
     '/',
     '/index.html',
