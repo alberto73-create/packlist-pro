@@ -1,10 +1,16 @@
-// sw.js - Service Worker v19
-const CACHE_NAME = 'packlist-v19';
+// sw.js - Service Worker v21
+const CACHE_NAME = 'packlist-v21';
 const ASSETS = [
     '/',
     '/index.html',
     '/js/app.js',
-    '/css/style.css'
+    '/js/modules/controller.js',
+    '/js/modules/db.js',
+    '/js/modules/pwa.js',
+    '/js/modules/ui.js',
+    '/js/modules/utils.js',
+    '/css/style.css',
+    '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,9 +37,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
 
-    // FIX: Ignora richieste chrome-extension e manifest.json per evitare errori
+    // Ignora richieste non gestibili dal service worker.
     if (url.startsWith('chrome-extension://')) return;
-    if (url.includes('manifest.json')) return;
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
