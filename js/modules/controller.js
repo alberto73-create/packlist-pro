@@ -114,7 +114,8 @@ function addGeneratedItem(list, item, qty, previousItems) {
         uid: previous?.uid || U.uid(),
         w: previous?.w ?? item.w,
         checked: previous?.checked || false,
-        worn: previous?.worn ?? Boolean(item.worn),
+        worn: previous?.worn ?? false,
+        bulky: previous?.bulky ?? false,
         custom: false
     });
 }
@@ -181,6 +182,22 @@ export function toggleWorn(uid) {
     return false;
 }
 
+export function updateItemOptions(uid, { quantity, weight, worn, bulky }) {
+    for (const cat in STATE.list) {
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (!item) continue;
+        item.q = Math.max(1, Math.min(99, Number.parseInt(quantity, 10) || 1));
+        item.w = Math.max(1, Math.min(50000, Number.parseInt(weight, 10) || item.w || 100));
+        item.worn = Boolean(worn);
+        item.bulky = Boolean(bulky);
+        View.list(STATE, U);
+        View.stats(STATE, U);
+        saveState();
+        return true;
+    }
+    return false;
+}
+
 /**
  * Rimuove un item dalla lista
  */
@@ -217,7 +234,8 @@ export function addCustomItem(cat, name, weight = 100, volume = 1) {
         uid: U.uid(),
         custom: true,
         checked: false,
-        worn: false
+        worn: false,
+        bulky: false
     };
     
     if (!STATE.list[cat]) STATE.list[cat] = [];
@@ -247,39 +265,69 @@ export function editItemWeight(uid, newWeight) {
     return false;
 }
 
+const STATE_STORAGE_KEY = 'packlist_state';
+const STATE_BACKUP_KEY = 'packlist_state_backup';
+
 /**
- * Salva lo stato in localStorage
+ * Salva lo stato mantenendo anche l'ultima copia valida per gli aggiornamenti PWA.
  */
 export function saveState() {
     try {
+        const previous = localStorage.getItem(STATE_STORAGE_KEY);
+        if (previous) localStorage.setItem(STATE_BACKUP_KEY, previous);
         const toSave = {
+            schema: 1,
             config: STATE.config,
             list: STATE.list,
             filter: STATE.filter
         };
-        localStorage.setItem('packlist_state', JSON.stringify(toSave));
+        localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(toSave));
+        return true;
     } catch (e) {
         console.warn('[Controller] Salvataggio fallito:', e);
+        return false;
     }
 }
 
+function normalizeList(list = {}) {
+    if (!list || typeof list !== 'object' || Array.isArray(list)) return {};
+    return Object.fromEntries(Object.entries(list).map(([cat, items]) => [cat, (Array.isArray(items) ? items : []).map(item => ({
+        ...item,
+        q: Math.max(1, Number.parseInt(item.q, 10) || 1),
+        w: Math.max(1, Number.parseInt(item.w, 10) || 100),
+        worn: Boolean(item.worn),
+        bulky: Boolean(item.bulky)
+    }))]));
+}
+
+function parseStoredState(value) {
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return {
+        config: normalizeConfig(parsed.config),
+        list: normalizeList(parsed.list),
+        filter: parsed.filter || 'all'
+    };
+}
+
 /**
- * Carica lo stato da localStorage
+ * Carica lo stato principale o, se non leggibile dopo un aggiornamento, la copia di sicurezza.
  */
 export function loadState() {
-    try {
-        const saved = localStorage.getItem('packlist_state');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            setState({
-                config: normalizeConfig(parsed.config),
-                list: parsed.list || {},
-                filter: parsed.filter || 'all'
-            });
+    for (const key of [STATE_STORAGE_KEY, STATE_BACKUP_KEY]) {
+        try {
+            const restored = parseStoredState(localStorage.getItem(key));
+            if (!restored) continue;
+            setState(restored);
+            if (key === STATE_BACKUP_KEY) {
+                localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify({ schema: 1, ...restored }));
+                U.toast('Lista ripristinata dopo l’aggiornamento');
+            }
             return true;
+        } catch (e) {
+            console.warn(`[Controller] Stato non leggibile (${key}):`, e);
         }
-    } catch (e) {
-        console.warn('[Controller] Caricamento fallito:', e);
     }
     return false;
 }
@@ -288,7 +336,8 @@ export function loadState() {
  * Reset completo dello stato
  */
 export function resetState() {
-    localStorage.removeItem('packlist_state');
+    localStorage.removeItem(STATE_STORAGE_KEY);
+    localStorage.removeItem(STATE_BACKUP_KEY);
     setState({
         config: { ...DEFAULT_CONFIG },
         list: {},
@@ -466,7 +515,7 @@ export function showStatsSummary() {
     ].join('\n'));
 }
 
-export function exportPDF() {
+export async function exportPDF() {
     const all = getAllItems();
     if (!all.length) {
         U.toast('Nessuna lista da esportare');
@@ -503,15 +552,29 @@ export function exportPDF() {
             head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']],
             body: rows,
             startY: 34,
+            margin: { bottom: 16 },
             styles: { fontSize: 8 }
         });
     } else {
         let y = 36;
         rows.forEach(row => {
-            if (y > 280) { doc.addPage(); y = 20; }
+            if (y > 275) { doc.addPage(); y = 20; }
             doc.text(row.join(' · '), 14, y);
             y += 6;
         });
+    }
+
+    const shareUrl = await createShareUrl();
+    const pageCount = doc.getNumberOfPages?.() || 1;
+    for (let page = 1; page <= pageCount; page += 1) {
+        doc.setPage?.(page);
+        doc.setFontSize(8);
+        doc.setTextColor?.(90, 103, 242);
+        const footer = 'Modifica ora la tua lista gratuitamente su ';
+        doc.text(footer, 14, 290);
+        const linkX = 14 + (doc.getTextWidth?.(footer) || 68);
+        if (typeof doc.textWithLink === 'function') doc.textWithLink('Packlist Pro', linkX, 290, { url: shareUrl });
+        else doc.text('Packlist Pro', linkX, 290);
     }
 
     doc.save(`packlist_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -556,6 +619,123 @@ export function exportStatsCSV() {
 /**
  * Inizializza i listener per gli eventi
  */
+
+function bytesToBase64Url(bytes) {
+    let binary = '';
+    bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlToBytes(value) {
+    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+    return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+}
+
+async function encodeSharedState(data) {
+    const bytes = new TextEncoder().encode(JSON.stringify(data));
+    if (typeof CompressionStream === 'undefined') return `b.${bytesToBase64Url(bytes)}`;
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+    return `g.${bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()))}`;
+}
+
+async function decodeSharedState(value) {
+    const [format, payload] = value.split('.', 2);
+    let bytes = base64UrlToBytes(payload || '');
+    if (format === 'g') {
+        if (typeof DecompressionStream === 'undefined') throw new Error('Compressione URL non supportata');
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function compactItem(item) {
+    const values = [item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0];
+    while (values[values.length - 1] === 0) values.pop();
+    return values;
+}
+
+function compactSharedState() {
+    const config = STATE.config;
+    return [
+        2,
+        [config.nights, config.gender, config.transport, config.weather, config.activities, config.laundry ? 1 : 0, config.laundryFreq, config.laundryBuffer],
+        Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(compactItem)])
+    ];
+}
+
+function expandSharedState(shared) {
+    if (Array.isArray(shared) && shared[0] === 2) {
+        const config = shared[1] || [];
+        return {
+            c: { nights: config[0], gender: config[1], transport: config[2], weather: config[3], activities: config[4], laundry: Boolean(config[5]), laundryFreq: config[6], laundryBuffer: config[7] },
+            l: shared[2]
+        };
+    }
+    if (shared?.v === 1) return { c: shared.c, l: shared.l };
+    throw new Error('Formato lista non valido');
+}
+
+export async function createShareUrl() {
+    const url = new URL(window.location.href);
+    url.search = '';
+    if (url.pathname.endsWith('/index.html')) url.pathname = url.pathname.slice(0, -'index.html'.length);
+    url.hash = await encodeSharedState(compactSharedState());
+    return url.toString();
+}
+
+export async function shareList() {
+    if (!getAllItems().length) {
+        U.toast('Nessuna lista da condividere');
+        return false;
+    }
+    const url = await createShareUrl();
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
+            return true;
+        } catch (error) {
+            if (error?.name === 'AbortError') return false;
+            console.warn('[Controller] Web Share non disponibile, uso gli appunti:', error);
+        }
+    }
+    try {
+        await navigator.clipboard.writeText(url);
+        U.toast('Link della lista copiato negli appunti');
+        return true;
+    } catch (error) {
+        console.warn('[Controller] Copia link fallita:', error);
+        U.toast('Impossibile condividere la lista');
+        return false;
+    }
+}
+
+export async function loadSharedListFromUrl() {
+    const url = new URL(window.location.href);
+    const encoded = url.hash.slice(1) || url.searchParams.get('list');
+    if (!encoded) return false;
+    try {
+        const shared = expandSharedState(await decodeSharedState(encoded));
+        if (!Array.isArray(shared.l)) throw new Error('Formato lista non valido');
+        const list = Object.fromEntries(shared.l.map(([cat, items]) => [String(cat), items.map((values) => ({
+            n: String(values[0]), q: Math.max(1, Number(values[1]) || 1), w: Math.max(1, Number(values[2]) || 100),
+            checked: Boolean(values[3]), worn: Boolean(values[4]), bulky: Boolean(values[5]), custom: Boolean(values[6]),
+            cat: String(cat), s: 'U', v: 1, uid: U.uid()
+        }))]));
+        setState({ config: normalizeConfig(shared.c), list: normalizeList(list), filter: 'all' });
+        saveState();
+        url.searchParams.delete('list');
+        url.hash = '';
+        window.history.replaceState({}, '', url);
+        U.toast('Lista condivisa importata');
+        return true;
+    } catch (error) {
+        console.warn('[Controller] Link condiviso non valido:', error);
+        U.toast('Impossibile importare la lista condivisa');
+        return false;
+    }
+}
+
 export function setupEventDelegation() {
     const results = document.getElementById('results');
     if (!results) return;
@@ -581,19 +761,9 @@ export function setupEventDelegation() {
         const uid = row.dataset.uid;
         const cat = row.dataset.cat;
         
-        // Bottone worn - usa data-action
-        if (target.closest('[data-action="worn"]')) {
-            toggleWorn(uid);
-            return;
-        }
-        
-        // Bottone edit peso - usa data-action
-        if (target.closest('[data-action="edit"]')) {
+        if (target.closest('[data-action="options"]')) {
             const item = STATE.list[cat]?.find(i => i.uid === uid);
-            const newWeight = prompt(`Modifica peso per "${item?.n}" (grammi):`, item?.w || 100);
-            if (newWeight !== null) {
-                editItemWeight(uid, newWeight);
-            }
+            View.openItemOptions(item);
             return;
         }
         

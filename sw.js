@@ -1,32 +1,32 @@
-// sw.js - Service Worker v28
-const CACHE_NAME = 'packlist-v28';
+// sw.js - Service Worker v32
+const CACHE_NAME = 'packlist-v32';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js?v=1.1.1',
+    '/js/app.js?v=1.2.3',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.1.1',
+    '/css/style.css?v=1.2.3',
     '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-    self.skipWaiting();
+});
+
+self.addEventListener('message', event => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
     event.waitUntil((async () => {
         const keys = await caches.keys();
         await Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
+        // Il cambio controller fa ricaricare ogni client una sola volta tramite pwa.js.
         await self.clients.claim();
-
-        // Forza anche le pagine ancora aperte con il vecchio JS/CSS a caricare la nuova build.
-        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-        await Promise.all(clients.map(client => client.navigate(client.url)));
     })());
 });
 

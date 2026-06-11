@@ -93,3 +93,7 @@ Questo progetto è open source.
 ---
 
 **Packlist Pro** - La tua packlist di viaggio intelligente 🌍
+
+## 🔐 Console amministrativa
+
+Una console amministrativa globale richiede autenticazione e autorizzazione server-side; username, password o privilegi inseriti nella PWA statica sarebbero esposti a tutti gli utenti. La proposta di architettura sicura e i passaggi necessari prima di aggiungere l'icona amministratore sono descritti in [`docs/admin-console.md`](docs/admin-console.md).

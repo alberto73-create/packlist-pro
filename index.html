@@ -43,7 +43,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.1.1">
+    <link rel="stylesheet" href="./css/style.css?v=1.2.3">
 </head>
 
 <body>
@@ -59,7 +59,7 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.1.1</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.2.3</span>
         </div>
     </div>
 
@@ -69,6 +69,13 @@
         <span class="install-banner-text">Installa Packlist Pro sul tuo dispositivo!</span>
         <button type="button" class="btn-sm" id="installBtn">Installa</button>
         <button type="button" class="install-banner-close" id="installClose" aria-label="Chiudi">✕</button>
+    </div>
+
+    <!-- Update Banner -->
+    <div class="update-banner" id="updateBanner" role="status" aria-live="polite">
+        <span class="update-banner-icon" aria-hidden="true">↻</span>
+        <span class="update-banner-text"><strong>Nuova versione disponibile</strong><small>Aggiorna ora per usare le ultime funzionalità.</small></span>
+        <button type="button" class="btn-sm" id="updateAppBtn">Aggiorna l’app</button>
     </div>
 
     <!-- Setup Card -->
@@ -197,6 +204,7 @@
         <div style="height:1px; background:var(--border); margin:3px 0;"></div>
         <button type="button" class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
         <button type="button" class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
+        <button type="button" class="fab-item" id="shareListBtn"><span class="fab-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/></svg></span><span>Condividi lista</span></button>
         <button type="button" class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
         <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
         <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
@@ -204,6 +212,18 @@
     <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.1.1"></script>
+<!-- Item options modal -->
+<div class="modal-backdrop" id="itemOptionsModal" aria-hidden="true">
+    <section class="item-options-card" role="dialog" aria-modal="true" aria-labelledby="itemOptionsTitle">
+        <div class="item-options-head"><div><span class="section-label">Opzioni articolo</span><h2 id="itemOptionsTitle"></h2></div><button type="button" class="modal-close" id="itemOptionsClose" aria-label="Chiudi">×</button></div>
+        <label class="option-field" for="itemQuantity"><span><strong>Quantità</strong><small>Numero di pezzi da portare</small></span><input type="number" id="itemQuantity" min="1" max="99" inputmode="numeric"></label>
+        <label class="option-field" for="itemWeight"><span><strong>Peso per pezzo</strong><small>Peso di un singolo articolo in grammi</small></span><span class="weight-input-wrap"><input type="number" id="itemWeight" min="1" max="50000" inputmode="numeric"><span>g</span></span></label>
+        <label class="option-field" for="itemWornToggle"><span><strong>Indossato</strong><small>Escludi dal peso nello zaino</small></span><input class="modern-switch" type="checkbox" id="itemWornToggle"></label>
+        <label class="option-field" for="itemBulkyToggle"><span><strong>Voluminoso</strong><small>Evidenzia gli articoli ingombranti</small></span><input class="modern-switch" type="checkbox" id="itemBulkyToggle"></label>
+        <div class="modal-actions"><button type="button" class="btn-secondary" id="itemOptionsCancel">Annulla</button><button type="button" class="btn-sm" id="itemOptionsSave">Salva modifiche</button></div>
+    </section>
+</div>
+
+    <script type="module" src="./js/app.js?v=1.2.3"></script>
 </body>
 </html>
