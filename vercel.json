@@ -7,12 +7,12 @@
   "routes": [
     {
       "src": "/js/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "headers": { "cache-control": "public, max-age=0, must-revalidate" },
       "dest": "/js/$1"
     },
     {
       "src": "/css/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "headers": { "cache-control": "public, max-age=0, must-revalidate" },
       "dest": "/css/$1"
     },
     {
