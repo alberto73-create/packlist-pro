@@ -35,6 +35,10 @@ function calculateQty(item, config) {
  */
 export function generateList() {
     const config = STATE.config;
+    const previousItems = new Map(
+        Object.values(STATE.list).flat().filter(item => !item.custom).map(item => [itemKey(item.cat, item.n), item])
+    );
+    const customItems = Object.values(STATE.list).flat().filter(item => item.custom);
     const newList = {};
     
     // 1. Item base (sempre inclusi)
@@ -45,13 +49,13 @@ export function generateList() {
         // Filtro gender
         if (item.s !== 'U' && item.s !== config.gender) continue;
         
-        addToCategory(newList, item.cat, { ...item, q: qty, uid: U.uid(), custom: false });
+        addGeneratedItem(newList, item, qty, previousItems);
     }
     
     // 2. Item lavanderia (se attiva)
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
-            addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
+            addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
     
@@ -59,14 +63,14 @@ export function generateList() {
     for (const weatherType of config.weather) {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
-            addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
+            addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
     
     // 4. Item trasporto
     const transportItems = DB.transport[config.transport] || [];
     for (const item of transportItems) {
-        addToCategory(newList, item.cat, { ...item, q: calculateQty(item, config), uid: U.uid(), custom: false });
+        addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
     }
     
     // 5. Item attività extra
@@ -75,10 +79,16 @@ export function generateList() {
         for (const item of items) {
             const qty = calculateQty(item, config);
             if (qty <= 0) continue;
-            addToCategory(newList, item.cat, { ...item, q: qty, uid: U.uid(), custom: false });
+            addGeneratedItem(newList, item, qty, previousItems);
         }
     }
     
+    // Gli item personali e lo stato di packing non devono andare persi quando cambia la configurazione.
+    for (const item of customItems) {
+        if (!newList[item.cat]) newList[item.cat] = [];
+        newList[item.cat].push(item);
+    }
+
     // Aggiorna stato e UI
     setState({ list: newList });
     View.list(STATE, U);
@@ -92,6 +102,23 @@ export function generateList() {
 /**
  * Aggiunge un item a una categoria
  */
+function itemKey(cat, name) {
+    return `${cat}\u0000${name}`;
+}
+
+function addGeneratedItem(list, item, qty, previousItems) {
+    const previous = previousItems.get(itemKey(item.cat, item.n));
+    addToCategory(list, item.cat, {
+        ...item,
+        q: qty,
+        uid: previous?.uid || U.uid(),
+        w: previous?.w ?? item.w,
+        checked: previous?.checked || false,
+        worn: previous?.worn ?? Boolean(item.worn),
+        custom: false
+    });
+}
+
 function addToCategory(list, cat, item) {
     if (!list[cat]) list[cat] = [];
     // Evita duplicati basati sul nome
@@ -164,10 +191,8 @@ export function removeItem(uid) {
             const removed = STATE.list[cat].splice(idx, 1)[0];
             setState({ lastRemoved: { cat, item: removed, idx } });
             
-            // Rimuovi dall'UI
-            const row = document.querySelector(`.item-row[data-uid="${uid}"]`);
-            if (row) row.remove();
-            
+            if (STATE.list[cat].length === 0) delete STATE.list[cat];
+            View.list(STATE, U);
             View.stats(STATE, U);
             saveState();
             return true;
@@ -274,6 +299,7 @@ export function resetState() {
     View.updateFilterUI('all');
     View.showEmptyState('Configura il viaggio e clicca "Genera Packlist"!');
     View.stats(STATE, U);
+    updateWarnings();
     U.toast('Sessione resettata');
 }
 
@@ -281,9 +307,11 @@ export function resetState() {
  * Imposta un filtro sulla lista
  */
 export function setFilter(filterType) {
-    setState({ filter: filterType });
-    View.updateFilterUI(filterType);
+    const filter = filterType === 'all' || FILTER_MAP_KEYS.has(filterType) ? filterType : 'all';
+    setState({ filter });
+    View.updateFilterUI(filter);
     View.list(STATE, U);
+    saveState();
 }
 
 /**
@@ -295,6 +323,7 @@ export function searchItems(term) {
 
 
 const TEMPLATE_KEY = 'packlist_templates';
+const FILTER_MAP_KEYS = new Set(['clothing', 'tech', 'essentials']);
 
 function getTemplates() {
     try {
@@ -511,8 +540,9 @@ export function exportStatsCSV() {
         item.worn ? 'Sì' : 'No'
     ]);
     
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const csv = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -648,13 +678,18 @@ export function updateConfigUI() {
 /**
  * Imposta la configurazione
  */
+function clampInteger(value, fallback, min, max) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
 function normalizeConfig(config = {}) {
     const normalized = { ...DEFAULT_CONFIG, ...STATE.config, ...config };
-    normalized.weather = Array.isArray(normalized.weather) ? normalized.weather : [];
-    normalized.activities = Array.isArray(normalized.activities) ? normalized.activities : [];
-    normalized.nights = Number.isFinite(parseInt(normalized.nights)) ? parseInt(normalized.nights) : DEFAULT_CONFIG.nights;
-    normalized.laundryFreq = Number.isFinite(parseInt(normalized.laundryFreq)) ? parseInt(normalized.laundryFreq) : DEFAULT_CONFIG.laundryFreq;
-    normalized.laundryBuffer = Number.isFinite(parseInt(normalized.laundryBuffer)) ? parseInt(normalized.laundryBuffer) : DEFAULT_CONFIG.laundryBuffer;
+    normalized.weather = Array.isArray(normalized.weather) ? [...new Set(normalized.weather)] : [];
+    normalized.activities = Array.isArray(normalized.activities) ? [...new Set(normalized.activities)] : [];
+    normalized.nights = clampInteger(normalized.nights, DEFAULT_CONFIG.nights, 0, 90);
+    normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
+    normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
     normalized.laundry = Boolean(normalized.laundry);
     return normalized;
 }

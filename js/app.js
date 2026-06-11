@@ -142,32 +142,6 @@ function setupFabActions() {
     });
 }
 
-async function handleFabAction(btn) {
-    const id = btn.id;
-    const filters = {
-        'filter-all': 'all',
-        'filter-clothing': 'clothing',
-        'filter-tech': 'tech',
-        'filter-essentials': 'essentials'
-    };
-
-    if (filters[id]) {
-        Ctrl.setFilter(filters[id]);
-    } else if (id === 'copyListBtn') {
-        await Ctrl.copyList();
-    } else if (id === 'exportPdfBtn') {
-        Ctrl.exportPDF();
-    } else if (id === 'uncheckAllBtn') {
-        Ctrl.uncheckAll();
-    } else if (id === 'showStatsBtn') {
-        Ctrl.showStatsSummary();
-    } else if (id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) {
-        Ctrl.resetState();
-    }
-
-    toggleFabMenu(false);
-}
-
 // --- FUNZIONI DI CONFIGURAZIONE ---
 function syncConfig() {
     const nights = parseInt(document.getElementById('nights')?.value) || 0;

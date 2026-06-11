@@ -69,6 +69,16 @@ packlist-pro/
 └── icons/            # Icone per PWA
 ```
 
+## 🖼️ Smoke test visuale
+
+Per acquisire uno screenshot headless dell’app con Chrome o Chromium:
+
+```bash
+npm run screenshot
+```
+
+Lo script rileva automaticamente il browser oppure usa il percorso indicato in `CHROME_PATH`. La workflow `Visual smoke test` installa Chrome, esegue i test e pubblica lo screenshot come artifact per ogni pull request.
+
 ## 🌐 Browser Supportati
 
 - Chrome/Edge (versioni recenti)
