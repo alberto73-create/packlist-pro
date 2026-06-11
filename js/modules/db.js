@@ -1,5 +1,5 @@
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.1.1";
+export const APP_VERSION = "1.2.2";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default

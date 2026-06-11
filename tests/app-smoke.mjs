@@ -110,6 +110,8 @@ const firstItem = Object.values(db.STATE.list).flat()[0];
 const firstUid = firstItem.uid;
 assert.equal(Ctrl.toggleItemChecked(firstUid), true);
 assert.equal(Object.values(db.STATE.list).flat().filter(item => item.checked).length, 1);
+assert.equal(Ctrl.updateItemOptions(firstUid, { quantity: 5, weight: 275, worn: true, bulky: true }), true);
+assert.deepEqual({ q: firstItem.q, w: firstItem.w, worn: firstItem.worn, bulky: firstItem.bulky }, { q: 5, w: 275, worn: true, bulky: true });
 Ctrl.setConfig({ nights: 999, laundryFreq: 0, laundryBuffer: 99, weather: ['sun', 'sun'] });
 Ctrl.generateList();
 assert.equal(db.STATE.config.nights, 90, 'nights must respect the UI maximum');
@@ -134,6 +136,11 @@ Ctrl.showStatsSummary();
 assert.equal(alertCalled, true);
 Ctrl.uncheckAll();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.checked), false);
+const validStateBeforeUpdate = localStorage.getItem('packlist_state');
+localStorage.setItem('packlist_state_backup', validStateBeforeUpdate);
+localStorage.setItem('packlist_state', '{broken');
+assert.equal(Ctrl.loadState(), true, 'a broken primary state must restore the update backup');
+assert.ok(Object.keys(db.STATE.list).length > 0, 'PWA update recovery must preserve the list');
 Ctrl.resetState();
 assert.equal(Object.keys(db.STATE.list).length, 0);
 assert.equal(db.STATE.filter, 'all');
@@ -143,7 +150,7 @@ const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 const controller = readFileSync(new URL('../js/modules/controller.js', import.meta.url), 'utf8');
 const fab = {
     'filter-all': 'setFilter', 'filter-clothing': 'setFilter', 'filter-tech': 'setFilter', 'filter-essentials': 'setFilter',
-    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', uncheckAllBtn: 'uncheckAll', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
+    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', shareListBtn: 'shareList', uncheckAllBtn: 'uncheckAll', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
 };
 for (const [id, action] of Object.entries(fab)) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
@@ -159,6 +166,9 @@ assert.match(app, /function handleControlClick\(event\)/);
 assert.match(app, /Ctrl\.toggleWeather\(weatherButton\.dataset\.weather\)/);
 assert.match(app, /Ctrl\.toggleActivity\(activityButton\.dataset\.activity\)/);
 assert.match(app, /const fabItem = event\.target\.closest/);
+assert.match(app, /Ctrl\.updateItemOptions/);
+assert.match(controller, /CompressionStream/);
+assert.match(controller, /navigator\.share/);
 assert.match(html, /data-weather="sun"/);
 assert.match(html, /id="act-trekking" data-activity="trekking"/);
 assert.doesNotMatch(`${app}\n${readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8')}`, /renderActivities/);

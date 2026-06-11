@@ -4,40 +4,52 @@
  * Registra il Service Worker - FIX per Vercel
  */
 export async function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        try {
-            // Usa percorso relativo corretto per Vercel
-            const swUrl = './sw.js';
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                refreshing = true;
-                window.location.reload();
-            });
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+        let refreshing = false;
+        let waitingWorker = null;
+        const banner = document.getElementById('updateBanner');
+        const updateButton = document.getElementById('updateAppBtn');
+        const showUpdate = worker => {
+            waitingWorker = worker;
+            banner?.classList.add('visible');
+        };
 
-            const registration = await navigator.serviceWorker.register(swUrl, { scope: './', updateViaCache: 'none' });
-            await registration.update();
-            console.log('[PWA] Service Worker registrato:', registration.scope);
-            
-            // Gestione update
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                console.log('[PWA] Nuovo Service Worker trovato');
-                
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[PWA] Nuovo contenuto disponibile, ricarica la pagina');
-                    }
-                });
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+        });
+        updateButton?.addEventListener('click', () => {
+            if (!waitingWorker) return;
+            // Chiede all'app di salvare lo stato corrente e conserva una copia prima del cambio worker.
+            window.dispatchEvent(new Event('packlist:before-update'));
+            try {
+                const currentState = localStorage.getItem('packlist_state');
+                if (currentState) localStorage.setItem('packlist_state_backup', currentState);
+            } catch (error) {
+                console.warn('[PWA] Backup pre-aggiornamento non disponibile:', error);
+            }
+            updateButton.disabled = true;
+            updateButton.textContent = 'Aggiornamento…';
+            waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        });
+
+        const registration = await navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' });
+        if (registration.waiting) showUpdate(registration.waiting);
+        registration.onupdatefound = () => {
+            const worker = registration.installing;
+            worker?.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdate(worker);
             });
-            
-            return registration;
-        } catch (error) {
-            console.error('[PWA] Errore registrazione SW:', error);
-            return null;
-        }
+        };
+        await registration.update();
+        console.log('[PWA] Service Worker registrato:', registration.scope);
+        return registration;
+    } catch (error) {
+        console.error('[PWA] Errore registrazione SW:', error);
+        return null;
     }
-    return null;
 }
 
 /**
