@@ -1,7 +1,7 @@
 // js/app.js - Entry Point Packlist Pro v9.5 Fixed
 // Architettura modulare ES6 completa
 
-import { STATE, ACTIVITIES, APP_VERSION } from './modules/db.js';
+import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const versionElement = document.getElementById('appVersion');
     if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
     document.documentElement.dataset.appVersion = APP_VERSION;
-    View.renderActivities(ACTIVITIES);
     setupEventListeners();
     Ctrl.updateConfigUI();
 

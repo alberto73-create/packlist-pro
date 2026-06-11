@@ -194,27 +194,6 @@ export function showEmptyState(message = 'Nessun elemento da mostrare') {
 }
 
 /**
- * Renderizza le attività nella griglia
- */
-export function renderActivities(activities) {
-    const grid = document.getElementById('activityGrid');
-    if (!grid) return;
-    
-    grid.innerHTML = '';
-    activities.forEach(a => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'act-btn';
-        button.id = `act-${a.id}`;
-        button.dataset.activity = a.id;
-        button.setAttribute('aria-pressed', 'false');
-        button.title = a.label;
-        button.innerHTML = `<i aria-hidden="true">${a.icon}</i><span>${a.label}</span>`;
-        grid.appendChild(button);
-    });
-}
-
-/**
  * Aggiorna il banner daytrip
  */
 export function updateDaytripBanner(isDaytrip) {
@@ -359,7 +338,6 @@ export default {
     stats,
     openSettingsModal,
     showEmptyState,
-    renderActivities,
     updateDaytripBanner,
     updateLaundryToggle,
     updateWeatherButtons,

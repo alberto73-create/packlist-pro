@@ -160,6 +160,7 @@ assert.match(app, /Ctrl\.toggleWeather\(weatherButton\.dataset\.weather\)/);
 assert.match(app, /Ctrl\.toggleActivity\(activityButton\.dataset\.activity\)/);
 assert.match(app, /const fabItem = event\.target\.closest/);
 assert.match(html, /data-weather="sun"/);
-assert.match(readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8'), /button\.dataset\.activity = a\.id/);
+assert.match(html, /id="act-trekking" data-activity="trekking"/);
+assert.doesNotMatch(`${app}\n${readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8')}`, /renderActivities/);
 
 console.log('Packlist Pro interaction smoke test passed');

@@ -40,6 +40,11 @@ assert.match(pwa, /controllerchange/);
 assert.match(sw, /client => client\.navigate\(client\.url\)/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
+const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);
+const extraDatabase = db.slice(db.indexOf('  extra: {'));
+const activityDatabaseIds = [...extraDatabase.matchAll(/^    ([a-z_]+): \[/gm)].map(([, id]) => id);
+assert.deepEqual(activityButtons, activityDatabaseIds, 'all database activities must exist statically in index.html');
+assert.doesNotMatch(`${app}\n${readFileSync('js/modules/ui.js', 'utf8')}`, /renderActivities/, 'activity visibility must not depend on dynamic rendering');
 
 for (const route of ['/', '/index.html', '/js/(.*)', '/css/(.*)', '/sw.js']) {
     const config = vercel.routes.find(item => item.src === route);
