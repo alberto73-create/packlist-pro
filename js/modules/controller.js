@@ -182,11 +182,12 @@ export function toggleWorn(uid) {
     return false;
 }
 
-export function updateItemOptions(uid, { quantity, worn, bulky }) {
+export function updateItemOptions(uid, { quantity, weight, worn, bulky }) {
     for (const cat in STATE.list) {
         const item = STATE.list[cat].find(i => i.uid === uid);
         if (!item) continue;
         item.q = Math.max(1, Math.min(99, Number.parseInt(quantity, 10) || 1));
+        item.w = Math.max(1, Math.min(50000, Number.parseInt(weight, 10) || item.w || 100));
         item.worn = Boolean(worn);
         item.bulky = Boolean(bulky);
         View.list(STATE, U);
@@ -264,48 +265,69 @@ export function editItemWeight(uid, newWeight) {
     return false;
 }
 
+const STATE_STORAGE_KEY = 'packlist_state';
+const STATE_BACKUP_KEY = 'packlist_state_backup';
+
 /**
- * Salva lo stato in localStorage
+ * Salva lo stato mantenendo anche l'ultima copia valida per gli aggiornamenti PWA.
  */
 export function saveState() {
     try {
+        const previous = localStorage.getItem(STATE_STORAGE_KEY);
+        if (previous) localStorage.setItem(STATE_BACKUP_KEY, previous);
         const toSave = {
+            schema: 1,
             config: STATE.config,
             list: STATE.list,
             filter: STATE.filter
         };
-        localStorage.setItem('packlist_state', JSON.stringify(toSave));
+        localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(toSave));
+        return true;
     } catch (e) {
         console.warn('[Controller] Salvataggio fallito:', e);
+        return false;
     }
 }
 
 function normalizeList(list = {}) {
-    return Object.fromEntries(Object.entries(list).map(([cat, items]) => [cat, (items || []).map(item => ({
+    if (!list || typeof list !== 'object' || Array.isArray(list)) return {};
+    return Object.fromEntries(Object.entries(list).map(([cat, items]) => [cat, (Array.isArray(items) ? items : []).map(item => ({
         ...item,
         q: Math.max(1, Number.parseInt(item.q, 10) || 1),
+        w: Math.max(1, Number.parseInt(item.w, 10) || 100),
         worn: Boolean(item.worn),
         bulky: Boolean(item.bulky)
     }))]));
 }
 
+function parseStoredState(value) {
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return {
+        config: normalizeConfig(parsed.config),
+        list: normalizeList(parsed.list),
+        filter: parsed.filter || 'all'
+    };
+}
+
 /**
- * Carica lo stato da localStorage
+ * Carica lo stato principale o, se non leggibile dopo un aggiornamento, la copia di sicurezza.
  */
 export function loadState() {
-    try {
-        const saved = localStorage.getItem('packlist_state');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            setState({
-                config: normalizeConfig(parsed.config),
-                list: normalizeList(parsed.list),
-                filter: parsed.filter || 'all'
-            });
+    for (const key of [STATE_STORAGE_KEY, STATE_BACKUP_KEY]) {
+        try {
+            const restored = parseStoredState(localStorage.getItem(key));
+            if (!restored) continue;
+            setState(restored);
+            if (key === STATE_BACKUP_KEY) {
+                localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify({ schema: 1, ...restored }));
+                U.toast('Lista ripristinata dopo l’aggiornamento');
+            }
             return true;
+        } catch (e) {
+            console.warn(`[Controller] Stato non leggibile (${key}):`, e);
         }
-    } catch (e) {
-        console.warn('[Controller] Caricamento fallito:', e);
     }
     return false;
 }
@@ -314,7 +336,8 @@ export function loadState() {
  * Reset completo dello stato
  */
 export function resetState() {
-    localStorage.removeItem('packlist_state');
+    localStorage.removeItem(STATE_STORAGE_KEY);
+    localStorage.removeItem(STATE_BACKUP_KEY);
     setState({
         config: { ...DEFAULT_CONFIG },
         list: {},
@@ -635,12 +658,23 @@ export async function shareList() {
     }
     const url = await createShareUrl();
     if (navigator.share) {
-        await navigator.share({ title: 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
-        return true;
+        try {
+            await navigator.share({ title: 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
+            return true;
+        } catch (error) {
+            if (error?.name === 'AbortError') return false;
+            console.warn('[Controller] Web Share non disponibile, uso gli appunti:', error);
+        }
     }
-    await navigator.clipboard.writeText(url);
-    U.toast('Link della lista copiato negli appunti');
-    return true;
+    try {
+        await navigator.clipboard.writeText(url);
+        U.toast('Link della lista copiato negli appunti');
+        return true;
+    } catch (error) {
+        console.warn('[Controller] Copia link fallita:', error);
+        U.toast('Impossibile condividere la lista');
+        return false;
+    }
 }
 
 export async function loadSharedListFromUrl() {

@@ -101,6 +101,7 @@ export function openItemOptions(item) {
     modal.dataset.uid = item.uid;
     document.getElementById('itemOptionsTitle').textContent = item.n;
     document.getElementById('itemQuantity').value = item.q;
+    document.getElementById('itemWeight').value = item.w || 100;
     document.getElementById('itemWornToggle').checked = Boolean(item.worn);
     document.getElementById('itemBulkyToggle').checked = Boolean(item.bulky);
     modal.classList.add('visible');

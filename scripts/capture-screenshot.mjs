@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -21,6 +22,19 @@ function findBrowser() {
     throw new Error('Chrome/Chromium non trovato. Imposta CHROME_PATH o installa Google Chrome/Chromium.');
 }
 
+function previewUrl(port) {
+    const sharedState = {
+        v: 1,
+        c: { nights: 3, gender: 'U', transport: 'auto', weather: [], activities: [], laundry: false, laundryFreq: 3, laundryBuffer: 1 },
+        l: [
+            ['Abbigliamento', [['Magliette tecniche', 4, 180, 0, 0, 0, 0], ['Giacca impermeabile', 1, 650, 0, 1, 1, 0], ['Calze', 4, 60, 1, 0, 0, 0]]],
+            ['Elettronica', [['Caricabatterie USB-C', 1, 120, 0, 0, 0, 0]]]
+        ]
+    };
+    const encoded = Buffer.from(JSON.stringify(sharedState)).toString('base64url');
+    return `http://127.0.0.1:${port}/?list=b.${encoded}`;
+}
+
 const mimeTypes = {
     '.css': 'text/css; charset=utf-8',
     '.html': 'text/html; charset=utf-8',
@@ -31,7 +45,7 @@ const mimeTypes = {
 };
 
 const browser = findBrowser();
-
+const profileDirectory = mkdtempSync(join(tmpdir(), 'packlist-screenshot-'));
 const server = createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
     const relativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
@@ -46,30 +60,42 @@ const server = createServer((request, response) => {
     createReadStream(filePath).pipe(response);
 });
 
-await new Promise((resolveListen, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolveListen);
-});
+try {
+    await new Promise((resolveListen, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolveListen);
+    });
 
-const { port } = server.address();
-mkdirSync(resolve(output, '..'), { recursive: true });
-const args = [
-    '--headless=new',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--hide-scrollbars',
-    '--run-all-compositor-stages-before-draw',
-    '--virtual-time-budget=3000',
-    '--window-size=1440,1200',
-    `--screenshot=${output}`,
-    `http://127.0.0.1:${port}/`
-];
-const child = spawn(browser, args, { stdio: 'inherit' });
-const exitCode = await new Promise(resolveExit => child.once('exit', resolveExit));
-server.close();
+    const { port } = server.address();
+    mkdirSync(resolve(output, '..'), { recursive: true });
+    const args = [
+        '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-background-networking',
+        '--hide-scrollbars',
+        '--run-all-compositor-stages-before-draw',
+        '--virtual-time-budget=4000',
+        '--window-size=1440,1800',
+        `--user-data-dir=${profileDirectory}`,
+        `--screenshot=${output}`,
+        previewUrl(port)
+    ];
+    const child = spawn(browser, args, { stdio: ['ignore', 'inherit', 'pipe'] });
+    let stderr = '';
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    const timeout = setTimeout(() => child.kill('SIGKILL'), 30000);
+    const exitCode = await new Promise(resolveExit => child.once('exit', resolveExit));
+    clearTimeout(timeout);
 
-if (exitCode !== 0 || !existsSync(output) || statSync(output).size === 0) {
-    throw new Error(`Acquisizione screenshot fallita (exit code: ${exitCode}).`);
+    const relevantErrors = stderr.split('\n').filter(line => line && !/dbus|UPower/i.test(line));
+    if (relevantErrors.length) console.error(relevantErrors.join('\n'));
+    if (exitCode !== 0 || !existsSync(output) || statSync(output).size === 0) {
+        throw new Error(`Acquisizione screenshot fallita (exit code: ${exitCode}).`);
+    }
+
+    console.log(`Screenshot salvato in ${output}`);
+} finally {
+    server.close();
+    rmSync(profileDirectory, { recursive: true, force: true });
 }
-
-console.log(`Screenshot salvato in ${output}`);

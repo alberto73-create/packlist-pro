@@ -20,7 +20,20 @@ export async function registerServiceWorker() {
             refreshing = true;
             window.location.reload();
         });
-        updateButton?.addEventListener('click', () => waitingWorker?.postMessage({ type: 'SKIP_WAITING' }));
+        updateButton?.addEventListener('click', () => {
+            if (!waitingWorker) return;
+            // Chiede all'app di salvare lo stato corrente e conserva una copia prima del cambio worker.
+            window.dispatchEvent(new Event('packlist:before-update'));
+            try {
+                const currentState = localStorage.getItem('packlist_state');
+                if (currentState) localStorage.setItem('packlist_state_backup', currentState);
+            } catch (error) {
+                console.warn('[PWA] Backup pre-aggiornamento non disponibile:', error);
+            }
+            updateButton.disabled = true;
+            updateButton.textContent = 'Aggiornamento…';
+            waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        });
 
         const registration = await navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' });
         if (registration.waiting) showUpdate(registration.waiting);

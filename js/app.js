@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupInstallPrompt();
     setupOnlineOfflineHandlers();
+    window.addEventListener('packlist:before-update', () => Ctrl.saveState());
     registerServiceWorker().catch(error => {
         console.error('[App] Inizializzazione PWA fallita:', error);
     });
@@ -84,10 +85,14 @@ function setupItemOptions() {
     document.getElementById('itemOptionsClose')?.addEventListener('click', View.closeItemOptions);
     document.getElementById('itemOptionsCancel')?.addEventListener('click', View.closeItemOptions);
     modal?.addEventListener('click', event => { if (event.target === modal) View.closeItemOptions(); });
+    modal?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') View.closeItemOptions();
+    });
     document.getElementById('itemOptionsSave')?.addEventListener('click', () => {
         if (!modal?.dataset.uid) return;
         Ctrl.updateItemOptions(modal.dataset.uid, {
             quantity: document.getElementById('itemQuantity')?.value,
+            weight: document.getElementById('itemWeight')?.value,
             worn: document.getElementById('itemWornToggle')?.checked,
             bulky: document.getElementById('itemBulkyToggle')?.checked
         });
