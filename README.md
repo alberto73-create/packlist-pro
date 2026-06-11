@@ -59,10 +59,14 @@ Una web app progressiva (PWA) per generare liste di viaggio perfette in pochi se
 ```
 packlist-pro/
 ├── index.html        # Pagina principale dell'app
+├── css/style.css     # Stili dell'interfaccia
+├── js/app.js         # Entry point JavaScript dell'app
+├── js/modules/       # Moduli applicativi (controller, UI, DB, PWA, utils)
 ├── manifest.json     # Manifest PWA per l'installazione
-├── sw.js            # Service Worker per funzionalità offline
-├── README.md        # Questa documentazione
-└── icons/           # Icone per PWA
+├── sw.js             # Service Worker per funzionalità offline
+├── vercel.json       # Configurazione deploy/cache Vercel
+├── README.md         # Questa documentazione
+└── icons/            # Icone per PWA
 ```
 
 ## 🌐 Browser Supportati
