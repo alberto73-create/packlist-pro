@@ -43,7 +43,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com;">
 
-    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/style.css?v=1.1.1">
 </head>
 
 <body>
@@ -59,7 +59,7 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
-            <span class="app-version" id="appVersion">v1.00.21</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.1.1</span>
         </div>
     </div>
 
@@ -135,7 +135,22 @@
     <!-- Activities Card -->
     <div class="card">
         <div class="section-label">🎯 Attività (Multi-selezione)</div>
-        <div class="activity-grid" id="activityGrid"></div>
+        <div class="activity-grid" id="activityGrid">
+            <button type="button" class="act-btn" id="act-trekking" data-activity="trekking" aria-pressed="false"><i aria-hidden="true">⛰️</i><span>Trekking</span></button>
+            <button type="button" class="act-btn" id="act-nuoto" data-activity="nuoto" aria-pressed="false"><i aria-hidden="true">🏊</i><span>Mare/Piscina</span></button>
+            <button type="button" class="act-btn" id="act-spiaggia" data-activity="spiaggia" aria-pressed="false"><i aria-hidden="true">🏖️</i><span>Spiaggia</span></button>
+            <button type="button" class="act-btn" id="act-lavoro" data-activity="lavoro" aria-pressed="false"><i aria-hidden="true">💼</i><span>Lavoro</span></button>
+            <button type="button" class="act-btn" id="act-cena" data-activity="cena" aria-pressed="false"><i aria-hidden="true">🍽️</i><span>Cena Elegante</span></button>
+            <button type="button" class="act-btn" id="act-ciclismo" data-activity="ciclismo" aria-pressed="false"><i aria-hidden="true">🚴</i><span>Ciclismo</span></button>
+            <button type="button" class="act-btn" id="act-sport_invernali" data-activity="sport_invernali" aria-pressed="false"><i aria-hidden="true">⛷️</i><span>Sport Invernali</span></button>
+            <button type="button" class="act-btn" id="act-moto_adv" data-activity="moto_adv" aria-pressed="false"><i aria-hidden="true">🏍️</i><span>Moto Pro</span></button>
+            <button type="button" class="act-btn" id="act-camping" data-activity="camping" aria-pressed="false"><i aria-hidden="true">⛺</i><span>Campeggio</span></button>
+            <button type="button" class="act-btn" id="act-foto" data-activity="foto" aria-pressed="false"><i aria-hidden="true">📸</i><span>Fotografia</span></button>
+            <button type="button" class="act-btn" id="act-fitness" data-activity="fitness" aria-pressed="false"><i aria-hidden="true">🏋️</i><span>Palestra/Run</span></button>
+            <button type="button" class="act-btn" id="act-bambini" data-activity="bambini" aria-pressed="false"><i aria-hidden="true">👶</i><span>Con Bambini</span></button>
+            <button type="button" class="act-btn" id="act-alpinismo" data-activity="alpinismo" aria-pressed="false"><i aria-hidden="true">🏔️</i><span>Alpinismo</span></button>
+            <button type="button" class="act-btn" id="act-ferrata" data-activity="ferrata" aria-pressed="false"><i aria-hidden="true">🧗</i><span>Ferrata</span></button>
+        </div>
         <button type="button" class="btn-main" id="generateBtn">🎒 GENERA PACKLIST</button>
     </div>
 
@@ -189,6 +204,6 @@
     <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
 </div>
 
-    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/app.js?v=1.1.1"></script>
 </body>
 </html>

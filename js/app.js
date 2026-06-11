@@ -1,7 +1,7 @@
 // js/app.js - Entry Point Packlist Pro v9.5 Fixed
 // Architettura modulare ES6 completa
 
-import { STATE, ACTIVITIES } from './modules/db.js';
+import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
@@ -13,7 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
     Ctrl.loadState();
-    View.renderActivities(ACTIVITIES);
+    const versionElement = document.getElementById('appVersion');
+    if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
+    document.documentElement.dataset.appVersion = APP_VERSION;
     setupEventListeners();
     Ctrl.updateConfigUI();
 
@@ -40,16 +42,10 @@ function setupEventListeners() {
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
         input?.addEventListener('change', syncConfig);
-        if (input?.tagName === 'INPUT') input.addEventListener('input', syncConfig);
     });
 
-    document.querySelectorAll('.weather-btn').forEach(button => {
-        button.addEventListener('click', () => Ctrl.toggleWeather(button.dataset.weather));
-    });
-
-    document.querySelectorAll('.act-btn').forEach(button => {
-        button.addEventListener('click', () => Ctrl.toggleActivity(button.dataset.activity));
-    });
+    // Un solo listener delegato mantiene interattivi anche i controlli renderizzati dinamicamente.
+    document.addEventListener('click', handleControlClick);
 
     const laundryToggle = document.getElementById('laundryToggle');
     laundryToggle?.addEventListener('click', () => Ctrl.toggleLaundry());
@@ -97,42 +93,6 @@ function setupTemplateActions() {
 }
 
 function setupFabActions() {
-    document.getElementById('fabMain')?.addEventListener('click', () => toggleFabMenu());
-
-    const filters = {
-        'filter-all': 'all',
-        'filter-clothing': 'clothing',
-        'filter-tech': 'tech',
-        'filter-essentials': 'essentials'
-    };
-    Object.entries(filters).forEach(([id, filter]) => {
-        document.getElementById(id)?.addEventListener('click', () => {
-            Ctrl.setFilter(filter);
-            toggleFabMenu(false);
-        });
-    });
-
-    document.getElementById('copyListBtn')?.addEventListener('click', async () => {
-        await Ctrl.copyList();
-        toggleFabMenu(false);
-    });
-    document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
-        Ctrl.exportPDF();
-        toggleFabMenu(false);
-    });
-    document.getElementById('uncheckAllBtn')?.addEventListener('click', () => {
-        Ctrl.uncheckAll();
-        toggleFabMenu(false);
-    });
-    document.getElementById('showStatsBtn')?.addEventListener('click', () => {
-        Ctrl.showStatsSummary();
-        toggleFabMenu(false);
-    });
-    document.getElementById('resetSessionBtn')?.addEventListener('click', () => {
-        if (confirm('Resettare tutta la sessione?')) Ctrl.resetState();
-        toggleFabMenu(false);
-    });
-
     document.addEventListener('click', event => {
         const container = document.querySelector('.fab-container');
         if (container && !container.contains(event.target)) toggleFabMenu(false);
@@ -142,39 +102,50 @@ function setupFabActions() {
     });
 }
 
-async function handleFabAction(btn) {
-    const id = btn.id;
+async function handleControlClick(event) {
+    const weatherButton = event.target.closest?.('.weather-btn');
+    if (weatherButton) {
+        Ctrl.toggleWeather(weatherButton.dataset.weather);
+        return;
+    }
+
+    const activityButton = event.target.closest?.('.act-btn');
+    if (activityButton) {
+        Ctrl.toggleActivity(activityButton.dataset.activity);
+        return;
+    }
+
+    if (event.target.closest?.('#fabMain')) {
+        toggleFabMenu();
+        return;
+    }
+
+    const fabItem = event.target.closest?.('.fab-item');
+    if (!fabItem) return;
+
     const filters = {
         'filter-all': 'all',
         'filter-clothing': 'clothing',
         'filter-tech': 'tech',
         'filter-essentials': 'essentials'
     };
-
-    if (filters[id]) {
-        Ctrl.setFilter(filters[id]);
-    } else if (id === 'copyListBtn') {
-        await Ctrl.copyList();
-    } else if (id === 'exportPdfBtn') {
-        Ctrl.exportPDF();
-    } else if (id === 'uncheckAllBtn') {
-        Ctrl.uncheckAll();
-    } else if (id === 'showStatsBtn') {
-        Ctrl.showStatsSummary();
-    } else if (id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) {
-        Ctrl.resetState();
-    }
+    if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
+    else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
+    else if (fabItem.id === 'exportPdfBtn') Ctrl.exportPDF();
+    else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
+    else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
+    else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
 
     toggleFabMenu(false);
 }
 
 // --- FUNZIONI DI CONFIGURAZIONE ---
 function syncConfig() {
-    const nights = parseInt(document.getElementById('nights')?.value) || 0;
+    const nights = Number.parseInt(document.getElementById('nights')?.value, 10);
     const gender = document.getElementById('gender')?.value || 'U';
     const transport = document.getElementById('transport')?.value || 'auto';
-    const laundryFreq = parseInt(document.getElementById('laundryFreq')?.value) || 3;
-    const laundryBuffer = parseInt(document.getElementById('laundryBuffer')?.value) || 1;
+    const laundryFreq = Number.parseInt(document.getElementById('laundryFreq')?.value, 10);
+    const laundryBuffer = Number.parseInt(document.getElementById('laundryBuffer')?.value, 10);
     
     Ctrl.setConfig({ nights, gender, transport, laundryFreq, laundryBuffer });
     Ctrl.generateList();

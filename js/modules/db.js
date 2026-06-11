@@ -1,4 +1,5 @@
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
+export const APP_VERSION = "1.1.1";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -85,9 +86,6 @@ export async function loadDatabase() {
         // Costruisci cache per lookup più veloci
         rebuildCaches();
         
-        const versionEl = document.getElementById('appVersion');
-        if(versionEl) versionEl.innerText = `v${db.version || DB_VERSION}`;
-
     } catch (error) {
         console.error("[DB] Errore caricamento DB:", error);
         db = { 
@@ -181,24 +179,6 @@ export function getActivityById(id) {
 export function getState() {
   return STATE;
 }
-
-// Attività disponibili
-export const ACTIVITIES = [
-  {id:'trekking',        label:'Trekking',       icon:'⛰️'},
-  {id:'nuoto',           label:'Mare/Piscina',   icon:'🏊'},
-  {id:'spiaggia',        label:'Spiaggia',       icon:'🏖️'},
-  {id:'lavoro',          label:'Lavoro',         icon:'💼'},
-  {id:'cena',            label:'Cena Elegante',  icon:'🍽️'},
-  {id:'ciclismo',        label:'Ciclismo',       icon:'🚴'},
-  {id:'sport_invernali', label:'Sport Invernali',icon:'⛷️'},
-  {id:'moto_adv',        label:'Moto Pro',       icon:'🏍️'},
-  {id:'camping',         label:'Campeggio',      icon:'⛺'},
-  {id:'foto',            label:'Fotografia',     icon:'📸'},
-  {id:'fitness',         label:'Palestra/Run',   icon:'🏋️'},
-  {id:'bambini',         label:'Con Bambini',    icon:'👶'},
-  {id:'alpinismo',       label:'Alpinismo',      icon:'🏔️'},
-  {id:'ferrata',         label:'Ferrata',        icon:'🧗'},
-];
 
 // Attività che si moltiplicano per notte
 export const PER_NIGHT = new Set(['trekking','nuoto','lavoro','fitness','ciclismo','sport_invernali','bambini','alpinismo','ferrata']);
