@@ -116,6 +116,7 @@ function addGeneratedItem(list, item, qty, previousItems) {
         checked: previous?.checked || false,
         worn: previous?.worn ?? false,
         bulky: previous?.bulky ?? false,
+        baggageId: previous?.baggageId || STATE.baggages[0]?.id || 'b1',
         custom: false
     });
 }
@@ -182,7 +183,7 @@ export function toggleWorn(uid) {
     return false;
 }
 
-export function updateItemOptions(uid, { quantity, weight, worn, bulky }) {
+export function updateItemOptions(uid, { quantity, weight, worn, bulky, baggageId }) {
     for (const cat in STATE.list) {
         const item = STATE.list[cat].find(i => i.uid === uid);
         if (!item) continue;
@@ -190,6 +191,7 @@ export function updateItemOptions(uid, { quantity, weight, worn, bulky }) {
         item.w = Math.max(1, Math.min(50000, Number.parseInt(weight, 10) || item.w || 100));
         item.worn = Boolean(worn);
         item.bulky = Boolean(bulky);
+        if (STATE.baggages.some(bag => bag.id === baggageId)) item.baggageId = baggageId;
         View.list(STATE, U);
         View.stats(STATE, U);
         saveState();
@@ -221,7 +223,7 @@ export function removeItem(uid) {
 /**
  * Aggiunge un item custom
  */
-export function addCustomItem(cat, name, weight = 100, volume = 1) {
+export function addCustomItem(cat, name, weight = 100, volume = 1, baggageId = STATE.baggages[0]?.id) {
     if (!name.trim()) return null;
     
     const item = {
@@ -235,7 +237,8 @@ export function addCustomItem(cat, name, weight = 100, volume = 1) {
         custom: true,
         checked: false,
         worn: false,
-        bulky: false
+        bulky: false,
+        baggageId: STATE.baggages.some(bag => bag.id === baggageId) ? baggageId : STATE.baggages[0]?.id || 'b1'
     };
     
     if (!STATE.list[cat]) STATE.list[cat] = [];
@@ -279,6 +282,9 @@ export function saveState() {
             schema: 1,
             config: STATE.config,
             list: STATE.list,
+            listName: STATE.listName,
+            baggages: STATE.baggages,
+            baggageSetup: STATE.baggageSetup,
             filter: STATE.filter
         };
         localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(toSave));
@@ -289,14 +295,26 @@ export function saveState() {
     }
 }
 
-function normalizeList(list = {}) {
+function normalizeBaggages(baggages = []) {
+    const normalized = (Array.isArray(baggages) ? baggages : []).map((bag, index) => ({
+        id: String(bag?.id || `b${index + 1}`),
+        name: String(bag?.name || `Bagaglio ${index + 1}`).trim() || `Bagaglio ${index + 1}`,
+        limit: Math.max(0, Number(bag?.limit) || 0)
+    }));
+    return normalized.length ? normalized : [{ id: 'b1', name: 'Bagaglio 1', limit: 0 }];
+}
+
+function normalizeList(list = {}, baggages = STATE.baggages) {
     if (!list || typeof list !== 'object' || Array.isArray(list)) return {};
+    const validIds = new Set(normalizeBaggages(baggages).map(bag => bag.id));
+    const fallbackId = normalizeBaggages(baggages)[0].id;
     return Object.fromEntries(Object.entries(list).map(([cat, items]) => [cat, (Array.isArray(items) ? items : []).map(item => ({
         ...item,
         q: Math.max(1, Number.parseInt(item.q, 10) || 1),
         w: Math.max(1, Number.parseInt(item.w, 10) || 100),
         worn: Boolean(item.worn),
-        bulky: Boolean(item.bulky)
+        bulky: Boolean(item.bulky),
+        baggageId: validIds.has(item.baggageId) ? item.baggageId : fallbackId
     }))]));
 }
 
@@ -304,9 +322,13 @@ function parseStoredState(value) {
     if (!value) return null;
     const parsed = JSON.parse(value);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const baggages = normalizeBaggages(parsed.baggages);
     return {
         config: normalizeConfig(parsed.config),
-        list: normalizeList(parsed.list),
+        list: normalizeList(parsed.list, baggages),
+        listName: String(parsed.listName || '').trim(),
+        baggages,
+        baggageSetup: Boolean(parsed.baggageSetup),
         filter: parsed.filter || 'all'
     };
 }
@@ -341,6 +363,9 @@ export function resetState() {
     setState({
         config: { ...DEFAULT_CONFIG },
         list: {},
+        listName: '',
+        baggages: [{ id: 'b1', name: 'Bagaglio 1', limit: 0 }],
+        baggageSetup: false,
         lastRemoved: null,
         filter: 'all'
     });
@@ -349,6 +374,7 @@ export function resetState() {
     View.showEmptyState('Configura il viaggio e clicca "Genera Packlist"!');
     View.stats(STATE, U);
     updateWarnings();
+    View.openBaggageSetup();
     U.toast('Sessione resettata');
 }
 
@@ -370,6 +396,48 @@ export function searchItems(term) {
     View.filterListBySearch(term);
 }
 
+
+export function configureBaggages(names) {
+    const cleanNames = (Array.isArray(names) ? names : []).map(name => String(name).trim()).filter(Boolean).slice(0, 12);
+    const baggages = (cleanNames.length ? cleanNames : ['Bagaglio 1']).map((name, index) => ({ id: `b${Date.now().toString(36)}-${index}`, name, limit: 0 }));
+    const firstId = baggages[0].id;
+    getAllItems().forEach(item => { item.baggageId = firstId; });
+    setState({ baggages, baggageSetup: true });
+    View.list(STATE, U); View.stats(STATE, U); saveState();
+    return baggages;
+}
+
+export function addBaggage(name = '') {
+    const index = STATE.baggages.length + 1;
+    const bag = { id: `b${Date.now().toString(36)}-${index}`, name: String(name).trim() || `Bagaglio ${index}`, limit: 0 };
+    setState({ baggages: [...STATE.baggages, bag], baggageSetup: true });
+    View.list(STATE, U); saveState(); return bag;
+}
+
+export function updateBaggage(id, { name, limit }) {
+    const bag = STATE.baggages.find(entry => entry.id === id); if (!bag) return false;
+    bag.name = String(name || bag.name).trim() || bag.name;
+    bag.limit = Math.max(0, Number(limit) || 0);
+    View.list(STATE, U); View.stats(STATE, U); saveState(); return true;
+}
+
+export function moveAllBaggageItems(fromId, toId) {
+    if (fromId === toId || !STATE.baggages.some(bag => bag.id === toId)) return false;
+    getAllItems().filter(item => item.baggageId === fromId).forEach(item => { item.baggageId = toId; });
+    View.list(STATE, U); View.stats(STATE, U); saveState(); return true;
+}
+
+export function deleteBaggage(id, moveToId = null) {
+    if (STATE.baggages.length <= 1) return false;
+    if (moveToId && !STATE.baggages.some(bag => bag.id === moveToId && bag.id !== id)) return false;
+    for (const cat of Object.keys(STATE.list)) {
+        if (moveToId) STATE.list[cat].forEach(item => { if (item.baggageId === id) item.baggageId = moveToId; });
+        else STATE.list[cat] = STATE.list[cat].filter(item => item.baggageId !== id);
+        if (!STATE.list[cat].length) delete STATE.list[cat];
+    }
+    setState({ baggages: STATE.baggages.filter(bag => bag.id !== id) });
+    View.list(STATE, U); View.stats(STATE, U); saveState(); return true;
+}
 
 const TEMPLATE_KEY = 'packlist_templates';
 const FILTER_MAP_KEYS = new Set(['clothing', 'tech', 'essentials']);
@@ -404,7 +472,9 @@ export function saveTemplate(name) {
 
     const templates = getTemplates();
     templates[cleanName] = { ...STATE.config };
+    setState({ listName: cleanName });
     saveTemplates(templates);
+    saveState();
     loadTemplateDropdown();
 
     const input = document.getElementById('templateName');
@@ -421,6 +491,7 @@ export function loadTemplate(name) {
     }
 
     setConfig({ ...DEFAULT_CONFIG, ...template });
+    setState({ listName: name.trim() });
     const nights = document.getElementById('nights');
     const gender = document.getElementById('gender');
     const transport = document.getElementById('transport');
@@ -466,13 +537,20 @@ export async function copyList() {
         return false;
     }
 
-    const lines = ['Packlist Pro', ''];
-    Object.entries(STATE.list).forEach(([cat, items]) => {
-        lines.push(cat);
-        items.forEach(item => {
-            const check = item.checked ? '✓' : '□';
-            const worn = item.worn ? ' (indossato)' : '';
-            lines.push(`${check} ${item.q}x ${item.n}${worn}`);
+    const lines = [STATE.listName ? `Packlist Pro · ${STATE.listName}` : 'Packlist Pro', ''];
+    STATE.baggages.forEach(bag => {
+        const bagItems = getAllItems().filter(item => item.baggageId === bag.id);
+        if (!bagItems.length) return;
+        lines.push(`🎒 ${bag.name}`);
+        Object.entries(STATE.list).forEach(([cat, items]) => {
+            const assigned = items.filter(item => item.baggageId === bag.id);
+            if (!assigned.length) return;
+            lines.push(cat);
+            assigned.forEach(item => {
+                const check = item.checked ? '✓' : '□';
+                const worn = item.worn ? ' (indossato)' : '';
+                lines.push(`${check} ${item.q}x ${item.n}${worn}`);
+            });
         });
         lines.push('');
     });
@@ -506,12 +584,17 @@ export function showStatsSummary() {
     const totalG = all.reduce((s, i) => s + (i.w || 100) * i.q, 0);
     const suitcaseG = all.filter(i => !i.worn).reduce((s, i) => s + (i.w || 100) * i.q, 0);
 
+    const baggageLines = STATE.baggages.map(bag => {
+        const weight = all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+        return `${bag.name}: ${U.weight(weight)}${bag.limit ? ` / ${bag.limit} kg` : ''}`;
+    });
     alert([
         '📊 Statistiche Packlist',
         `Item: ${done}/${all.length}`,
         `Peso totale: ${U.weight(totalG)}`,
         `In valigia: ${U.weight(suitcaseG)}`,
-        `Indossato: ${U.weight(wornG)}`
+        `Indossato: ${U.weight(wornG)}`,
+        '', 'Bagagli:', ...baggageLines
     ].join('\n'));
 }
 
@@ -530,54 +613,57 @@ export async function exportPDF() {
     }
 
     const doc = new jsPDF();
+    const listName = String(STATE.listName || '').trim();
+    const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
     doc.setFontSize(18);
-    doc.text('Packlist Pro', 14, 18);
+    doc.text(documentTitle, 14, 18);
     doc.setFontSize(10);
     doc.text(`${STATE.config.nights} notti · ${STATE.config.transport}`, 14, 26);
 
-    const rows = [];
-    Object.entries(STATE.list).forEach(([cat, items]) => {
-        items.forEach(item => rows.push([
-            cat,
-            item.n,
-            `${item.q}`,
-            U.weight((item.w || 100) * item.q),
-            item.checked ? 'Sì' : 'No',
-            item.worn ? 'Sì' : 'No'
-        ]));
-    });
-
-    if (typeof doc.autoTable === 'function') {
-        doc.autoTable({
-            head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']],
-            body: rows,
-            startY: 34,
-            margin: { bottom: 16 },
-            styles: { fontSize: 8 }
+    let nextY = 34;
+    for (const bag of STATE.baggages) {
+        const rows = [];
+        Object.entries(STATE.list).forEach(([cat, items]) => {
+            items.filter(item => item.baggageId === bag.id).forEach(item => rows.push([
+                cat, item.n, `${item.q}`, U.weight((item.w || 100) * item.q), item.checked ? 'Sì' : 'No', item.worn ? 'Sì' : 'No'
+            ]));
         });
-    } else {
-        let y = 36;
-        rows.forEach(row => {
-            if (y > 275) { doc.addPage(); y = 20; }
-            doc.text(row.join(' · '), 14, y);
-            y += 6;
-        });
+        if (!rows.length) continue;
+        const bagWeight = getAllItems().filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+        if (nextY > 248) { doc.addPage(); nextY = 20; }
+        doc.setFontSize(12); doc.setTextColor?.(17, 24, 39);
+        doc.text(`${bag.name} · ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
+        if (typeof doc.autoTable === 'function') {
+            doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
+            nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
+        } else {
+            nextY += 7;
+            rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 20; } doc.text(row.join(' · '), 14, nextY); nextY += 6; });
+            nextY += 6;
+        }
     }
 
     const shareUrl = await createShareUrl();
     const pageCount = doc.getNumberOfPages?.() || 1;
+    const cta = { x: 14, y: 278, width: 182, height: 12 };
     for (let page = 1; page <= pageCount; page += 1) {
         doc.setPage?.(page);
-        doc.setFontSize(8);
-        doc.setTextColor?.(90, 103, 242);
-        const footer = 'Modifica ora la tua lista gratuitamente su ';
-        doc.text(footer, 14, 290);
-        const linkX = 14 + (doc.getTextWidth?.(footer) || 68);
-        if (typeof doc.textWithLink === 'function') doc.textWithLink('Packlist Pro', linkX, 290, { url: shareUrl });
-        else doc.text('Packlist Pro', linkX, 290);
+        doc.setFillColor?.(90, 103, 242);
+        doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 3, 3, 'F');
+        doc.setFillColor?.(255, 255, 255);
+        doc.roundedRect?.(cta.x + 4, cta.y + 2.5, 7, 6.5, 1.4, 1.4, 'F');
+        doc.setFillColor?.(139, 92, 246);
+        doc.roundedRect?.(cta.x + 5.2, cta.y + 4.1, 4.6, 4.1, 1, 1, 'F');
+        doc.setFontSize(9);
+        doc.setTextColor?.(255, 255, 255);
+        doc.text('Clicca qui per modificare gratuitamente la tua lista', cta.x + 15, cta.y + 7.5);
+        if (typeof doc.link === 'function') doc.link(cta.x, cta.y, cta.width, cta.height, { url: shareUrl });
+        else if (typeof doc.textWithLink === 'function') doc.textWithLink('Apri la lista', cta.x + 15, cta.y + 7.5, { url: shareUrl });
     }
 
-    doc.save(`packlist_${new Date().toISOString().slice(0, 10)}.pdf`);
+    const safeName = listName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+    const namePart = safeName ? `_${safeName}` : '';
+    doc.save(`packlist${namePart}_${new Date().toISOString().slice(0, 10)}.pdf`);
     U.toast('PDF esportato');
     return true;
 }
@@ -592,8 +678,9 @@ export function exportStatsCSV() {
         return;
     }
     
-    const headers = ['Categoria', 'Item', 'Quantità', 'Peso (g)', 'Volume', 'Preso', 'Indossato'];
+    const headers = ['Bagaglio', 'Categoria', 'Item', 'Quantità', 'Peso (g)', 'Volume', 'Preso', 'Indossato'];
     const rows = all.map(item => [
+        STATE.baggages.find(bag => bag.id === item.baggageId)?.name || 'Bagaglio 1',
         item.cat,
         item.n,
         item.q,
@@ -649,30 +736,35 @@ async function decodeSharedState(value) {
     return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function compactItem(item) {
-    const values = [item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0];
+function compactItem(item, baggageIndexes) {
+    const values = [item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0, baggageIndexes.get(item.baggageId) || 0];
     while (values[values.length - 1] === 0) values.pop();
     return values;
 }
 
 function compactSharedState() {
     const config = STATE.config;
+    const baggageIndexes = new Map(STATE.baggages.map((bag, index) => [bag.id, index]));
     return [
-        2,
+        3,
         [config.nights, config.gender, config.transport, config.weather, config.activities, config.laundry ? 1 : 0, config.laundryFreq, config.laundryBuffer],
-        Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(compactItem)])
+        STATE.listName || '',
+        STATE.baggages.map(bag => [bag.name, bag.limit || 0]),
+        Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(item => compactItem(item, baggageIndexes))])
     ];
 }
 
 function expandSharedState(shared) {
+    if (Array.isArray(shared) && shared[0] === 3) {
+        const config = shared[1] || [];
+        const baggages = normalizeBaggages((shared[3] || []).map((bag, index) => ({ id: `b${index + 1}`, name: bag[0], limit: bag[1] })));
+        return { c: { nights: config[0], gender: config[1], transport: config[2], weather: config[3], activities: config[4], laundry: Boolean(config[5]), laundryFreq: config[6], laundryBuffer: config[7] }, n: String(shared[2] || '').trim(), b: baggages, l: shared[4] };
+    }
     if (Array.isArray(shared) && shared[0] === 2) {
         const config = shared[1] || [];
-        return {
-            c: { nights: config[0], gender: config[1], transport: config[2], weather: config[3], activities: config[4], laundry: Boolean(config[5]), laundryFreq: config[6], laundryBuffer: config[7] },
-            l: shared[2]
-        };
+        return { c: { nights: config[0], gender: config[1], transport: config[2], weather: config[3], activities: config[4], laundry: Boolean(config[5]), laundryFreq: config[6], laundryBuffer: config[7] }, l: shared[2], n: String(shared[3] || '').trim(), b: normalizeBaggages([]) };
     }
-    if (shared?.v === 1) return { c: shared.c, l: shared.l };
+    if (shared?.v === 1) return { c: shared.c, l: shared.l, n: String(shared.n || '').trim(), b: normalizeBaggages(shared.b) };
     throw new Error('Formato lista non valido');
 }
 
@@ -692,7 +784,7 @@ export async function shareList() {
     const url = await createShareUrl();
     if (navigator.share) {
         try {
-            await navigator.share({ title: 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
+            await navigator.share({ title: STATE.listName ? `Packlist Pro · ${STATE.listName}` : 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
             return true;
         } catch (error) {
             if (error?.name === 'AbortError') return false;
@@ -717,12 +809,13 @@ export async function loadSharedListFromUrl() {
     try {
         const shared = expandSharedState(await decodeSharedState(encoded));
         if (!Array.isArray(shared.l)) throw new Error('Formato lista non valido');
+        const baggages = normalizeBaggages(shared.b);
         const list = Object.fromEntries(shared.l.map(([cat, items]) => [String(cat), items.map((values) => ({
             n: String(values[0]), q: Math.max(1, Number(values[1]) || 1), w: Math.max(1, Number(values[2]) || 100),
             checked: Boolean(values[3]), worn: Boolean(values[4]), bulky: Boolean(values[5]), custom: Boolean(values[6]),
-            cat: String(cat), s: 'U', v: 1, uid: U.uid()
+            cat: String(cat), s: 'U', v: 1, uid: U.uid(), baggageId: baggages[Number(values[7]) || 0]?.id || baggages[0].id
         }))]));
-        setState({ config: normalizeConfig(shared.c), list: normalizeList(list), filter: 'all' });
+        setState({ config: normalizeConfig(shared.c), list: normalizeList(list, baggages), listName: shared.n || '', baggages, baggageSetup: true, filter: 'all' });
         saveState();
         url.searchParams.delete('list');
         url.hash = '';
@@ -748,8 +841,9 @@ export function setupEventDelegation() {
             const addRow = target.closest('.add-custom');
             const category = addRow?.closest('.cat-box')?.dataset.cat;
             const input = addRow?.querySelector('input');
+            const baggageId = addRow?.closest('.baggage-section')?.dataset.baggageId;
             if (category && input?.value.trim()) {
-                addCustomItem(category, input.value);
+                addCustomItem(category, input.value, 100, 1, baggageId);
                 input.value = '';
             }
             return;
@@ -763,7 +857,7 @@ export function setupEventDelegation() {
         
         if (target.closest('[data-action="options"]')) {
             const item = STATE.list[cat]?.find(i => i.uid === uid);
-            View.openItemOptions(item);
+            View.openItemOptions(item, STATE.baggages, U);
             return;
         }
         
@@ -788,9 +882,10 @@ export function setupEventDelegation() {
         if (e.key === 'Enter' && e.target.matches('.add-custom input')) {
             const addRow = e.target.closest('.add-custom');
             const category = addRow?.closest('.cat-box')?.dataset.cat;
+            const baggageId = addRow?.closest('.baggage-section')?.dataset.baggageId;
             if (category && e.target.value.trim()) {
                 e.preventDefault();
-                addCustomItem(category, e.target.value);
+                addCustomItem(category, e.target.value, 100, 1, baggageId);
                 e.target.value = '';
             }
             return;

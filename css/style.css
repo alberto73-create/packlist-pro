@@ -97,8 +97,11 @@
             align-items: center;
             justify-content: center;
             font-size: 1.1rem;
+            overflow: hidden;
             box-shadow: 0 3px 14px rgba(90, 103, 242, 0.35);
         }
+
+        .app-logo-icon img { width: 100%; height: 100%; display: block; }
 
         .app-logo-text {
             font-size: 1.05rem;
@@ -947,3 +950,30 @@
 }
 .modern-switch:checked { border-color: var(--violet-h); background: rgba(139,92,246,.4); }
 .modern-switch:checked::after { transform: translateX(20px); background: #fff; }
+
+
+/* Multi-bagaglio */
+.list-grid { display: block; }
+.baggage-section { margin: 0 0 18px; padding: 14px; border: 1px solid var(--border2); border-radius: var(--r-lg); background: linear-gradient(145deg, rgba(17,24,39,.98), rgba(11,15,26,.98)); }
+.baggage-section.over-limit { border-color: rgba(244,63,94,.75); box-shadow: 0 0 0 1px rgba(244,63,94,.2); }
+.baggage-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; padding: 2px 4px 12px; border-bottom: 1px solid var(--border); }
+.baggage-header h2 { font-size: 1rem; color: var(--text); }
+.baggage-kicker { display: block; color: var(--subtle); font-size: .6rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.baggage-weight { flex: 0 0 auto; padding: 7px 10px; border: 1px solid rgba(16,185,129,.35); border-radius: 999px; background: rgba(16,185,129,.1); color: var(--emerald); font-family: 'DM Mono', monospace; font-size: .74rem; font-weight: 800; }
+.baggage-weight small { color: inherit; opacity: .75; }
+.baggage-weight.over-limit { border-color: rgba(244,63,94,.5); background: rgba(244,63,94,.12); color: var(--rose); }
+.baggage-section .cat-box { margin-bottom: 10px; }
+.option-field select, .baggage-manage-actions select { min-width: 145px; padding: 8px; border: 1px solid var(--border2); border-radius: 9px; background: var(--bg); color: var(--text); }
+.baggage-dialog { width: min(100%, 720px); max-height: min(88vh, 760px); overflow: auto; }
+.quick-count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 12px; }
+.quick-count button { padding: 10px; border: 1px solid var(--border2); border-radius: 10px; background: var(--bg); color: var(--text); cursor: pointer; }
+.baggage-count-label, .baggage-name-fields label, .baggage-manage-fields label { display: flex; flex-direction: column; gap: 4px; color: var(--subtle); font-size: .68rem; font-weight: 700; }
+.baggage-count-label input, .baggage-name-fields input, .baggage-manage-fields input { padding: 9px; border: 1px solid var(--border2); border-radius: 9px; background: var(--bg); color: var(--text); }
+.baggage-name-fields { display: grid; gap: 8px; margin-top: 12px; }
+.baggage-manager-rows { display: grid; gap: 10px; }
+.baggage-manage-row { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.baggage-manage-fields { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+.baggage-manage-meta { margin: 7px 0; color: var(--muted); font-size: .68rem; }
+.baggage-manage-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn-secondary.danger { color: var(--rose); border-color: rgba(244,63,94,.35); }
+@media (max-width: 520px) { .baggage-section { padding: 9px; } .baggage-manage-fields { grid-template-columns: 1fr; } .baggage-header { align-items: flex-start; } }
