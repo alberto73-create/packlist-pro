@@ -59,7 +59,7 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
-            <span class="app-version" id="appVersion">v1.00.18</span>
+            <span class="app-version" id="appVersion">v1.00.21</span>
         </div>
     </div>
 
@@ -67,8 +67,8 @@
     <div class="install-banner" id="installBanner">
         <span>📲</span>
         <span class="install-banner-text">Installa Packlist Pro sul tuo dispositivo!</span>
-        <button class="btn-sm" id="installBtn">Installa</button>
-        <button class="install-banner-close" id="installClose" aria-label="Chiudi">✕</button>
+        <button type="button" class="btn-sm" id="installBtn">Installa</button>
+        <button type="button" class="install-banner-close" id="installClose" aria-label="Chiudi">✕</button>
     </div>
 
     <!-- Setup Card -->
@@ -100,9 +100,9 @@
             <div class="input-box">
                 <label>🌦️ METEO (Multi)</label>
                 <div class="weather-grid">
-                    <div class="weather-btn" id="w-sun" role="button" aria-pressed="false" tabindex="0">☀️ Sole</div>
-                    <div class="weather-btn" id="w-rain" role="button" aria-pressed="false" tabindex="0">🌧️ Pioggia</div>
-                    <div class="weather-btn" id="w-cold" role="button" aria-pressed="false" tabindex="0">❄️ Freddo</div>
+                    <button type="button" class="weather-btn" id="w-sun" data-weather="sun" aria-pressed="false">☀️ Sole</button>
+                    <button type="button" class="weather-btn" id="w-rain" data-weather="rain" aria-pressed="false">🌧️ Pioggia</button>
+                    <button type="button" class="weather-btn" id="w-cold" data-weather="cold" aria-pressed="false">❄️ Freddo</button>
                 </div>
             </div>
         </div>
@@ -124,11 +124,11 @@
         <div class="laundry-info" id="laundryInfo"></div>
         <div class="template-row">
             <input type="text" id="templateName" placeholder="Nome template...">
-            <button class="btn-sm" id="saveTemplateBtn">💾 Salva</button>
+            <button type="button" class="btn-sm" id="saveTemplateBtn">💾 Salva</button>
             <select id="templateSelect">
                 <option value="">📂 Carica template...</option>
             </select>
-            <button class="btn-sm danger" id="deleteTemplateBtn">🗑️</button>
+            <button type="button" class="btn-sm danger" id="deleteTemplateBtn">🗑️</button>
         </div>
     </div>
 
@@ -136,7 +136,7 @@
     <div class="card">
         <div class="section-label">🎯 Attività (Multi-selezione)</div>
         <div class="activity-grid" id="activityGrid"></div>
-        <button class="btn-main" id="generateBtn">🎒 GENERA PACKLIST</button>
+        <button type="button" class="btn-main" id="generateBtn">🎒 GENERA PACKLIST</button>
     </div>
 
     <!-- Stats Bar -->
@@ -164,7 +164,7 @@
     <div class="search-box">
         <span class="search-icon">🔍</span>
         <input type="text" id="searchItems" placeholder="Cerca item nella lista..." autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="search-clear" id="searchClear" aria-label="Cancella ricerca">✕</button>
+        <button type="button" class="search-clear" id="searchClear" aria-label="Cancella ricerca">✕</button>
     </div>
 
     <!-- Results -->
@@ -175,18 +175,18 @@
 <!-- FAB -->
 <div class="fab-container">
     <div class="fab-menu" id="fabMenu">
-        <button class="fab-item active-filter" id="filter-all"><span class="fab-item-icon">📂</span><span>Tutte le Categorie</span></button>
-        <button class="fab-item" id="filter-clothing"><span class="fab-item-icon">👕</span><span>Solo Abbigliamento</span></button>
-        <button class="fab-item" id="filter-tech"><span class="fab-item-icon">🔌</span><span>Tech & Lavoro</span></button>
-        <button class="fab-item" id="filter-essentials"><span class="fab-item-icon">🪪</span><span>Essenziali & Igiene</span></button>
+        <button type="button" class="fab-item active-filter" id="filter-all"><span class="fab-item-icon">📂</span><span>Tutte le Categorie</span></button>
+        <button type="button" class="fab-item" id="filter-clothing"><span class="fab-item-icon">👕</span><span>Solo Abbigliamento</span></button>
+        <button type="button" class="fab-item" id="filter-tech"><span class="fab-item-icon">🔌</span><span>Tech & Lavoro</span></button>
+        <button type="button" class="fab-item" id="filter-essentials"><span class="fab-item-icon">🪪</span><span>Essenziali & Igiene</span></button>
         <div style="height:1px; background:var(--border); margin:3px 0;"></div>
-        <button class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
-        <button class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
-        <button class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
-        <button class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
-        <button class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+        <button type="button" class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
+        <button type="button" class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
+        <button type="button" class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
+        <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
+        <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
     </div>
-    <button class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
+    <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
 </div>
 
     <script type="module" src="./js/app.js"></script>
