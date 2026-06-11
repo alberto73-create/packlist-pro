@@ -8,36 +8,28 @@ import * as View from './modules/ui.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     console.log('[App] Avvio Packlist Pro v9.5 Fixed');
-    
-    // Inizializza PWA
-    await registerServiceWorker();
-    setupInstallPrompt();
-    setupOnlineOfflineHandlers();
-    
-    // Carica stato salvato o usa default
+
+    // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
     Ctrl.loadState();
-    
-    // Renderizza attività prima di agganciare gli handler
     View.renderActivities(ACTIVITIES);
-    
-    // Setup UI iniziale
     setupEventListeners();
     setupGlobalControls();
-    setupActivityGrid();
-    setupWeatherButtons();
-    
-    // Aggiorna UI configurazione
     Ctrl.updateConfigUI();
-    
-    // Genera lista se ci sono dati salvati
+
     if (Object.keys(STATE.list).length > 0) {
         View.list(STATE, U);
         View.stats(STATE, U);
     } else {
         View.showEmptyState('Configura il viaggio e clicca "Genera Packlist"!');
     }
+
+    setupInstallPrompt();
+    setupOnlineOfflineHandlers();
+    registerServiceWorker().catch(error => {
+        console.error('[App] Inizializzazione PWA fallita:', error);
+    });
 });
 
 // --- SETUP EVENT LISTENERS ---
@@ -71,103 +63,25 @@ function setupEventListeners() {
     document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
     document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
     
-    // Banner installazione PWA
-    document.getElementById('installBtn')?.addEventListener('click', triggerInstall);
-    document.getElementById('installClose')?.addEventListener('click', dismissInstallBanner);
-    
     // Search
     const searchInput = document.getElementById('searchItems');
+    const searchClear = document.getElementById('searchClear');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             Ctrl.searchItems(e.target.value);
+            searchClear?.classList.toggle('visible', Boolean(e.target.value));
         });
     }
+    searchClear?.addEventListener('click', () => {
+        if (!searchInput) return;
+        searchInput.value = '';
+        Ctrl.searchItems('');
+        searchClear.classList.remove('visible');
+        searchInput.focus();
+    });
     
     // Template viaggio
     setupTemplateActions();
-    // FAB Main
-    const fabMain = document.getElementById('fabMain');
-    if (fabMain) {
-        fabMain.addEventListener('click', toggleFabMenu);
-    }
-    
-    // Filtri e azioni FAB
-    setupFabActions();
-    
-    // Template viaggio
-    setupTemplateActions();
-}
-
-
-function setupFabActions() {
-    const closeMenu = () => {
-        const menu = document.getElementById('fabMenu');
-        if (menu?.classList.contains('open')) toggleFabMenu();
-    };
-
-    const filterMap = {
-        'filter-all': 'all',
-        'filter-clothing': 'clothing',
-        'filter-tech': 'tech',
-        'filter-essentials': 'essentials'
-    };
-
-    Object.entries(filterMap).forEach(([id, filter]) => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('click', () => {
-                Ctrl.setFilter(filter);
-                closeMenu();
-            });
-        }
-    });
-
-    document.getElementById('copyListBtn')?.addEventListener('click', async () => {
-        await Ctrl.copyList();
-        closeMenu();
-    });
-
-    document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
-        Ctrl.exportPDF();
-        closeMenu();
-    });
-
-    document.getElementById('uncheckAllBtn')?.addEventListener('click', () => {
-        Ctrl.uncheckAll();
-        closeMenu();
-    });
-
-    document.getElementById('showStatsBtn')?.addEventListener('click', () => {
-        Ctrl.showStatsSummary();
-        closeMenu();
-    });
-
-    document.getElementById('resetSessionBtn')?.addEventListener('click', () => {
-        if (confirm('Resettare tutta la sessione?')) {
-            Ctrl.resetState();
-        }
-        closeMenu();
-    });
-}
-
-function setupTemplateActions() {
-    Ctrl.loadTemplateDropdown();
-
-    document.getElementById('saveTemplateBtn')?.addEventListener('click', () => {
-        const name = document.getElementById('templateName')?.value || '';
-        Ctrl.saveTemplate(name);
-    });
-
-    document.getElementById('templateSelect')?.addEventListener('change', (e) => {
-        if (e.target.value) Ctrl.loadTemplate(e.target.value);
-    });
-
-    document.getElementById('deleteTemplateBtn')?.addEventListener('click', () => {
-        const name = document.getElementById('templateSelect')?.value || '';
-        if (name && confirm(`Eliminare il template "${name}"?`)) {
-            Ctrl.deleteTemplate(name);
-        }
-    });
 }
 
 
@@ -188,6 +102,7 @@ function setupTemplateActions() {
         if (name && confirm(`Eliminare il template "${name}"?`)) {
             Ctrl.deleteTemplate(name);
         }
+        closeMenu();
     });
 }
 
@@ -197,14 +112,14 @@ function setupGlobalControls() {
         const weatherBtn = e.target.closest('.weather-btn');
         if (weatherBtn) {
             e.preventDefault();
-            Ctrl.toggleWeather(weatherBtn.id.replace('w-', ''));
+            Ctrl.toggleWeather(weatherBtn.dataset.weather);
             return;
         }
 
         const activityBtn = e.target.closest('.act-btn');
         if (activityBtn) {
             e.preventDefault();
-            Ctrl.toggleActivity(activityBtn.id.replace('act-', ''));
+            Ctrl.toggleActivity(activityBtn.dataset.activity);
             return;
         }
 
@@ -233,7 +148,7 @@ function setupGlobalControls() {
         }
     });
 
-    document.addEventListener('keydown', async (e) => {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             toggleFabMenu(false);
             return;
@@ -241,27 +156,10 @@ function setupGlobalControls() {
 
         if (e.key !== 'Enter' && e.key !== ' ') return;
 
-        const weatherBtn = e.target.closest('.weather-btn');
-        const activityBtn = e.target.closest('.act-btn');
         const laundryToggle = e.target.closest('#laundryToggle');
-        const fabMain = e.target.closest('#fabMain');
-        const fabAction = e.target.closest('.fab-item');
-
-        if (weatherBtn) {
-            e.preventDefault();
-            Ctrl.toggleWeather(weatherBtn.id.replace('w-', ''));
-        } else if (activityBtn) {
-            e.preventDefault();
-            Ctrl.toggleActivity(activityBtn.id.replace('act-', ''));
-        } else if (laundryToggle) {
+        if (laundryToggle) {
             e.preventDefault();
             Ctrl.toggleLaundry();
-        } else if (fabMain) {
-            e.preventDefault();
-            toggleFabMenu();
-        } else if (fabAction) {
-            e.preventDefault();
-            await handleFabAction(fabAction);
         }
     });
 }

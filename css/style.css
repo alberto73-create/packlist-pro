@@ -242,6 +242,8 @@
             color: var(--subtle);
             transition: all .2s;
             user-select: none;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         .weather-btn:hover { border-color: var(--amber); color: var(--amber); }
@@ -272,7 +274,11 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
-            min-height: 76px;
+            min-height: 82px;
+            width: 100%;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         .act-btn:hover,
@@ -290,8 +296,20 @@
             box-shadow: 0 3px 12px rgba(139, 92, 246, .25);
         }
 
+        .act-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            color: var(--violet-h);
+            font-size: .72rem;
+            font-weight: 900;
+        }
+
         .act-btn i {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.4rem;
             font-style: normal;
             line-height: 1;

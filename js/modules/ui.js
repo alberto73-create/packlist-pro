@@ -45,7 +45,7 @@ export function list(state, U) {
         addRow.className = 'add-custom';
         addRow.innerHTML = `
             <input type="text" id="${inputId}" placeholder="+ Aggiungi item personalizzato...">
-            <button class="btn-sm" data-action="add" data-cat="${U.esc(cat)}" data-input="${inputId}">+ Add</button>`;
+            <button type="button" class="btn-sm" data-action="add" data-cat="${U.esc(cat)}" data-input="${inputId}">+ Add</button>`;
         box.appendChild(addRow);
         frag.appendChild(box);
     }
@@ -191,15 +191,15 @@ export function renderActivities(activities) {
     
     grid.innerHTML = '';
     activities.forEach(a => {
-        const div = document.createElement('div');
-        div.className = 'act-btn';
-        div.id = `act-${a.id}`;
-        div.setAttribute('role', 'button');
-        div.setAttribute('aria-pressed', 'false');
-        div.setAttribute('tabindex', '0');
-        div.title = a.label;
-        div.innerHTML = `<i>${a.icon}</i><span>${a.label}</span>`;
-        grid.appendChild(div);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'act-btn';
+        button.id = `act-${a.id}`;
+        button.dataset.activity = a.id;
+        button.setAttribute('aria-pressed', 'false');
+        button.title = a.label;
+        button.innerHTML = `<i aria-hidden="true">${a.icon}</i><span>${a.label}</span>`;
+        grid.appendChild(button);
     });
 }
 

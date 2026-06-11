@@ -467,8 +467,9 @@ export function exportPDF() {
 
     const jsPDF = window.jspdf?.jsPDF;
     if (!jsPDF) {
-        U.toast('Modulo PDF non ancora caricato');
-        return false;
+        U.toast('Modulo PDF non disponibile: apro la stampa per salvare come PDF');
+        window.print();
+        return true;
     }
 
     const doc = new jsPDF();
@@ -605,6 +606,16 @@ export function setupEventDelegation() {
     
     // Keyboard navigation
     results.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('.add-custom input')) {
+            const addRow = e.target.closest('.add-custom');
+            const button = addRow?.querySelector('[data-action="add"]');
+            if (button && e.target.value.trim()) {
+                e.preventDefault();
+                addCustomItem(button.dataset.cat, e.target.value);
+            }
+            return;
+        }
+
         if (e.key === 'Enter' || e.key === ' ') {
             const row = e.target.closest('.item-row');
             if (row && !e.target.closest('button, input, select, textarea')) {
