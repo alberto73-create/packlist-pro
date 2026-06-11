@@ -114,7 +114,8 @@ function addGeneratedItem(list, item, qty, previousItems) {
         uid: previous?.uid || U.uid(),
         w: previous?.w ?? item.w,
         checked: previous?.checked || false,
-        worn: previous?.worn ?? Boolean(item.worn),
+        worn: previous?.worn ?? false,
+        bulky: previous?.bulky ?? false,
         custom: false
     });
 }
@@ -181,6 +182,21 @@ export function toggleWorn(uid) {
     return false;
 }
 
+export function updateItemOptions(uid, { quantity, worn, bulky }) {
+    for (const cat in STATE.list) {
+        const item = STATE.list[cat].find(i => i.uid === uid);
+        if (!item) continue;
+        item.q = Math.max(1, Math.min(99, Number.parseInt(quantity, 10) || 1));
+        item.worn = Boolean(worn);
+        item.bulky = Boolean(bulky);
+        View.list(STATE, U);
+        View.stats(STATE, U);
+        saveState();
+        return true;
+    }
+    return false;
+}
+
 /**
  * Rimuove un item dalla lista
  */
@@ -217,7 +233,8 @@ export function addCustomItem(cat, name, weight = 100, volume = 1) {
         uid: U.uid(),
         custom: true,
         checked: false,
-        worn: false
+        worn: false,
+        bulky: false
     };
     
     if (!STATE.list[cat]) STATE.list[cat] = [];
@@ -263,6 +280,15 @@ export function saveState() {
     }
 }
 
+function normalizeList(list = {}) {
+    return Object.fromEntries(Object.entries(list).map(([cat, items]) => [cat, (items || []).map(item => ({
+        ...item,
+        q: Math.max(1, Number.parseInt(item.q, 10) || 1),
+        worn: Boolean(item.worn),
+        bulky: Boolean(item.bulky)
+    }))]));
+}
+
 /**
  * Carica lo stato da localStorage
  */
@@ -273,7 +299,7 @@ export function loadState() {
             const parsed = JSON.parse(saved);
             setState({
                 config: normalizeConfig(parsed.config),
-                list: parsed.list || {},
+                list: normalizeList(parsed.list),
                 filter: parsed.filter || 'all'
             });
             return true;
@@ -556,6 +582,92 @@ export function exportStatsCSV() {
 /**
  * Inizializza i listener per gli eventi
  */
+
+function bytesToBase64Url(bytes) {
+    let binary = '';
+    bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlToBytes(value) {
+    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+    return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+}
+
+async function encodeSharedState(data) {
+    const bytes = new TextEncoder().encode(JSON.stringify(data));
+    if (typeof CompressionStream === 'undefined') return `b.${bytesToBase64Url(bytes)}`;
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+    return `g.${bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()))}`;
+}
+
+async function decodeSharedState(value) {
+    const [format, payload] = value.split('.', 2);
+    let bytes = base64UrlToBytes(payload || '');
+    if (format === 'g') {
+        if (typeof DecompressionStream === 'undefined') throw new Error('Compressione URL non supportata');
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function compactSharedState() {
+    return {
+        v: 1,
+        c: STATE.config,
+        l: Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(item => [
+            item.n, item.q, item.w, item.checked ? 1 : 0, item.worn ? 1 : 0, item.bulky ? 1 : 0, item.custom ? 1 : 0
+        ])])
+    };
+}
+
+export async function createShareUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('list', await encodeSharedState(compactSharedState()));
+    return url.toString();
+}
+
+export async function shareList() {
+    if (!getAllItems().length) {
+        U.toast('Nessuna lista da condividere');
+        return false;
+    }
+    const url = await createShareUrl();
+    if (navigator.share) {
+        await navigator.share({ title: 'Packlist Pro', text: 'Ecco la mia lista di viaggio', url });
+        return true;
+    }
+    await navigator.clipboard.writeText(url);
+    U.toast('Link della lista copiato negli appunti');
+    return true;
+}
+
+export async function loadSharedListFromUrl() {
+    const url = new URL(window.location.href);
+    const encoded = url.searchParams.get('list');
+    if (!encoded) return false;
+    try {
+        const shared = await decodeSharedState(encoded);
+        if (shared?.v !== 1 || !Array.isArray(shared.l)) throw new Error('Formato lista non valido');
+        const list = Object.fromEntries(shared.l.map(([cat, items]) => [String(cat), items.map((values) => ({
+            n: String(values[0]), q: Math.max(1, Number(values[1]) || 1), w: Math.max(1, Number(values[2]) || 100),
+            checked: Boolean(values[3]), worn: Boolean(values[4]), bulky: Boolean(values[5]), custom: Boolean(values[6]),
+            cat: String(cat), s: 'U', v: 1, uid: U.uid()
+        }))]));
+        setState({ config: normalizeConfig(shared.c), list: normalizeList(list), filter: 'all' });
+        saveState();
+        url.searchParams.delete('list');
+        window.history.replaceState({}, '', url);
+        U.toast('Lista condivisa importata');
+        return true;
+    } catch (error) {
+        console.warn('[Controller] Link condiviso non valido:', error);
+        U.toast('Impossibile importare la lista condivisa');
+        return false;
+    }
+}
+
 export function setupEventDelegation() {
     const results = document.getElementById('results');
     if (!results) return;
@@ -581,19 +693,9 @@ export function setupEventDelegation() {
         const uid = row.dataset.uid;
         const cat = row.dataset.cat;
         
-        // Bottone worn - usa data-action
-        if (target.closest('[data-action="worn"]')) {
-            toggleWorn(uid);
-            return;
-        }
-        
-        // Bottone edit peso - usa data-action
-        if (target.closest('[data-action="edit"]')) {
+        if (target.closest('[data-action="options"]')) {
             const item = STATE.list[cat]?.find(i => i.uid === uid);
-            const newWeight = prompt(`Modifica peso per "${item?.n}" (grammi):`, item?.w || 100);
-            if (newWeight !== null) {
-                editItemWeight(uid, newWeight);
-            }
+            View.openItemOptions(item);
             return;
         }
         
