@@ -40,6 +40,11 @@ function isTransportCompatible(item, transport) {
     return modes.includes('tutti') || modes.includes(selected);
 }
 
+function isWeatherCompatible(item, selectedWeather) {
+    const modes = Array.isArray(item.weatherModes) && item.weatherModes.length ? item.weatherModes : ['tutti'];
+    return modes.includes('tutti') || selectedWeather.some(weather => modes.includes(weather));
+}
+
 /**
  * Genera la lista completa dagli item del database
  */
@@ -54,6 +59,7 @@ export function generateList() {
     // 1. Item base (sempre inclusi)
     for (const item of DB.base) {
         if (!isTransportCompatible(item, config.transport)) continue;
+        if (!isWeatherCompatible(item, config.weather)) continue;
         const qty = calculateQty(item, config);
         if (qty <= 0) continue;
         
@@ -67,6 +73,7 @@ export function generateList() {
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
             if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
@@ -76,6 +83,7 @@ export function generateList() {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
             if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
@@ -84,6 +92,7 @@ export function generateList() {
     const transportItems = DB.transport[config.transport === 'a_piedi_trekking' ? 'backpack' : config.transport] || [];
     for (const item of transportItems) {
         if (!isTransportCompatible(item, config.transport)) continue;
+        if (!isWeatherCompatible(item, config.weather)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
     }
     
@@ -92,6 +101,7 @@ export function generateList() {
         const items = DB.extra[actId] || [];
         for (const item of items) {
             if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             const qty = calculateQty(item, config);
             if (qty <= 0) continue;
             addGeneratedItem(newList, item, qty, previousItems);

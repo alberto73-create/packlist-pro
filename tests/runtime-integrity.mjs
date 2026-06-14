@@ -61,6 +61,8 @@ assert.match(css, /\.admin-toggle input\[type="checkbox"\]:checked::after/, 'adm
 assert.match(css, /\.admin-field\.is-modified/, 'admin fields must visually identify unsaved changes');
 assert.match(admin, /markModified\(e\.target\)/, 'admin editor must mark changed parameters');
 assert.match(admin, /data-transport-mode/, 'admin items must expose per-item transport compatibility');
+assert.match(admin, /data-weather-mode/, 'admin items must expose per-item weather compatibility');
+assert.match(controller, /isWeatherCompatible\(item, config\.weather\)/, 'generated items must be filtered by per-item weather compatibility');
 assert.match(admin, /group\.querySelectorAll\('\[data-transport-mode\]'\)/, 'transport chip changes must update in place without resetting scroll');
 assert.match(admin, /adminPasswordToggle/, 'admin login must expose a password visibility control');
 assert.match(admin, /data-quantity="every"/, 'admin items must expose quantity frequency rules');
