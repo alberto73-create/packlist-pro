@@ -221,6 +221,10 @@ Ctrl.showStatsSummary();
 assert.equal(alertCalled, true);
 Ctrl.uncheckAll();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.checked), false);
+const removable = Object.values(db.STATE.list).flat()[0];
+Ctrl.toggleItemChecked(removable.uid);
+assert.equal(Ctrl.removeChecked(), 1, 'remove checked must remove exactly the selected item');
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.uid === removable.uid), false);
 const validStateBeforeUpdate = localStorage.getItem('packlist_state');
 localStorage.setItem('packlist_state_backup', validStateBeforeUpdate);
 localStorage.setItem('packlist_state', '{broken');
@@ -235,7 +239,7 @@ const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 const controller = readFileSync(new URL('../js/modules/controller.js', import.meta.url), 'utf8');
 const fab = {
     'filter-all': 'setFilter', 'filter-clothing': 'setFilter', 'filter-tech': 'setFilter', 'filter-essentials': 'setFilter',
-    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', shareListBtn: 'shareList', uncheckAllBtn: 'uncheckAll', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
+    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', shareListBtn: 'shareList', uncheckAllBtn: 'uncheckAll', removeCheckedBtn: 'removeChecked', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
 };
 for (const [id, action] of Object.entries(fab)) {
     assert.match(html, new RegExp(`id=["']${id}["']`));

@@ -1,4 +1,4 @@
-// js/app.js - Entry Point Packlist Pro v9.5 Fixed
+// js/app.js - Entry point Packlist Pro
 // Architettura modulare ES6 completa
 
 import { STATE, APP_VERSION } from './modules/db.js';
@@ -11,8 +11,6 @@ import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, 
 
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[App] Avvio Packlist Pro v9.5 Fixed');
-
     // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
     Ctrl.loadState();
     await Ctrl.loadSharedListFromUrl();
@@ -214,6 +212,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
+    else if (fabItem.id === 'removeCheckedBtn' && confirm('Rimuovere dalla lista tutti gli item già presi?')) Ctrl.removeChecked();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
     else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
@@ -258,5 +257,3 @@ window.App = {
     resetState: () => Ctrl.resetState(),
     exportCSV: () => Ctrl.exportStatsCSV()
 };
-
-console.log('[App] Packlist Pro pronto! Usa window.App per debug.');

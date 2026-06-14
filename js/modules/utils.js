@@ -1,4 +1,4 @@
-// js/modules/utils.js - Utility Functions Packlist Pro v9.5 Fixed
+// js/modules/utils.js - Utility functions Packlist Pro
 
 /**
  * Escapes HTML special characters to prevent XSS
