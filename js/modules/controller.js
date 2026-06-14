@@ -34,8 +34,10 @@ function calculateQty(item, config) {
 }
 
 function isTransportCompatible(item, transport) {
-    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes : ['tutti'];
-    return modes.includes('tutti') || modes.includes(transport);
+    const aliases = { backpack: 'a_piedi_trekking', zaino: 'a_piedi_trekking', viaggio_zaino: 'a_piedi_trekking', trekking: 'a_piedi_trekking', treno_regionale: 'treno' };
+    const selected = aliases[transport] || transport;
+    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes.map(mode => aliases[mode] || mode) : ['tutti'];
+    return modes.includes('tutti') || modes.includes(selected);
 }
 
 /**
@@ -79,7 +81,7 @@ export function generateList() {
     }
     
     // 4. Item trasporto
-    const transportItems = DB.transport[config.transport === 'trekking' ? 'backpack' : config.transport] || [];
+    const transportItems = DB.transport[config.transport === 'a_piedi_trekking' ? 'backpack' : config.transport] || [];
     for (const item of transportItems) {
         if (!isTransportCompatible(item, config.transport)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
@@ -970,7 +972,7 @@ function normalizeConfig(config = {}) {
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
     normalized.laundry = Boolean(normalized.laundry);
-    if (normalized.transport === 'backpack') normalized.transport = 'trekking';
+    normalized.transport = ({ backpack:'a_piedi_trekking', zaino:'a_piedi_trekking', viaggio_zaino:'a_piedi_trekking', trekking:'a_piedi_trekking', treno_regionale:'treno' })[normalized.transport] || normalized.transport;
     return normalized;
 }
 

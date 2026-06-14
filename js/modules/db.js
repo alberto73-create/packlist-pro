@@ -1,7 +1,7 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
 
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.6.0";
+export const APP_VERSION = "1.6.1";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -203,6 +203,6 @@ const WARNING_CHECKS = [
   s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Coltellino')),
   s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Accendino')),
   s => s.config.nights === 0 && s.config.laundry,
-  s => s.config.nights > 7 && !s.config.laundry,
+  s => s.config.nights > 6 && !s.config.laundry,
 ];
 export const WARNINGS = WARNING_CHECKS.map((check, index) => ({ check, msg: WARNING_MESSAGES[index] || '' }));

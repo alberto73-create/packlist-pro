@@ -1,7 +1,7 @@
 const buckets = new Map();
 const allowedTop = new Set(['db','daytripExclude','perNight','warningMessages']);
 const allowedItem = new Set(['n','q','cat','s','w','v','worn','bulk','transportModes','quantityRule']);
-const transportModes = new Set(['tutti','auto','moto','aereo','treno','camper','trekking']);
+const transportModes = new Set(['tutti','auto','moto','aereo','treno','camper','a_piedi_trekking']);
 const fixed = { weather:['sun','rain','cold'], transport:['auto','moto','aereo','backpack'] };
 const fail = (res,status,error) => res.status(status).json({ok:false,error});
 function exact(o, keys){return o&&typeof o==='object'&&!Array.isArray(o)&&Object.keys(o).every(k=>keys.has(k))&&[...keys].every(k=>k in o)}

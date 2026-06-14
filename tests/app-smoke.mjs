@@ -60,6 +60,11 @@ globalThis.prompt = () => null;
 const Ctrl = await import('../js/modules/controller.js');
 const db = await import('../js/modules/db.js');
 
+const longTripWarning = db.WARNINGS.at(-1);
+assert.equal(longTripWarning.check({ config: { nights: 7, laundry: false } }), true, 'long-trip warning must appear above six nights without laundry');
+assert.equal(longTripWarning.check({ config: { nights: 6, laundry: false } }), false, 'long-trip warning must stay hidden at six nights');
+assert.equal(longTripWarning.check({ config: { nights: 7, laundry: true } }), false, 'long-trip warning must stay hidden when laundry is active');
+
 const powerbank = db.DB.base.find(item => item.n === 'Powerbank');
 powerbank.transportModes = ['auto'];
 Ctrl.setConfig({ transport: 'moto' });
