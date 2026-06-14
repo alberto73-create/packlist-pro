@@ -49,6 +49,8 @@ assert.doesNotMatch(sw, /client => client\.navigate\(client\.url\)/, 'activation
 assert.match(screenshot, /previewUrl\(port\)/, 'visual regression screenshot must render representative item rows');
 assert.match(screenshot, /dbus\|UPower/i, 'headless environment noise must be filtered');
 assert.match(screenshot, /child\.kill\('SIGKILL'\)/, 'screenshot capture must have a timeout');
+assert.match(screenshot, /maxRetries:\s*5/, 'screenshot profile cleanup must tolerate transient Chrome file locks');
+assert.match(screenshot, /server\.close\(resolveClose\)/, 'screenshot server must close before temporary files are removed');
 assert.match(css, /\.fab-container \{[\s\S]*pointer-events: none;/);
 assert.match(css, /\.fab-menu \{[\s\S]*position: absolute;/);
 assert.match(css, /\.modern-switch:checked::after/);

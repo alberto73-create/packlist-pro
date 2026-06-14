@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, statSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -46,6 +47,7 @@ const mimeTypes = {
 
 const browser = findBrowser();
 const profileDirectory = mkdtempSync(join(tmpdir(), 'packlist-screenshot-'));
+let child;
 const server = createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
     const relativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
@@ -81,14 +83,14 @@ try {
         `--screenshot=${output}`,
         previewUrl(port)
     ];
-    const child = spawn(browser, args, { stdio: ['ignore', 'inherit', 'pipe'] });
+    child = spawn(browser, args, { stdio: ['ignore', 'inherit', 'pipe'] });
     let stderr = '';
     child.stderr.on('data', chunk => { stderr += chunk; });
     const timeout = setTimeout(() => child.kill('SIGKILL'), 30000);
     const exitCode = await new Promise(resolveExit => child.once('exit', resolveExit));
     clearTimeout(timeout);
 
-    const relevantErrors = stderr.split('\n').filter(line => line && !/dbus|UPower/i.test(line));
+    const relevantErrors = stderr.split('\n').filter(line => line && !/dbus|UPower|DEPRECATED_ENDPOINT/i.test(line));
     if (relevantErrors.length) console.error(relevantErrors.join('\n'));
     if (exitCode !== 0 || !existsSync(output) || statSync(output).size === 0) {
         throw new Error(`Acquisizione screenshot fallita (exit code: ${exitCode}).`);
@@ -96,6 +98,10 @@ try {
 
     console.log(`Screenshot salvato in ${output}`);
 } finally {
-    server.close();
-    rmSync(profileDirectory, { recursive: true, force: true });
+    if (child && child.exitCode === null) child.kill('SIGKILL');
+    await new Promise(resolveClose => server.close(resolveClose));
+    // Chrome può continuare a scrivere nel profilo per qualche istante dopo
+    // l'uscita del processo principale. I retry evitano ENOTEMPTY intermittenti
+    // sui runner GitHub Actions senza nascondere errori persistenti.
+    await rm(profileDirectory, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
 }
