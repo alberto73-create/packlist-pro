@@ -21,6 +21,7 @@ assert.equal(new Set(ids).size, ids.length, 'HTML ids must be unique');
 assert.equal((html.match(/<link rel="stylesheet"/g) || []).length, 1, 'the runtime must load exactly one app stylesheet');
 assert.equal((html.match(/<script type="module"/g) || []).length, 1, 'the runtime must load exactly one module entry point');
 const app = readFileSync('js/app.js', 'utf8');
+const admin = readFileSync('js/modules/admin.js', 'utf8');
 const db = readFileSync('js/modules/db.js', 'utf8');
 const dbData = readFileSync('js/modules/db-data.js', 'utf8');
 const controller = readFileSync('js/modules/controller.js', 'utf8');
@@ -54,6 +55,9 @@ assert.match(screenshot, /server\.close\(resolveClose\)/, 'screenshot server mus
 assert.match(css, /\.fab-container \{[\s\S]*pointer-events: none;/);
 assert.match(css, /\.fab-menu \{[\s\S]*position: absolute;/);
 assert.match(css, /\.modern-switch:checked::after/);
+assert.match(css, /\.admin-toggle input\[type="checkbox"\]:checked::after/, 'admin worn control must show a visible checkmark');
+assert.match(css, /\.admin-field\.is-modified/, 'admin fields must visually identify unsaved changes');
+assert.match(admin, /markModified\(e\.target\)/, 'admin editor must mark changed parameters');
 assert.match(html, /id="itemWeight"/);
 assert.match(html, /id="itemBaggage"/);
 assert.match(html, /id="baggageSetupModal"/);
