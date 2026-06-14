@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- SETUP EVENT LISTENERS ---
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
+    const scheduleConfigSync = U.debounce(syncConfig, 180);
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
@@ -221,6 +222,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'removeCheckedBtn' && confirm('Rimuovere dalla lista tutti gli item già presi?')) Ctrl.removeChecked();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
     else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
+    else if (fabItem.id === 'adminFabBtn') document.getElementById('adminOpen')?.click();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
 
     toggleFabMenu(false);
