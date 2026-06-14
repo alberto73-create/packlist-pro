@@ -11,23 +11,26 @@ import * as View from './ui.js';
 function calculateQty(item, config) {
     const nights = Math.max(0, Number(config.nights) || 0);
     const totalDays = nights + 1;
+    const legacyRule = item.q === 'n'
+        ? { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true }
+        : { type: 'fixed', base: 1, every: 1, min: 1, max: 0, laundry: false };
+    const rule = { ...legacyRule, ...(item.quantityRule || {}) };
 
     if (nights === 0) {
         if (DAYTRIP_EXCLUDE.has(item.n)) return 0;
-        return 1;
+        return Math.max(1, Number(rule.min) || 1);
     }
 
-    if (item.q === 'n') {
-        if (!config.laundry) return totalDays;
-
-        // Con lavanderia servono capi sufficienti fino al prossimo lavaggio,
-        // più il buffer scelto, mai più dei giorni totali del viaggio.
-        const laundryFreq = Math.max(1, Number(config.laundryFreq) || 3);
-        const laundryBuffer = Math.max(0, Number(config.laundryBuffer) || 0);
-        return Math.max(1, Math.min(totalDays, laundryFreq + laundryBuffer));
+    let coveredDays = totalDays;
+    if (config.laundry && rule.laundry) {
+        coveredDays = Math.min(totalDays, Math.max(1, Number(config.laundryFreq) || 3) + Math.max(0, Number(config.laundryBuffer) || 0));
     }
-
-    return 1;
+    let qty = rule.type === 'fixed'
+        ? Math.max(1, Number(rule.base) || 1)
+        : Math.ceil(coveredDays / Math.max(1, Number(rule.every) || 1)) * Math.max(1, Number(rule.base) || 1);
+    qty = Math.max(Math.max(0, Number(rule.min) || 0), qty);
+    if (Number(rule.max) > 0) qty = Math.min(qty, Number(rule.max));
+    return qty;
 }
 
 function isTransportCompatible(item, transport) {
@@ -76,7 +79,7 @@ export function generateList() {
     }
     
     // 4. Item trasporto
-    const transportItems = DB.transport[config.transport] || [];
+    const transportItems = DB.transport[config.transport === 'trekking' ? 'backpack' : config.transport] || [];
     for (const item of transportItems) {
         if (!isTransportCompatible(item, config.transport)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
@@ -967,6 +970,7 @@ function normalizeConfig(config = {}) {
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
     normalized.laundry = Boolean(normalized.laundry);
+    if (normalized.transport === 'backpack') normalized.transport = 'trekking';
     return normalized;
 }
 

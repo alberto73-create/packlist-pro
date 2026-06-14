@@ -70,6 +70,20 @@ Ctrl.generateList();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'items compatible with the selected transport must be included');
 delete powerbank.transportModes;
 
+const pants = db.DB.base.find(item => item.n === 'Pantaloni casual');
+pants.quantityRule = { type: 'perDay', base: 1, every: 3, min: 1, max: 0, laundry: true };
+Ctrl.setConfig({ nights: 5, transport: 'auto', laundry: false });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Pantaloni casual').q, 2, 'six travel days with one item every three days must produce two items');
+const underwearRule = db.DB.base.find(item => item.n === 'Mutande');
+underwearRule.quantityRule = { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true };
+Ctrl.setConfig({ nights: 9, laundry: true, laundryFreq: 4, laundryBuffer: 1 });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 5, 'laundry frequency and buffer must cap daily clothing quantities');
+delete pants.quantityRule;
+delete underwearRule.quantityRule;
+Ctrl.setConfig({ laundry: false });
+
 Ctrl.toggleWeather('sun');
 Ctrl.toggleWeather('rain');
 Ctrl.toggleWeather('cold');
