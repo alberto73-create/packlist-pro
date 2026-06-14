@@ -44,7 +44,6 @@ export async function registerServiceWorker() {
             });
         };
         await registration.update();
-        console.log('[PWA] Service Worker registrato:', registration.scope);
         return registration;
     } catch (error) {
         console.error('[PWA] Errore registrazione SW:', error);
@@ -62,11 +61,9 @@ export function setupInstallPrompt() {
         e.preventDefault();
         deferredPrompt = e;
         showInstallBanner(true);
-        console.log('[PWA] Prompt di installazione pronto');
     });
 
     window.addEventListener('appinstalled', () => {
-        console.log('[PWA] App installata con successo');
         deferredPrompt = null;
         hideInstallBanner();
     });
@@ -98,19 +95,12 @@ export function hideInstallBanner() {
  */
 export async function triggerInstall() {
     if (!deferredPrompt) {
-        console.log('[PWA] Nessun prompt disponibile');
         return false;
     }
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
-    console.log(`[PWA] Scelta utente: ${outcome}`);
-    
-    if (outcome === 'accepted') {
-        console.log('[PWA] Utente ha accettato l\'installazione');
-    }
-    
+
     deferredPrompt = null;
     hideInstallBanner();
     

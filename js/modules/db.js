@@ -1,7 +1,7 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
 
-// js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.10.2";
+// js/modules/db.js - Database e costanti Packlist Pro
+export const APP_VERSION = "1.10.3";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -87,7 +87,6 @@ export async function loadDatabase() {
         if (!db.settings) db.settings = { selectedActivities: [], nights: 3, laundryFreq: 0 };
         if (!db.settings.selectedActivities) db.settings.selectedActivities = [];
 
-        console.log(`[DB] Database caricato: ${db.version || DB_VERSION}`);
         
         // Costruisci cache per lookup più veloci
         rebuildCaches();

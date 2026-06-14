@@ -126,3 +126,15 @@ assert.doesNotMatch(adminAuth, /ADMIN_PASSWORD\s*=/, 'admin password must not be
 assert.match(communications, /postAppsScriptBestEffort/);
 assert.match(communications, /mode: 'no-cors'/);
 assert.doesNotMatch(communications, /return \{ ok: true \};/, 'non-JSON responses must never be assumed successful');
+
+assert.match(html, /id="feedbackBtn"/);
+assert.match(html, /id="adminFabBtn"/);
+assert.match(html, /id="removeCheckedBtn"/);
+assert.match(communications, /class="feedback-stars"/);
+assert.match(communications, /data-rating="\$\{x\}"/);
+assert.match(communications, /if\(!form\.elements\.rating\.value\)/, 'feedback must require an explicit rating');
+assert.match(communications, /if\(!form\.elements\.message\.value\.trim\(\)\)/, 'feedback must require a comment');
+assert.match(communications, /if \(error\.confirmedBackendError\) throw error/, 'confirmed backend failures must never fall back to opaque success');
+assert.doesNotMatch(`${app}
+${readFileSync('js/modules/ui.js', 'utf8')}
+${readFileSync('js/modules/utils.js', 'utf8')}`, /v9\.5 Fixed/);
