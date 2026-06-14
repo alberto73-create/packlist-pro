@@ -52,6 +52,8 @@ assert.match(screenshot, /dbus\|UPower/i, 'headless environment noise must be fi
 assert.match(screenshot, /child\.kill\('SIGKILL'\)/, 'screenshot capture must have a timeout');
 assert.match(screenshot, /maxRetries:\s*5/, 'screenshot profile cleanup must tolerate transient Chrome file locks');
 assert.match(screenshot, /server\.close\(resolveClose\)/, 'screenshot server must close before temporary files are removed');
+assert.match(screenshot, /const screenshotReady = existsSync\(output\)/, 'a valid screenshot must be the primary success condition');
+assert.match(screenshot, /PHONE_REGISTRATION_ERROR/, 'harmless Chrome registration noise must be filtered');
 assert.match(css, /\.fab-container \{[\s\S]*pointer-events: none;/);
 assert.match(css, /\.fab-menu \{[\s\S]*position: absolute;/);
 assert.match(css, /\.modern-switch:checked::after/);

@@ -87,14 +87,18 @@ try {
     let stderr = '';
     child.stderr.on('data', chunk => { stderr += chunk; });
     const timeout = setTimeout(() => child.kill('SIGKILL'), 30000);
-    const exitCode = await new Promise(resolveExit => child.once('exit', resolveExit));
+    const { code: exitCode, signal: exitSignal } = await new Promise(resolveExit => {
+        child.once('close', (code, signal) => resolveExit({ code, signal }));
+    });
     clearTimeout(timeout);
 
-    const relevantErrors = stderr.split('\n').filter(line => line && !/dbus|UPower|DEPRECATED_ENDPOINT/i.test(line));
+    const relevantErrors = stderr.split('\n').filter(line => line && !/dbus|UPower|DEPRECATED_ENDPOINT|PHONE_REGISTRATION_ERROR/i.test(line));
     if (relevantErrors.length) console.error(relevantErrors.join('\n'));
-    if (exitCode !== 0 || !existsSync(output) || statSync(output).size === 0) {
-        throw new Error(`Acquisizione screenshot fallita (exit code: ${exitCode}).`);
+    const screenshotReady = existsSync(output) && statSync(output).size > 0;
+    if (!screenshotReady) {
+        throw new Error(`Acquisizione screenshot fallita (exit code: ${exitCode}, signal: ${exitSignal || 'none'}).`);
     }
+    if (exitCode !== 0) console.warn(`Chrome terminato dopo lo screenshot (exit code: ${exitCode}, signal: ${exitSignal || 'none'}).`);
 
     console.log(`Screenshot salvato in ${output}`);
 } finally {
