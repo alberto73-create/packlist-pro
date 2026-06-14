@@ -22,6 +22,7 @@ assert.equal((html.match(/<link rel="stylesheet"/g) || []).length, 1, 'the runti
 assert.equal((html.match(/<script type="module"/g) || []).length, 1, 'the runtime must load exactly one module entry point');
 const app = readFileSync('js/app.js', 'utf8');
 const admin = readFileSync('js/modules/admin.js', 'utf8');
+const communications = readFileSync('js/modules/communications.js', 'utf8');
 const db = readFileSync('js/modules/db.js', 'utf8');
 const dbData = readFileSync('js/modules/db-data.js', 'utf8');
 const controller = readFileSync('js/modules/controller.js', 'utf8');
@@ -90,8 +91,10 @@ assert.match(css, /\.baggage-section\.over-limit/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
 const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);
-const extraDatabase = dbData.slice(dbData.indexOf('  extra: {'));
-const activityDatabaseIds = [...extraDatabase.matchAll(/^    ([a-z_]+): \[/gm)].map(([, id]) => id);
+const extraStart = dbData.search(/^\s*(?:extra|"extra"):\s*\{/m);
+assert.ok(extraStart >= 0, 'DB_DATA.extra must exist in serialized or object-literal form');
+const extraDatabase = dbData.slice(extraStart);
+const activityDatabaseIds = [...extraDatabase.matchAll(/^\s{4}(?:([a-z_]+)|"([a-z_]+)"):\s*\[/gm)].map(([, plain, quoted]) => plain || quoted);
 assert.deepEqual(activityButtons, activityDatabaseIds, 'all database activities must exist statically in index.html');
 assert.doesNotMatch(`${app}\n${readFileSync('js/modules/ui.js', 'utf8')}`, /renderActivities/, 'activity visibility must not depend on dynamic rendering');
 
@@ -102,3 +105,11 @@ for (const route of ['/', '/index.html', '/js/(.*)', '/css/(.*)', '/sw.js']) {
 }
 
 console.log(`Runtime integrity passed: one HTML entry point, version ${version}, cache-safe assets`);
+
+// Communications backend remains optional, isolated and never hardcodes a personal endpoint/admin key.
+assert.match(communications, /packlist_apps_script_settings/);
+assert.match(communications, /packlist_remote_feedback_pending/);
+assert.match(communications, /loadRemoteCommunicationSettings/);
+assert.match(communications, /retryPendingFeedback/);
+assert.match(communications, /action:\s*'saveCommunication'/);
+assert.doesNotMatch(communications, /script\.google\.com\/macros\/s\//, 'Apps Script endpoint must be configured by the admin');
