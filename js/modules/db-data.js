@@ -95,7 +95,7 @@ export const DB_DATA = {
         "every": 1,
         "min": 1,
         "max": 0,
-        "laundry": true
+        "laundry": false
       }
     },
     {

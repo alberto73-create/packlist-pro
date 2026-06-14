@@ -219,6 +219,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'removeCheckedBtn' && confirm('Rimuovere dalla lista tutti gli item già presi?')) Ctrl.removeChecked();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
     else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
+    else if (fabItem.id === 'adminFabBtn') document.getElementById('adminOpen')?.click();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
 
     toggleFabMenu(false);
