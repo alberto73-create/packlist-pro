@@ -90,8 +90,10 @@ assert.match(css, /\.baggage-section\.over-limit/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
 const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);
-const extraDatabase = dbData.slice(dbData.indexOf('  extra: {'));
-const activityDatabaseIds = [...extraDatabase.matchAll(/^    ([a-z_]+): \[/gm)].map(([, id]) => id);
+const extraStart = dbData.search(/^\s*(?:extra|"extra"):\s*\{/m);
+assert.ok(extraStart >= 0, 'DB_DATA.extra must exist in serialized or object-literal form');
+const extraDatabase = dbData.slice(extraStart);
+const activityDatabaseIds = [...extraDatabase.matchAll(/^\s{4}(?:([a-z_]+)|"([a-z_]+)"):\s*\[/gm)].map(([, plain, quoted]) => plain || quoted);
 assert.deepEqual(activityButtons, activityDatabaseIds, 'all database activities must exist statically in index.html');
 assert.doesNotMatch(`${app}\n${readFileSync('js/modules/ui.js', 'utf8')}`, /renderActivities/, 'activity visibility must not depend on dynamic rendering');
 

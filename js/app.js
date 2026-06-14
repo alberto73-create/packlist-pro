@@ -6,6 +6,7 @@ import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
 import { initAdmin } from './modules/admin.js';
+import { initCommunications, openFeedbackModal, renderSupportBanner } from './modules/communications.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.dataset.appVersion = APP_VERSION;
     setupEventListeners();
     initAdmin();
+    initCommunications({ state: STATE, version: APP_VERSION });
     Ctrl.updateConfigUI();
 
     if (Object.keys(STATE.list).length > 0) {
@@ -41,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
 
-    document.getElementById('generateBtn')?.addEventListener('click', () => Ctrl.generateList());
+    document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
@@ -213,6 +215,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
+    else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
 
     toggleFabMenu(false);
@@ -230,6 +233,7 @@ function syncConfig() {
     
     Ctrl.setConfig({ nights, gender, transport, transports, laundryFreq, laundryBuffer });
     Ctrl.generateList();
+    renderSupportBanner('afterGenerate');
 }
 
 // --- FAB MENU ---
