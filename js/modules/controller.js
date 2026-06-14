@@ -1,7 +1,7 @@
 // js/modules/controller.js - Logica di controllo Packlist Pro
 // Architettura STATE-based con gestione completa della lista
 
-import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS } from './db.js';
+import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS, FILTER_MAP } from './db.js';
 import { U } from './utils.js';
 import * as View from './ui.js';
 
@@ -584,12 +584,14 @@ export async function copyList() {
         return false;
     }
 
-    const lines = [STATE.listName ? `Packlist Pro · ${STATE.listName}` : 'Packlist Pro', ''];
+    const allowedCategories = STATE.filter === 'all' ? null : FILTER_MAP[STATE.filter] || [];
+    const visibleEntries = Object.entries(STATE.list).filter(([category]) => !allowedCategories || allowedCategories.includes(category));
+    const lines = [STATE.listName ? `Packlist Pro · ${STATE.listName}` : 'Packlist Pro', STATE.filter === 'all' ? '' : `Filtro: ${STATE.filter}`, ''];
     STATE.baggages.forEach(bag => {
-        const bagItems = getAllItems().filter(item => item.baggageId === bag.id);
+        const bagItems = visibleEntries.flatMap(([, items]) => items).filter(item => item.baggageId === bag.id);
         if (!bagItems.length) return;
         lines.push(`🎒 ${bag.name}`);
-        Object.entries(STATE.list).forEach(([cat, items]) => {
+        visibleEntries.forEach(([cat, items]) => {
             const assigned = items.filter(item => item.baggageId === bag.id);
             if (!assigned.length) return;
             lines.push(cat);
@@ -635,14 +637,7 @@ export function showStatsSummary() {
         const weight = all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
         return `${bag.name}: ${U.weight(weight)}${bag.limit ? ` / ${bag.limit} kg` : ''}`;
     });
-    alert([
-        '📊 Statistiche Packlist',
-        `Item: ${done}/${all.length}`,
-        `Peso totale: ${U.weight(totalG)}`,
-        `In valigia: ${U.weight(suitcaseG)}`,
-        `Indossato: ${U.weight(wornG)}`,
-        '', 'Bagagli:', ...baggageLines
-    ].join('\n'));
+    View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines });
 }
 
 export async function exportPDF() {

@@ -13,7 +13,7 @@ function collectFiles(directory, extension, results = []) {
 }
 
 const htmlFiles = collectFiles('.', '.html');
-assert.deepEqual(htmlFiles, ['index.html'], 'the runtime must have exactly one HTML entry point');
+assert.deepEqual(htmlFiles, ['index.html', 'offline.html'], 'the runtime must contain the app entry point and offline fallback');
 
 const html = readFileSync('index.html', 'utf8');
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
@@ -129,7 +129,7 @@ assert.doesNotMatch(communications, /return \{ ok: true \};/, 'non-JSON response
 
 assert.match(html, /id="feedbackBtn"/);
 assert.match(app, /fabItem\.id === 'feedbackBtn'\) openFeedbackModal\(\)/, 'the Feedback FAB action must open the feedback modal');
-assert.match(html, /id="adminFabBtn"/);
+assert.doesNotMatch(html, /id="adminFabBtn"/, 'admin entry must not be duplicated in the FAB');
 assert.match(html, /id="removeCheckedBtn"/);
 assert.match(communications, /class="feedback-stars"/);
 assert.match(communications, /<h2 id="feedbackTitle">Lascia un feedback<\/h2>/);
@@ -142,3 +142,15 @@ assert.match(communications, /if \(error\.confirmedBackendError\) throw error/, 
 assert.doesNotMatch(`${app}
 ${readFileSync('js/modules/ui.js', 'utf8')}
 ${readFileSync('js/modules/utils.js', 'utf8')}`, /v9\.5 Fixed/);
+
+assert.match(communications, /modal-backdrop feedback-modal visible/, 'feedback modal must use the visible modal state');
+assert.match(adminModule, /communicationSettingsForm'\)\?\.requestSubmit\(\)/, 'Salva tutto must also persist local communication settings');
+
+assert.doesNotMatch(db, /INLINE_DB/, 'legacy inline database must not coexist with DB_DATA');
+assert.match(html, /id="exportCsvBtn"/, 'CSV export must be reachable from the UI');
+assert.match(html, /id="statsSummaryModal"/, 'statistics must use an app modal');
+assert.doesNotMatch(controller, /alert\(\[/, 'statistics must not use blocking native alert');
+assert.match(controller, /visibleEntries/, 'copy list must respect the active filter');
+assert.match(sw, /offline\.html/);
+assert.match(css, /\.item-text mark/);
+assert.match(html, /Per assegnare un singolo item/);
