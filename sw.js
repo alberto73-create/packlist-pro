@@ -1,9 +1,9 @@
-// sw.js - Service Worker v35
-const CACHE_NAME = 'packlist-v35';
+// sw.js - Service Worker v36
+const CACHE_NAME = 'packlist-v36';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js?v=1.4.0',
+    '/js/app.js?v=1.4.1',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',
@@ -11,7 +11,7 @@ const ASSETS = [
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.4.0',
+    '/css/style.css?v=1.4.1',
     '/manifest.json',
     '/icons/icon-backpack.svg'
 ];
