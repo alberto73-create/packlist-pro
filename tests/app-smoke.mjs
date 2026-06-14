@@ -60,6 +60,16 @@ globalThis.prompt = () => null;
 const Ctrl = await import('../js/modules/controller.js');
 const db = await import('../js/modules/db.js');
 
+const powerbank = db.DB.base.find(item => item.n === 'Powerbank');
+powerbank.transportModes = ['auto'];
+Ctrl.setConfig({ transport: 'moto' });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), false, 'items incompatible with the selected transport must be excluded');
+Ctrl.setConfig({ transport: 'auto' });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'items compatible with the selected transport must be included');
+delete powerbank.transportModes;
+
 Ctrl.toggleWeather('sun');
 Ctrl.toggleWeather('rain');
 Ctrl.toggleWeather('cold');

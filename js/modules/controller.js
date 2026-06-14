@@ -30,6 +30,11 @@ function calculateQty(item, config) {
     return 1;
 }
 
+function isTransportCompatible(item, transport) {
+    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes : ['tutti'];
+    return modes.includes('tutti') || modes.includes(transport);
+}
+
 /**
  * Genera la lista completa dagli item del database
  */
@@ -43,6 +48,7 @@ export function generateList() {
     
     // 1. Item base (sempre inclusi)
     for (const item of DB.base) {
+        if (!isTransportCompatible(item, config.transport)) continue;
         const qty = calculateQty(item, config);
         if (qty <= 0) continue;
         
@@ -55,6 +61,7 @@ export function generateList() {
     // 2. Item lavanderia (se attiva)
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
+            if (!isTransportCompatible(item, config.transport)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
@@ -63,6 +70,7 @@ export function generateList() {
     for (const weatherType of config.weather) {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
+            if (!isTransportCompatible(item, config.transport)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
@@ -70,6 +78,7 @@ export function generateList() {
     // 4. Item trasporto
     const transportItems = DB.transport[config.transport] || [];
     for (const item of transportItems) {
+        if (!isTransportCompatible(item, config.transport)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
     }
     
@@ -77,6 +86,7 @@ export function generateList() {
     for (const actId of config.activities) {
         const items = DB.extra[actId] || [];
         for (const item of items) {
+            if (!isTransportCompatible(item, config.transport)) continue;
             const qty = calculateQty(item, config);
             if (qty <= 0) continue;
             addGeneratedItem(newList, item, qty, previousItems);

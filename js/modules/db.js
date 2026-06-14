@@ -1,7 +1,7 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
 
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.4.2";
+export const APP_VERSION = "1.5.0";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
