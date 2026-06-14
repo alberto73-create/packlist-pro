@@ -160,6 +160,26 @@ function setupFabActions() {
 }
 
 async function handleControlClick(event) {
+    const genderButton = event.target.closest?.('.gender-btn');
+    if (genderButton) {
+        const input = document.getElementById('gender');
+        if (input) input.value = genderButton.dataset.gender;
+        syncConfig();
+        return;
+    }
+
+    const transportButton = event.target.closest?.('.transport-btn');
+    if (transportButton) {
+        const input = document.getElementById('transport');
+        const option = [...(input?.options || [])].find(item => item.value === transportButton.dataset.transport);
+        if (option) {
+            option.selected = !option.selected;
+            if (![...(input?.selectedOptions || [])].length) option.selected = true;
+        }
+        syncConfig();
+        return;
+    }
+
     const weatherButton = event.target.closest?.('.weather-btn');
     if (weatherButton) {
         Ctrl.toggleWeather(weatherButton.dataset.weather);

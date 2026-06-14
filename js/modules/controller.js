@@ -945,6 +945,16 @@ export function updateConfigUI() {
     if (nights) nights.value = config.nights;
     if (gender) gender.value = config.gender;
     if (transport?.options) [...transport.options].forEach(option => { option.selected = config.transports.includes(option.value); });
+    document.querySelectorAll('.gender-btn').forEach(button => {
+        const active = button.dataset.gender === config.gender;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+    });
+    document.querySelectorAll('.transport-btn').forEach(button => {
+        const active = config.transports.includes(button.dataset.transport);
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+    });
     if (laundryFreq) laundryFreq.value = config.laundryFreq;
     if (laundryBuffer) laundryBuffer.value = config.laundryBuffer;
     

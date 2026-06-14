@@ -69,6 +69,8 @@ assert.match(admin, /data-quantity="every"/, 'admin items must expose quantity f
 assert.match(controller, /isTransportCompatible\(item, config\.transports\)/, 'generated items must be filtered by per-item transport compatibility');
 assert.match(controller, /Math\.ceil\(coveredDays/, 'quantity frequency must round up');
 assert.match(html, /option value="camper"/, 'the trip transport selector must expose camper');
+assert.match(html, /class="choice-btn transport-btn"/, 'public transport selection must use compact visual buttons');
+assert.match(html, /class="choice-btn gender-btn"/, 'public gender selection must use compact visual buttons');
 assert.match(html, /option value="walking"/, 'walking and trekking must use one canonical transport mode');
 assert.doesNotMatch(html, /option value="backpack"/, 'backpack must not be duplicated as a transport mode');
 assert.match(html, /id="itemWeight"/);
