@@ -5,7 +5,7 @@ export const DB_DATA = {
     {
       "n": "calza",
       "q": "f",
-      "cat": "Varie",
+      "cat": "Abbigliamento Base",
       "s": "U",
       "w": 0,
       "v": 1,
