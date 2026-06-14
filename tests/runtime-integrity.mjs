@@ -128,9 +128,13 @@ assert.match(communications, /mode: 'no-cors'/);
 assert.doesNotMatch(communications, /return \{ ok: true \};/, 'non-JSON responses must never be assumed successful');
 
 assert.match(html, /id="feedbackBtn"/);
+assert.match(app, /fabItem\.id === 'feedbackBtn'\) openFeedbackModal\(\)/, 'the Feedback FAB action must open the feedback modal');
 assert.match(html, /id="adminFabBtn"/);
 assert.match(html, /id="removeCheckedBtn"/);
 assert.match(communications, /class="feedback-stars"/);
+assert.match(communications, /<h2 id="feedbackTitle">Lascia un feedback<\/h2>/);
+assert.equal((communications.match(/data-rating="\$\{x\}"/g) || []).length, 1, 'feedback must render its five stars from one canonical 1..5 list');
+assert.match(communications, /\[1,2,3,4,5\]\.map/, 'feedback must render exactly five rating choices');
 assert.match(communications, /data-rating="\$\{x\}"/);
 assert.match(communications, /if\(!form\.elements\.rating\.value\)/, 'feedback must require an explicit rating');
 assert.match(communications, /if\(!form\.elements\.message\.value\.trim\(\)\)/, 'feedback must require a comment');

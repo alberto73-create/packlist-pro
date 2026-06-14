@@ -9,6 +9,7 @@ const call = async ({ method = 'POST', password, ip = `test-${Math.random()}` } 
 };
 process.env.ADMIN_PASSWORD = 'correct-test-password';
 assert.deepEqual(await call({ method: 'GET' }), { statusCode: 405, body: { ok: false, error: 'Metodo non consentito' } });
+assert.deepEqual(await call({ password: '' }), { statusCode: 401, body: { ok: false, error: 'Credenziali non valide' } });
 assert.deepEqual(await call({ password: 'random-wrong-password' }), { statusCode: 401, body: { ok: false, error: 'Credenziali non valide' } });
 assert.deepEqual(await call({ password: 'correct-test-password' }), { statusCode: 200, body: { ok: true } });
 console.log('Admin authentication endpoint test passed');
