@@ -1,14 +1,15 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
 
 // js/modules/db.js - Database e Costanti Packlist Pro v9.5 Fixed
-export const APP_VERSION = "1.7.0";
+export const APP_VERSION = "1.8.0";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
 export const DEFAULT_CONFIG = {
   nights: 1, 
   gender: 'U', 
-  transport: 'auto',
+  transport: 'car',
+  transports: ['car'],
   weather: [], 
   activities: [],
   laundry: false, 
@@ -200,8 +201,8 @@ export const PER_NIGHT = new Set(PER_NIGHT_DATA);
 export const DAYTRIP_EXCLUDE = new Set(DAYTRIP_EXCLUDE_DATA);
 
 const WARNING_CHECKS = [
-  s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Coltellino')),
-  s => s.config.transport === 'aereo' && Object.values(s.list).flat().some(i => i.n.includes('Accendino')),
+  s => (s.config.transports || [s.config.transport]).includes('plane') && Object.values(s.list).flat().some(i => i.n.includes('Coltellino')),
+  s => (s.config.transports || [s.config.transport]).includes('plane') && Object.values(s.list).flat().some(i => i.n.includes('Accendino')),
   s => s.config.nights === 0 && s.config.laundry,
   s => s.config.nights > 6 && !s.config.laundry,
 ];

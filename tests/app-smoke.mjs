@@ -67,13 +67,17 @@ assert.equal(longTripWarning.check({ config: { nights: 6, laundry: false } }), f
 assert.equal(longTripWarning.check({ config: { nights: 7, laundry: true } }), false, 'long-trip warning must stay hidden when laundry is active');
 
 const powerbank = db.DB.base.find(item => item.n === 'Powerbank');
-powerbank.transportModes = ['auto'];
+powerbank.transportModes = ['car'];
 Ctrl.setConfig({ transport: 'moto' });
 Ctrl.generateList();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), false, 'items incompatible with the selected transport must be excluded');
 Ctrl.setConfig({ transport: 'auto' });
 Ctrl.generateList();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'items compatible with the selected transport must be included');
+powerbank.transportModes = ['walking'];
+Ctrl.setConfig({ transports: ['motorcycle', 'walking'] });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'an item must be included when at least one selected transport matches');
 delete powerbank.transportModes;
 
 powerbank.weatherModes = ['rain'];

@@ -33,11 +33,14 @@ function calculateQty(item, config) {
     return qty;
 }
 
-function isTransportCompatible(item, transport) {
-    const aliases = { backpack: 'a_piedi_trekking', zaino: 'a_piedi_trekking', viaggio_zaino: 'a_piedi_trekking', trekking: 'a_piedi_trekking', treno_regionale: 'treno' };
-    const selected = aliases[transport] || transport;
-    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes.map(mode => aliases[mode] || mode) : ['tutti'];
-    return modes.includes('tutti') || modes.includes(selected);
+function normalizeTransportMode(mode) {
+    return ({ auto:'car', macchina:'car', auto_macchina:'car', moto:'motorcycle', aereo:'plane', treno:'train', treno_regionale:'train', backpack:'walking', zaino:'walking', viaggio_zaino:'walking', trekking:'walking', a_piedi_trekking:'walking' })[mode] || mode;
+}
+
+function isTransportCompatible(item, transports) {
+    const selected = (Array.isArray(transports) ? transports : [transports]).map(normalizeTransportMode);
+    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes.map(normalizeTransportMode) : ['tutti'];
+    return modes.includes('tutti') || selected.some(transport => modes.includes(transport));
 }
 
 function isWeatherCompatible(item, selectedWeather) {
@@ -58,7 +61,7 @@ export function generateList() {
     
     // 1. Item base (sempre inclusi)
     for (const item of DB.base) {
-        if (!isTransportCompatible(item, config.transport)) continue;
+        if (!isTransportCompatible(item, config.transports)) continue;
         if (!isWeatherCompatible(item, config.weather)) continue;
         const qty = calculateQty(item, config);
         if (qty <= 0) continue;
@@ -72,7 +75,7 @@ export function generateList() {
     // 2. Item lavanderia (se attiva)
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
-            if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isTransportCompatible(item, config.transports)) continue;
             if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
@@ -82,16 +85,17 @@ export function generateList() {
     for (const weatherType of config.weather) {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
-            if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isTransportCompatible(item, config.transports)) continue;
             if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
     
     // 4. Item trasporto
-    const transportItems = DB.transport[config.transport === 'a_piedi_trekking' ? 'backpack' : config.transport] || [];
+    const legacyTransportKeys = { car:'auto', motorcycle:'moto', plane:'aereo', walking:'backpack' };
+    const transportItems = config.transports.flatMap(transport => DB.transport[legacyTransportKeys[transport] || transport] || []);
     for (const item of transportItems) {
-        if (!isTransportCompatible(item, config.transport)) continue;
+        if (!isTransportCompatible(item, config.transports)) continue;
         if (!isWeatherCompatible(item, config.weather)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
     }
@@ -100,7 +104,7 @@ export function generateList() {
     for (const actId of config.activities) {
         const items = DB.extra[actId] || [];
         for (const item of items) {
-            if (!isTransportCompatible(item, config.transport)) continue;
+            if (!isTransportCompatible(item, config.transports)) continue;
             if (!isWeatherCompatible(item, config.weather)) continue;
             const qty = calculateQty(item, config);
             if (qty <= 0) continue;
@@ -525,7 +529,7 @@ export function loadTemplate(name) {
 
     if (nights) nights.value = STATE.config.nights;
     if (gender) gender.value = STATE.config.gender;
-    if (transport) transport.value = STATE.config.transport;
+    if (transport?.options) [...transport.options].forEach(option => { option.selected = STATE.config.transports.includes(option.value); });
     if (laundryFreq) laundryFreq.value = STATE.config.laundryFreq;
     if (laundryBuffer) laundryBuffer.value = STATE.config.laundryBuffer;
 
@@ -940,7 +944,7 @@ export function updateConfigUI() {
 
     if (nights) nights.value = config.nights;
     if (gender) gender.value = config.gender;
-    if (transport) transport.value = config.transport;
+    if (transport?.options) [...transport.options].forEach(option => { option.selected = config.transports.includes(option.value); });
     if (laundryFreq) laundryFreq.value = config.laundryFreq;
     if (laundryBuffer) laundryBuffer.value = config.laundryBuffer;
     
@@ -982,7 +986,11 @@ function normalizeConfig(config = {}) {
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
     normalized.laundry = Boolean(normalized.laundry);
-    normalized.transport = ({ backpack:'a_piedi_trekking', zaino:'a_piedi_trekking', viaggio_zaino:'a_piedi_trekking', trekking:'a_piedi_trekking', treno_regionale:'treno' })[normalized.transport] || normalized.transport;
+    const requestedTransports = Array.isArray(config.transports) && config.transports.length
+        ? config.transports
+        : config.transport !== undefined ? [config.transport] : normalized.transports;
+    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : [normalized.transport]).map(normalizeTransportMode))];
+    normalized.transport = normalized.transports[0] || 'car';
     return normalized;
 }
 

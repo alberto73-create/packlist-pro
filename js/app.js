@@ -202,11 +202,13 @@ async function handleControlClick(event) {
 function syncConfig() {
     const nights = Number.parseInt(document.getElementById('nights')?.value, 10);
     const gender = document.getElementById('gender')?.value || 'U';
-    const transport = document.getElementById('transport')?.value || 'auto';
+    const transportInput = document.getElementById('transport');
+    const transports = [...(transportInput?.selectedOptions || [])].map(option => option.value);
+    const transport = transports[0] || 'car';
     const laundryFreq = Number.parseInt(document.getElementById('laundryFreq')?.value, 10);
     const laundryBuffer = Number.parseInt(document.getElementById('laundryBuffer')?.value, 10);
     
-    Ctrl.setConfig({ nights, gender, transport, laundryFreq, laundryBuffer });
+    Ctrl.setConfig({ nights, gender, transport, transports, laundryFreq, laundryBuffer });
     Ctrl.generateList();
 }
 

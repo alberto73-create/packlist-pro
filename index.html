@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.7.0">
+    <link rel="stylesheet" href="./css/style.css?v=1.8.0">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
         </div>
         <div class="header-right">
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.7.0</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.8.0</span>
         </div>
     </div>
 
@@ -93,13 +93,13 @@
         <div class="setup-grid">
             <div class="input-box">
                 <label>🚗 MEZZO</label>
-                <select id="transport">
-                    <option value="auto">🚗 Auto</option>
-                    <option value="moto">🏍️ Moto</option>
-                    <option value="aereo">✈️ Aereo</option>
-                    <option value="treno">🚆 Treno</option>
+                <select id="transport" multiple aria-label="Mezzi di trasporto">
+                    <option value="car">🚗 Auto</option>
+                    <option value="motorcycle">🏍️ Moto</option>
+                    <option value="plane">✈️ Aereo</option>
+                    <option value="train">🚆 Treno</option>
                     <option value="camper">🚐 Camper</option>
-                    <option value="a_piedi_trekking">🥾 A piedi/Trekking</option>
+                    <option value="walking">🥾 A piedi/Trekking</option>
                 </select>
             </div>
             <div class="input-box">
@@ -244,6 +244,6 @@
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.7.0"></script>
+    <script type="module" src="./js/app.js?v=1.8.0"></script>
 </body>
 </html>

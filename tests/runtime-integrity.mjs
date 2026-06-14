@@ -66,10 +66,10 @@ assert.match(controller, /isWeatherCompatible\(item, config\.weather\)/, 'genera
 assert.match(admin, /group\.querySelectorAll\('\[data-transport-mode\]'\)/, 'transport chip changes must update in place without resetting scroll');
 assert.match(admin, /adminPasswordToggle/, 'admin login must expose a password visibility control');
 assert.match(admin, /data-quantity="every"/, 'admin items must expose quantity frequency rules');
-assert.match(controller, /isTransportCompatible\(item, config\.transport\)/, 'generated items must be filtered by per-item transport compatibility');
+assert.match(controller, /isTransportCompatible\(item, config\.transports\)/, 'generated items must be filtered by per-item transport compatibility');
 assert.match(controller, /Math\.ceil\(coveredDays/, 'quantity frequency must round up');
 assert.match(html, /option value="camper"/, 'the trip transport selector must expose camper');
-assert.match(html, /option value="a_piedi_trekking"/, 'walking and trekking must use one canonical transport mode');
+assert.match(html, /option value="walking"/, 'walking and trekking must use one canonical transport mode');
 assert.doesNotMatch(html, /option value="backpack"/, 'backpack must not be duplicated as a transport mode');
 assert.match(html, /id="itemWeight"/);
 assert.match(html, /id="itemBaggage"/);
