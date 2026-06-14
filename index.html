@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.10.1">
+    <link rel="stylesheet" href="./css/style.css?v=1.10.7">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
         </div>
         <div class="header-right">
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.1</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.7</span>
         </div>
     </div>
 
@@ -87,10 +87,12 @@
             <div class="input-box">
                 <label>👤 SESSO</label>
                 <select id="gender" class="visual-select-source" aria-label="Sesso">
+                    <option value="U">🧑 Unisex</option>
                     <option value="M">👨 Maschio</option>
                     <option value="F">👩 Femmina</option>
                 </select>
                 <div class="choice-grid gender-choice-grid">
+                    <button type="button" class="choice-btn gender-btn" data-gender="U">🧑 Unisex</button>
                     <button type="button" class="choice-btn gender-btn" data-gender="M">👨 Maschio</button>
                     <button type="button" class="choice-btn gender-btn" data-gender="F">👩 Femmina</button>
                 </div>
@@ -170,7 +172,7 @@
             <button type="button" class="act-btn" id="act-alpinismo" data-activity="alpinismo" aria-pressed="false"><i aria-hidden="true">🏔️</i><span>Alpinismo</span></button>
             <button type="button" class="act-btn" id="act-ferrata" data-activity="ferrata" aria-pressed="false"><i aria-hidden="true">🧗</i><span>Ferrata</span></button>
         </div>
-        <button type="button" class="btn-main" id="generateBtn">🎒 GENERA PACKLIST</button>
+        <div class="generate-actions"><button type="button" class="btn-main" id="generateBtn">🎒 AGGIORNA PACKLIST</button><button type="button" class="btn-secondary share-quick" id="shareQuickBtn">🔗 Condividi con chi viaggia con te</button></div>
     </div>
 
     <!-- Stats Bar -->
@@ -221,9 +223,13 @@
         <button type="button" class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
         <button type="button" class="fab-item" id="shareListBtn"><span class="fab-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/></svg></span><span>Condividi lista</span></button>
         <button type="button" class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
-        <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📊</span><span>Statistiche & Log</span></button>
-        <button type="button" class="fab-item" id="feedbackBtn"><span class="fab-item-icon">💬</span><span>Lascia feedback</span></button>
-        <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+        <button type="button" class="fab-item" id="removeCheckedBtn"><span class="fab-item-icon">✅</span><span>Rimuovi presi</span></button>
+        <details class="fab-more"><summary>••• Altri strumenti</summary><div>
+            <button type="button" class="fab-item" id="exportCsvBtn"><span class="fab-item-icon">📊</span><span>Esporta CSV</span></button>
+            <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📈</span><span>Statistiche</span></button>
+            <button type="button" class="fab-item" id="feedbackBtn"><span class="fab-item-icon">💬</span><span>Lascia feedback</span></button>
+            <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+        </div></details>
     </div>
     <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
 </div>
@@ -244,7 +250,7 @@
 <!-- Initial baggage setup -->
 <div class="modal-backdrop" id="baggageSetupModal" aria-hidden="true">
     <section class="item-options-card baggage-dialog" role="dialog" aria-modal="true" aria-labelledby="baggageSetupTitle">
-        <div class="item-options-head"><div><span class="section-label">Nuova lista</span><h2 id="baggageSetupTitle">Quanti bagagli compongono il tuo carico?</h2></div></div>
+        <div class="item-options-head"><div><span class="section-label">Nuova lista</span><h2 id="baggageSetupTitle">Quanti bagagli compongono il tuo carico?</h2><p class="baggage-guide">Potrai modificare i bagagli dal menu ⋮ e assegnare ogni item dal pulsante opzioni della sua riga.</p></div></div>
         <div class="quick-count" id="baggageQuickCount"><button data-count="1" class="active">1</button><button data-count="2">2</button><button data-count="3">3</button><button data-count="4">4+</button></div>
         <label class="baggage-count-label">Numero bagagli<input type="number" id="baggageCount" min="1" max="12" value="1"></label>
         <div id="baggageSetupNames" class="baggage-name-fields"></div>
@@ -255,12 +261,19 @@
 <!-- Baggage manager -->
 <div class="modal-backdrop" id="baggageManagerModal" aria-hidden="true">
     <section class="item-options-card baggage-dialog" role="dialog" aria-modal="true" aria-labelledby="baggageManagerTitle">
-        <div class="item-options-head"><div><span class="section-label">Configurazione</span><h2 id="baggageManagerTitle">Gestisci Bagagli</h2></div><button type="button" class="modal-close" id="baggageManagerClose" aria-label="Chiudi">×</button></div>
+        <div class="item-options-head"><div><span class="section-label">Configurazione</span><h2 id="baggageManagerTitle">Gestisci Bagagli</h2><p class="baggage-guide">Per assegnare un singolo item, apri le sue opzioni dalla checklist e scegli “Assegna a Bagaglio”.</p></div><button type="button" class="modal-close" id="baggageManagerClose" aria-label="Chiudi">×</button></div>
         <div id="baggageManagerRows" class="baggage-manager-rows"></div>
         <div class="modal-actions"><button type="button" class="btn-secondary" id="baggageAddBtn">+ Aggiungi bagaglio</button><button type="button" class="btn-sm" id="baggageManagerSave">Salva modifiche</button></div>
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.10.1"></script>
+<div class="modal-backdrop" id="statsSummaryModal" aria-hidden="true">
+    <section class="item-options-card stats-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="statsSummaryTitle">
+        <div class="item-options-head"><div><span class="section-label">Riepilogo</span><h2 id="statsSummaryTitle">Statistiche Packlist</h2></div><button type="button" class="modal-close" id="statsSummaryClose" aria-label="Chiudi">×</button></div>
+        <div id="statsSummaryContent"></div>
+    </section>
+</div>
+
+    <script type="module" src="./js/app.js?v=1.10.7"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// js/app.js - Entry Point Packlist Pro v9.5 Fixed
+// js/app.js - Entry point Packlist Pro
 // Architettura modulare ES6 completa
 
 import { STATE, APP_VERSION } from './modules/db.js';
@@ -9,10 +9,11 @@ import { initAdmin } from './modules/admin.js';
 import { initCommunications, openFeedbackModal, renderSupportBanner } from './modules/communications.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
+// Shared by native input listeners and the delegated visual controls.
+const scheduleConfigSync = U.debounce(syncConfig, 180);
+
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[App] Avvio Packlist Pro v9.5 Fixed');
-
     // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
     Ctrl.loadState();
     await Ctrl.loadSharedListFromUrl();
@@ -44,10 +45,11 @@ function setupEventListeners() {
     Ctrl.setupEventDelegation();
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
+    document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
-        input?.addEventListener('change', syncConfig);
+        input?.addEventListener('change', scheduleConfigSync);
     });
 
     // Un solo listener delegato mantiene interattivi anche i controlli renderizzati dinamicamente.
@@ -83,7 +85,6 @@ function setupEventListeners() {
     setupFabActions();
     setupItemOptions();
     setupBaggageModals();
-    if (!STATE.baggageSetup) View.openBaggageSetup();
 }
 
 function setupItemOptions() {
@@ -134,6 +135,8 @@ function setupBaggageModals() {
         }
         View.openBaggageManager(STATE, U);
     });
+    document.getElementById('statsSummaryClose')?.addEventListener('click', View.closeStatsSummary);
+    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); });
 }
 
 function setupTemplateActions() {
@@ -166,7 +169,7 @@ async function handleControlClick(event) {
     if (genderButton) {
         const input = document.getElementById('gender');
         if (input) input.value = genderButton.dataset.gender;
-        syncConfig();
+        scheduleConfigSync();
         return;
     }
 
@@ -178,7 +181,7 @@ async function handleControlClick(event) {
             option.selected = !option.selected;
             if (![...(input?.selectedOptions || [])].length) option.selected = true;
         }
-        syncConfig();
+        scheduleConfigSync();
         return;
     }
 
@@ -212,8 +215,10 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'manageBaggagesBtn') View.openBaggageManager(STATE, U);
     else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
     else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
+    else if (fabItem.id === 'exportCsvBtn') Ctrl.exportStatsCSV();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
+    else if (fabItem.id === 'removeCheckedBtn' && confirm('Rimuovere dalla lista tutti gli item già presi?')) Ctrl.removeChecked();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
     else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
@@ -258,5 +263,3 @@ window.App = {
     resetState: () => Ctrl.resetState(),
     exportCSV: () => Ctrl.exportStatsCSV()
 };
-
-console.log('[App] Packlist Pro pronto! Usa window.App per debug.');

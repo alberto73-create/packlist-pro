@@ -1,4 +1,4 @@
-// js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente - Versione v9.5 Fixed
+// js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente
 
 import { FILTER_MAP } from './db.js';
 
@@ -30,7 +30,7 @@ export function list(state, U) {
             if (!items.length) continue;
             const sorted = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
             const box = document.createElement('div');
-            box.className = 'cat-box'; box.dataset.cat = cat;
+            box.className = `cat-box${sorted.every(item => item.checked) ? ' complete' : ''}`; box.dataset.cat = cat;
             box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${sorted.filter(i => !i.checked).length}/${items.length}</span></div>`;
             sorted.forEach(item => box.appendChild(createItemRow(item, cat, U)));
             const addRow = document.createElement('div'); addRow.className = 'add-custom';
@@ -123,6 +123,7 @@ export function updateItemRow(uid, checked) {
             const rows = box.querySelectorAll('.item-row');
             const pending = [...rows].filter(itemRow => !itemRow.classList.contains('taken')).length;
             count.textContent = `${pending}/${rows.length}`;
+            box?.classList.toggle('complete', pending === 0);
         }
     }
 }
@@ -224,13 +225,6 @@ export function stats(state, U) {
 }
 
 /**
- * Apre il modal delle impostazioni (placeholder)
- */
-export function openSettingsModal() {
-    console.log('Impostazioni non implementate');
-}
-
-/**
  * Mostra lo stato vuoto
  */
 export function showEmptyState(message = 'Nessun elemento da mostrare') {
@@ -318,14 +312,45 @@ export function loadTemplateDropdown(getTplFn) {
  * Filtra la lista in base al termine di ricerca
  */
 export function filterListBySearch(term) {
-    const searchLower = term.toLowerCase();
+    const searchLower = term.trim().toLowerCase();
     document.querySelectorAll('.item-row').forEach(row => {
-        const text = row.querySelector('.item-text')?.textContent.toLowerCase() || '';
+        const label = row.querySelector('.item-text');
+        const original = label?.dataset.searchText || label?.textContent || '';
+        if (label) label.dataset.searchText = original;
+        const text = original.toLowerCase();
         row.style.display = text.includes(searchLower) ? 'flex' : 'none';
+        if (label) {
+            label.replaceChildren();
+            const start = searchLower ? text.indexOf(searchLower) : -1;
+            if (start < 0) label.textContent = original;
+            else {
+                label.append(document.createTextNode(original.slice(0, start)));
+                const mark = document.createElement('mark');
+                mark.textContent = original.slice(start, start + searchLower.length);
+                label.append(mark, document.createTextNode(original.slice(start + searchLower.length)));
+            }
+        }
     });
     document.querySelectorAll('.cat-box').forEach(box => {
         box.style.display = [...box.querySelectorAll('.item-row')].some(r => r.style.display !== 'none') ? 'block' : 'none';
     });
+}
+
+export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines }) {
+    const modal = document.getElementById('statsSummaryModal');
+    const content = document.getElementById('statsSummaryContent');
+    if (!modal || !content) return;
+    const safe = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('statsSummaryClose')?.focus();
+}
+
+export function closeStatsSummary() {
+    const modal = document.getElementById('statsSummaryModal');
+    modal?.classList.remove('visible');
+    modal?.setAttribute('aria-hidden', 'true');
 }
 
 /**
@@ -337,43 +362,6 @@ export function updateFilterUI(filterType) {
     if(activeBtn) activeBtn.classList.add('active-filter');
 }
 
-/**
- * Toggle del menu FAB
- */
-export function toggleFabMenu() {
-    const menu = document.getElementById('fabMenu');
-    const btn = document.getElementById('fabMain');
-    if (menu && btn) {
-        menu.classList.toggle('open');
-        btn.classList.toggle('open');
-    }
-}
-
-/**
- * Aggiorna il display del progresso
- */
-export function updateProgressDisplay(pct, weightData) {
-    const fillEl = document.getElementById('progressFill');
-    const weightFillEl = document.getElementById('weightFill');
-    const pctEl = document.getElementById('progressPct');
-    
-    if (fillEl) fillEl.style.width = `${pct}%`;
-    if (weightFillEl && weightData) {
-        weightFillEl.style.width = `${Math.min(100, (weightData.total / 15) * 100)}%`;
-    }
-    if (pctEl) pctEl.textContent = `${pct}%`;
-}
-
-/**
- * Mostra il banner di installazione PWA
- */
-export function showInstallBanner() {
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-        banner.style.display = 'flex';
-    }
-}
-
 // Export default con tutte le funzioni pubbliche
 export default {
     list,
@@ -381,7 +369,6 @@ export default {
     updateItemRow,
     applyWornStatus,
     stats,
-    openSettingsModal,
     showEmptyState,
     updateDaytripBanner,
     updateLaundryToggle,
@@ -389,8 +376,7 @@ export default {
     updateActivityButtons,
     loadTemplateDropdown,
     filterListBySearch,
-    updateFilterUI,
-    toggleFabMenu,
-    updateProgressDisplay,
-    showInstallBanner
+    openStatsSummary,
+    closeStatsSummary,
+    updateFilterUI
 };

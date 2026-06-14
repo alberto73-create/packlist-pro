@@ -1,4 +1,4 @@
-// js/modules/utils.js - Utility Functions Packlist Pro v9.5 Fixed
+// js/modules/utils.js - Utility functions Packlist Pro
 
 /**
  * Escapes HTML special characters to prevent XSS
@@ -44,19 +44,6 @@ export function toast(message, duration = 2000) {
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
     toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #333;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 8px;
-        z-index: 10000;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    `;
     document.body.appendChild(toast);
     
     setTimeout(() => toast.remove(), duration);

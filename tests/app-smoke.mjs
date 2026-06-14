@@ -30,7 +30,7 @@ function element(id = '') {
 const ids = [
     'results', 'statsBar', 'progressFill', 'progressPct', 'itemsCount', 'weightSuitcase', 'weightTotal',
     'wornChip', 'wornWeight', 'weightFill', 'daytripBanner', 'laundryToggle', 'laundryFreqBox', 'nights',
-    'gender', 'transport', 'laundryFreq', 'laundryBuffer', 'warningsBox', 'templateSelect', 'templateName', 'itemBaggage', 'baggageSetupModal', 'baggageSetupNames',
+    'gender', 'transport', 'laundryFreq', 'laundryBuffer', 'warningsBox', 'templateSelect', 'templateName', 'itemBaggage', 'baggageSetupModal', 'baggageSetupNames', 'statsSummaryModal', 'statsSummaryContent', 'statsSummaryClose',
     'w-sun', 'w-rain', 'w-cold', 'act-trekking', 'act-nuoto'
 ];
 const elements = new Map(ids.map(id => [id, element(id)]));
@@ -49,7 +49,8 @@ globalThis.document = {
 globalThis.localStorage = {
     data: {}, getItem(key) { return this.data[key] ?? null; }, setItem(key, value) { this.data[key] = value; }, removeItem(key) { delete this.data[key]; }
 };
-Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => {} } }, configurable: true });
+let clipboardText = '';
+Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async value => { clipboardText = value; } } }, configurable: true });
 let printCalled = false;
 globalThis.window = { jspdf: null, location: new URL('https://packlist.example/index.html?old=1'), history: { replaceState() {} }, print() { printCalled = true; } };
 let alertCalled = false;
@@ -216,11 +217,20 @@ for (const filter of ['all', 'clothing', 'tech', 'essentials']) {
 }
 Ctrl.setFilter('invalid-filter');
 assert.equal(db.STATE.filter, 'all');
+Ctrl.setFilter('clothing');
 assert.equal(await Ctrl.copyList(), true);
+assert.match(clipboardText, /Filtro: clothing/);
+assert.doesNotMatch(clipboardText, /Caricabatterie USB-C/, 'copy must respect the active clothing filter');
+Ctrl.setFilter('all');
 Ctrl.showStatsSummary();
-assert.equal(alertCalled, true);
+assert.equal(elements.get('statsSummaryModal').classList.contains('visible'), true, 'stats must open a non-blocking modal');
+assert.equal(alertCalled, false, 'stats must not use blocking native alert');
 Ctrl.uncheckAll();
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.checked), false);
+const removable = Object.values(db.STATE.list).flat()[0];
+Ctrl.toggleItemChecked(removable.uid);
+assert.equal(Ctrl.removeChecked(), 1, 'remove checked must remove exactly the selected item');
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.uid === removable.uid), false);
 const validStateBeforeUpdate = localStorage.getItem('packlist_state');
 localStorage.setItem('packlist_state_backup', validStateBeforeUpdate);
 localStorage.setItem('packlist_state', '{broken');
@@ -235,7 +245,7 @@ const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 const controller = readFileSync(new URL('../js/modules/controller.js', import.meta.url), 'utf8');
 const fab = {
     'filter-all': 'setFilter', 'filter-clothing': 'setFilter', 'filter-tech': 'setFilter', 'filter-essentials': 'setFilter',
-    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', shareListBtn: 'shareList', uncheckAllBtn: 'uncheckAll', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
+    copyListBtn: 'copyList', exportPdfBtn: 'exportPDF', exportCsvBtn: 'exportStatsCSV', shareListBtn: 'shareList', uncheckAllBtn: 'uncheckAll', removeCheckedBtn: 'removeChecked', showStatsBtn: 'showStatsSummary', resetSessionBtn: 'resetState'
 };
 for (const [id, action] of Object.entries(fab)) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
