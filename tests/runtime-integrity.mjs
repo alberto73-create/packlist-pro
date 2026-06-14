@@ -113,3 +113,5 @@ assert.match(communications, /loadRemoteCommunicationSettings/);
 assert.match(communications, /retryPendingFeedback/);
 assert.match(communications, /action:\s*'saveCommunication'/);
 assert.doesNotMatch(communications, /script\.google\.com\/macros\/s\//, 'Apps Script endpoint must be configured by the admin');
+assert.match(html, /script-src-elem[^;]*https:\/\/script\.google\.com[^;]*https:\/\/script\.googleusercontent\.com/, 'CSP must allow Apps Script JSONP fallback');
+assert.match(html, /connect-src[^;]*https:\/\/script\.google\.com[^;]*https:\/\/script\.googleusercontent\.com/, 'CSP must allow Apps Script fetch requests');
