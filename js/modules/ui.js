@@ -311,14 +311,45 @@ export function loadTemplateDropdown(getTplFn) {
  * Filtra la lista in base al termine di ricerca
  */
 export function filterListBySearch(term) {
-    const searchLower = term.toLowerCase();
+    const searchLower = term.trim().toLowerCase();
     document.querySelectorAll('.item-row').forEach(row => {
-        const text = row.querySelector('.item-text')?.textContent.toLowerCase() || '';
+        const label = row.querySelector('.item-text');
+        const original = label?.dataset.searchText || label?.textContent || '';
+        if (label) label.dataset.searchText = original;
+        const text = original.toLowerCase();
         row.style.display = text.includes(searchLower) ? 'flex' : 'none';
+        if (label) {
+            label.replaceChildren();
+            const start = searchLower ? text.indexOf(searchLower) : -1;
+            if (start < 0) label.textContent = original;
+            else {
+                label.append(document.createTextNode(original.slice(0, start)));
+                const mark = document.createElement('mark');
+                mark.textContent = original.slice(start, start + searchLower.length);
+                label.append(mark, document.createTextNode(original.slice(start + searchLower.length)));
+            }
+        }
     });
     document.querySelectorAll('.cat-box').forEach(box => {
         box.style.display = [...box.querySelectorAll('.item-row')].some(r => r.style.display !== 'none') ? 'block' : 'none';
     });
+}
+
+export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines }) {
+    const modal = document.getElementById('statsSummaryModal');
+    const content = document.getElementById('statsSummaryContent');
+    if (!modal || !content) return;
+    const safe = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('statsSummaryClose')?.focus();
+}
+
+export function closeStatsSummary() {
+    const modal = document.getElementById('statsSummaryModal');
+    modal?.classList.remove('visible');
+    modal?.setAttribute('aria-hidden', 'true');
 }
 
 /**
@@ -344,5 +375,7 @@ export default {
     updateActivityButtons,
     loadTemplateDropdown,
     filterListBySearch,
+    openStatsSummary,
+    closeStatsSummary,
     updateFilterUI
 };

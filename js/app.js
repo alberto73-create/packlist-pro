@@ -132,6 +132,8 @@ function setupBaggageModals() {
         }
         View.openBaggageManager(STATE, U);
     });
+    document.getElementById('statsSummaryClose')?.addEventListener('click', View.closeStatsSummary);
+    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); });
 }
 
 function setupTemplateActions() {
@@ -210,6 +212,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'manageBaggagesBtn') View.openBaggageManager(STATE, U);
     else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
     else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
+    else if (fabItem.id === 'exportCsvBtn') Ctrl.exportStatsCSV();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
     else if (fabItem.id === 'removeCheckedBtn' && confirm('Rimuovere dalla lista tutti gli item già presi?')) Ctrl.removeChecked();

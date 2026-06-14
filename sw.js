@@ -1,9 +1,10 @@
-// sw.js - Service Worker v49
-const CACHE_NAME = 'packlist-v49';
+// sw.js - Service Worker v50
+const CACHE_NAME = 'packlist-v50';
 const ASSETS = [
     '/',
     '/index.html',
-    '/js/app.js?v=1.10.4',
+    '/offline.html',
+    '/js/app.js?v=1.10.5',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',
@@ -12,7 +13,7 @@ const ASSETS = [
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.10.4',
+    '/css/style.css?v=1.10.5',
     '/manifest.json',
     '/icons/icon-backpack.svg'
 ];
@@ -52,7 +53,7 @@ self.addEventListener('fetch', event => {
             .catch(async () => {
                 const cached = await caches.match(event.request);
                 if (cached) return cached;
-                if (event.request.mode === 'navigate') return caches.match('/index.html');
+                if (event.request.mode === 'navigate') return (await caches.match('/index.html')) || caches.match('/offline.html');
                 return Response.error();
             })
     );
