@@ -22,6 +22,7 @@ assert.equal((html.match(/<link rel="stylesheet"/g) || []).length, 1, 'the runti
 assert.equal((html.match(/<script type="module"/g) || []).length, 1, 'the runtime must load exactly one module entry point');
 const app = readFileSync('js/app.js', 'utf8');
 const db = readFileSync('js/modules/db.js', 'utf8');
+const dbData = readFileSync('js/modules/db-data.js', 'utf8');
 const controller = readFileSync('js/modules/controller.js', 'utf8');
 const pwa = readFileSync('js/modules/pwa.js', 'utf8');
 const sw = readFileSync('sw.js', 'utf8');
@@ -68,7 +69,7 @@ assert.match(css, /\.baggage-section\.over-limit/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
 const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);
-const extraDatabase = db.slice(db.indexOf('  extra: {'));
+const extraDatabase = dbData.slice(dbData.indexOf('  extra: {'));
 const activityDatabaseIds = [...extraDatabase.matchAll(/^    ([a-z_]+): \[/gm)].map(([, id]) => id);
 assert.deepEqual(activityButtons, activityDatabaseIds, 'all database activities must exist statically in index.html');
 assert.doesNotMatch(`${app}\n${readFileSync('js/modules/ui.js', 'utf8')}`, /renderActivities/, 'activity visibility must not depend on dynamic rendering');

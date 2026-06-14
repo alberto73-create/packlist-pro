@@ -5,6 +5,7 @@ import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
+import { initAdmin } from './modules/admin.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
     document.documentElement.dataset.appVersion = APP_VERSION;
     setupEventListeners();
+    initAdmin();
     Ctrl.updateConfigUI();
 
     if (Object.keys(STATE.list).length > 0) {
