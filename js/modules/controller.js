@@ -1,4 +1,4 @@
-// js/modules/controller.js - Logica di Controllo Packlist Pro v9.5 Fixed
+// js/modules/controller.js - Logica di controllo Packlist Pro
 // Architettura STATE-based con gestione completa della lista
 
 import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS } from './db.js';
@@ -557,6 +557,24 @@ export function uncheckAll() {
     View.stats(STATE, U);
     saveState();
     U.toast('Spunte azzerate');
+}
+
+export function removeChecked() {
+    let removed = 0;
+    for (const category of Object.keys(STATE.list)) {
+        const remaining = STATE.list[category].filter(item => {
+            if (!item.checked) return true;
+            removed++;
+            return false;
+        });
+        if (remaining.length) STATE.list[category] = remaining;
+        else delete STATE.list[category];
+    }
+    View.list(STATE, U);
+    View.stats(STATE, U);
+    saveState();
+    U.toast(removed ? `${removed} item presi rimossi` : 'Nessun item preso da rimuovere');
+    return removed;
 }
 
 export async function copyList() {
