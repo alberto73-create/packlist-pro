@@ -3,30 +3,6 @@
 export const DB_DATA = {
   "base": [
     {
-      "n": "calza",
-      "q": "f",
-      "cat": "Abbigliamento Base",
-      "s": "U",
-      "w": 0,
-      "v": 1,
-      "worn": false,
-      "bulk": 1,
-      "transportModes": [
-        "tutti"
-      ],
-      "weatherModes": [
-        "tutti"
-      ],
-      "quantityRule": {
-        "type": "fixed",
-        "base": 1,
-        "every": 1,
-        "min": 1,
-        "max": 0,
-        "laundry": false
-      }
-    },
-    {
       "n": "Mutande",
       "q": "n",
       "cat": "Abbigliamento Base",
