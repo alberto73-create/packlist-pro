@@ -40,12 +40,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- SETUP EVENT LISTENERS ---
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
+    const scheduleConfigSync = U.debounce(syncConfig, 180);
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
+    document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
-        input?.addEventListener('change', syncConfig);
+        input?.addEventListener('change', scheduleConfigSync);
     });
 
     // Un solo listener delegato mantiene interattivi anche i controlli renderizzati dinamicamente.
@@ -81,7 +83,6 @@ function setupEventListeners() {
     setupFabActions();
     setupItemOptions();
     setupBaggageModals();
-    if (!STATE.baggageSetup) View.openBaggageSetup();
 }
 
 function setupItemOptions() {
@@ -166,7 +167,7 @@ async function handleControlClick(event) {
     if (genderButton) {
         const input = document.getElementById('gender');
         if (input) input.value = genderButton.dataset.gender;
-        syncConfig();
+        scheduleConfigSync();
         return;
     }
 
@@ -178,7 +179,7 @@ async function handleControlClick(event) {
             option.selected = !option.selected;
             if (![...(input?.selectedOptions || [])].length) option.selected = true;
         }
-        syncConfig();
+        scheduleConfigSync();
         return;
     }
 

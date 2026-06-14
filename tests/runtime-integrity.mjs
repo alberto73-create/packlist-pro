@@ -154,3 +154,12 @@ assert.match(controller, /visibleEntries/, 'copy list must respect the active fi
 assert.match(sw, /offline\.html/);
 assert.match(css, /\.item-text mark/);
 assert.match(html, /Per assegnare un singolo item/);
+
+assert.doesNotMatch(readFileSync('js/modules/utils.js', 'utf8'), /toast\.style\.cssText/, 'toast styling must use the shared stylesheet');
+assert.match(css, /\.toast-notification/);
+assert.match(app, /U\.debounce\(syncConfig, 180\)/, 'automatic config regeneration must be debounced');
+assert.doesNotMatch(app, /if \(!STATE\.baggageSetup\) View\.openBaggageSetup\(\)/, 'baggage setup must not block first exploration');
+assert.match(html, /data-gender="U"[^>]*>🧑 Unisex/);
+assert.match(html, /id="shareQuickBtn"/);
+assert.match(html, /class="fab-more"/);
+assert.match(css, /\.cat-box\.complete/);

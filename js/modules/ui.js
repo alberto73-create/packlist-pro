@@ -30,7 +30,7 @@ export function list(state, U) {
             if (!items.length) continue;
             const sorted = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
             const box = document.createElement('div');
-            box.className = 'cat-box'; box.dataset.cat = cat;
+            box.className = `cat-box${sorted.every(item => item.checked) ? ' complete' : ''}`; box.dataset.cat = cat;
             box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${sorted.filter(i => !i.checked).length}/${items.length}</span></div>`;
             sorted.forEach(item => box.appendChild(createItemRow(item, cat, U)));
             const addRow = document.createElement('div'); addRow.className = 'add-custom';
@@ -123,6 +123,7 @@ export function updateItemRow(uid, checked) {
             const rows = box.querySelectorAll('.item-row');
             const pending = [...rows].filter(itemRow => !itemRow.classList.contains('taken')).length;
             count.textContent = `${pending}/${rows.length}`;
+            box?.classList.toggle('complete', pending === 0);
         }
     }
 }
