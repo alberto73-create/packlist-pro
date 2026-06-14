@@ -1,4 +1,4 @@
-// js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente - Versione v9.5 Fixed
+// js/modules/ui.js - Modulo View per la gestione dell'interfaccia utente
 
 import { FILTER_MAP } from './db.js';
 
@@ -224,13 +224,6 @@ export function stats(state, U) {
 }
 
 /**
- * Apre il modal delle impostazioni (placeholder)
- */
-export function openSettingsModal() {
-    console.log('Impostazioni non implementate');
-}
-
-/**
  * Mostra lo stato vuoto
  */
 export function showEmptyState(message = 'Nessun elemento da mostrare') {
@@ -337,43 +330,6 @@ export function updateFilterUI(filterType) {
     if(activeBtn) activeBtn.classList.add('active-filter');
 }
 
-/**
- * Toggle del menu FAB
- */
-export function toggleFabMenu() {
-    const menu = document.getElementById('fabMenu');
-    const btn = document.getElementById('fabMain');
-    if (menu && btn) {
-        menu.classList.toggle('open');
-        btn.classList.toggle('open');
-    }
-}
-
-/**
- * Aggiorna il display del progresso
- */
-export function updateProgressDisplay(pct, weightData) {
-    const fillEl = document.getElementById('progressFill');
-    const weightFillEl = document.getElementById('weightFill');
-    const pctEl = document.getElementById('progressPct');
-    
-    if (fillEl) fillEl.style.width = `${pct}%`;
-    if (weightFillEl && weightData) {
-        weightFillEl.style.width = `${Math.min(100, (weightData.total / 15) * 100)}%`;
-    }
-    if (pctEl) pctEl.textContent = `${pct}%`;
-}
-
-/**
- * Mostra il banner di installazione PWA
- */
-export function showInstallBanner() {
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-        banner.style.display = 'flex';
-    }
-}
-
 // Export default con tutte le funzioni pubbliche
 export default {
     list,
@@ -381,7 +337,6 @@ export default {
     updateItemRow,
     applyWornStatus,
     stats,
-    openSettingsModal,
     showEmptyState,
     updateDaytripBanner,
     updateLaundryToggle,
@@ -389,8 +344,5 @@ export default {
     updateActivityButtons,
     loadTemplateDropdown,
     filterListBySearch,
-    updateFilterUI,
-    toggleFabMenu,
-    updateProgressDisplay,
-    showInstallBanner
+    updateFilterUI
 };
