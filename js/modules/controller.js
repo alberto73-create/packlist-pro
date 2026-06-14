@@ -11,23 +11,41 @@ import * as View from './ui.js';
 function calculateQty(item, config) {
     const nights = Math.max(0, Number(config.nights) || 0);
     const totalDays = nights + 1;
+    const legacyRule = item.q === 'n'
+        ? { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true }
+        : { type: 'fixed', base: 1, every: 1, min: 1, max: 0, laundry: false };
+    const rule = { ...legacyRule, ...(item.quantityRule || {}) };
 
     if (nights === 0) {
         if (DAYTRIP_EXCLUDE.has(item.n)) return 0;
-        return 1;
+        return Math.max(1, Number(rule.min) || 1);
     }
 
-    if (item.q === 'n') {
-        if (!config.laundry) return totalDays;
-
-        // Con lavanderia servono capi sufficienti fino al prossimo lavaggio,
-        // più il buffer scelto, mai più dei giorni totali del viaggio.
-        const laundryFreq = Math.max(1, Number(config.laundryFreq) || 3);
-        const laundryBuffer = Math.max(0, Number(config.laundryBuffer) || 0);
-        return Math.max(1, Math.min(totalDays, laundryFreq + laundryBuffer));
+    let coveredDays = totalDays;
+    if (config.laundry && rule.laundry) {
+        coveredDays = Math.min(totalDays, Math.max(1, Number(config.laundryFreq) || 3) + Math.max(0, Number(config.laundryBuffer) || 0));
     }
+    let qty = rule.type === 'fixed'
+        ? Math.max(1, Number(rule.base) || 1)
+        : Math.ceil(coveredDays / Math.max(1, Number(rule.every) || 1)) * Math.max(1, Number(rule.base) || 1);
+    qty = Math.max(Math.max(0, Number(rule.min) || 0), qty);
+    if (Number(rule.max) > 0) qty = Math.min(qty, Number(rule.max));
+    return qty;
+}
 
-    return 1;
+function normalizeTransportMode(mode) {
+    return ({ auto:'car', macchina:'car', auto_macchina:'car', moto:'motorcycle', aereo:'plane', treno:'train', treno_regionale:'train', backpack:'walking', zaino:'walking', viaggio_zaino:'walking', trekking:'walking', a_piedi_trekking:'walking' })[mode] || mode;
+}
+
+function isTransportCompatible(item, transports) {
+    const selected = (Array.isArray(transports) ? transports : [transports]).map(normalizeTransportMode);
+    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes.map(normalizeTransportMode) : ['tutti'];
+    return modes.includes('tutti') || selected.some(transport => modes.includes(transport));
+}
+
+function isWeatherCompatible(item, selectedWeather) {
+    const modes = Array.isArray(item.weatherModes) && item.weatherModes.length ? item.weatherModes : ['tutti'];
+    return modes.includes('tutti') || selectedWeather.some(weather => modes.includes(weather));
 }
 
 /**
@@ -43,6 +61,8 @@ export function generateList() {
     
     // 1. Item base (sempre inclusi)
     for (const item of DB.base) {
+        if (!isTransportCompatible(item, config.transports)) continue;
+        if (!isWeatherCompatible(item, config.weather)) continue;
         const qty = calculateQty(item, config);
         if (qty <= 0) continue;
         
@@ -55,6 +75,8 @@ export function generateList() {
     // 2. Item lavanderia (se attiva)
     if (config.laundry && config.nights > 0) {
         for (const item of DB.laundry) {
+            if (!isTransportCompatible(item, config.transports)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
@@ -63,13 +85,18 @@ export function generateList() {
     for (const weatherType of config.weather) {
         const items = DB.weather[weatherType] || [];
         for (const item of items) {
+            if (!isTransportCompatible(item, config.transports)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
         }
     }
     
     // 4. Item trasporto
-    const transportItems = DB.transport[config.transport] || [];
+    const legacyTransportKeys = { car:'auto', motorcycle:'moto', plane:'aereo', walking:'backpack' };
+    const transportItems = config.transports.flatMap(transport => DB.transport[legacyTransportKeys[transport] || transport] || []);
     for (const item of transportItems) {
+        if (!isTransportCompatible(item, config.transports)) continue;
+        if (!isWeatherCompatible(item, config.weather)) continue;
         addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
     }
     
@@ -77,6 +104,8 @@ export function generateList() {
     for (const actId of config.activities) {
         const items = DB.extra[actId] || [];
         for (const item of items) {
+            if (!isTransportCompatible(item, config.transports)) continue;
+            if (!isWeatherCompatible(item, config.weather)) continue;
             const qty = calculateQty(item, config);
             if (qty <= 0) continue;
             addGeneratedItem(newList, item, qty, previousItems);
@@ -500,7 +529,7 @@ export function loadTemplate(name) {
 
     if (nights) nights.value = STATE.config.nights;
     if (gender) gender.value = STATE.config.gender;
-    if (transport) transport.value = STATE.config.transport;
+    if (transport?.options) [...transport.options].forEach(option => { option.selected = STATE.config.transports.includes(option.value); });
     if (laundryFreq) laundryFreq.value = STATE.config.laundryFreq;
     if (laundryBuffer) laundryBuffer.value = STATE.config.laundryBuffer;
 
@@ -915,7 +944,17 @@ export function updateConfigUI() {
 
     if (nights) nights.value = config.nights;
     if (gender) gender.value = config.gender;
-    if (transport) transport.value = config.transport;
+    if (transport?.options) [...transport.options].forEach(option => { option.selected = config.transports.includes(option.value); });
+    document.querySelectorAll('.gender-btn').forEach(button => {
+        const active = button.dataset.gender === config.gender;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+    });
+    document.querySelectorAll('.transport-btn').forEach(button => {
+        const active = config.transports.includes(button.dataset.transport);
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+    });
     if (laundryFreq) laundryFreq.value = config.laundryFreq;
     if (laundryBuffer) laundryBuffer.value = config.laundryBuffer;
     
@@ -957,6 +996,11 @@ function normalizeConfig(config = {}) {
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
     normalized.laundry = Boolean(normalized.laundry);
+    const requestedTransports = Array.isArray(config.transports) && config.transports.length
+        ? config.transports
+        : config.transport !== undefined ? [config.transport] : normalized.transports;
+    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : [normalized.transport]).map(normalizeTransportMode))];
+    normalized.transport = normalized.transports[0] || 'car';
     return normalized;
 }
 

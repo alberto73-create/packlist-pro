@@ -60,6 +60,50 @@ globalThis.prompt = () => null;
 const Ctrl = await import('../js/modules/controller.js');
 const db = await import('../js/modules/db.js');
 
+assert.equal(Object.values(db.DB).flatMap(value => Array.isArray(value) ? value : []).some(item => ['Sole','Pioggia','Freddo'].includes(item?.cat)), false, 'weather conditions must not become item categories');
+const longTripWarning = db.WARNINGS.at(-1);
+assert.equal(longTripWarning.check({ config: { nights: 7, laundry: false } }), true, 'long-trip warning must appear above six nights without laundry');
+assert.equal(longTripWarning.check({ config: { nights: 6, laundry: false } }), false, 'long-trip warning must stay hidden at six nights');
+assert.equal(longTripWarning.check({ config: { nights: 7, laundry: true } }), false, 'long-trip warning must stay hidden when laundry is active');
+
+const powerbank = db.DB.base.find(item => item.n === 'Powerbank');
+powerbank.transportModes = ['car'];
+Ctrl.setConfig({ transport: 'moto' });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), false, 'items incompatible with the selected transport must be excluded');
+Ctrl.setConfig({ transport: 'auto' });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'items compatible with the selected transport must be included');
+powerbank.transportModes = ['walking'];
+Ctrl.setConfig({ transports: ['motorcycle', 'walking'] });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'an item must be included when at least one selected transport matches');
+delete powerbank.transportModes;
+
+powerbank.weatherModes = ['rain'];
+Ctrl.setConfig({ transport: 'auto', weather: ['sun'] });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), false, 'items incompatible with the selected weather must be excluded');
+Ctrl.setConfig({ weather: ['sun', 'rain'] });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().some(item => item.n === 'Powerbank'), true, 'an item must be included when at least one selected weather matches');
+delete powerbank.weatherModes;
+Ctrl.setConfig({ weather: [] });
+
+const pants = db.DB.base.find(item => item.n === 'Pantaloni casual');
+pants.quantityRule = { type: 'perDay', base: 1, every: 3, min: 1, max: 0, laundry: true };
+Ctrl.setConfig({ nights: 5, transport: 'auto', laundry: false });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Pantaloni casual').q, 2, 'six travel days with one item every three days must produce two items');
+const underwearRule = db.DB.base.find(item => item.n === 'Mutande');
+underwearRule.quantityRule = { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true };
+Ctrl.setConfig({ nights: 9, laundry: true, laundryFreq: 4, laundryBuffer: 1 });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 5, 'laundry frequency and buffer must cap daily clothing quantities');
+delete pants.quantityRule;
+delete underwearRule.quantityRule;
+Ctrl.setConfig({ laundry: false });
+
 Ctrl.toggleWeather('sun');
 Ctrl.toggleWeather('rain');
 Ctrl.toggleWeather('cold');
