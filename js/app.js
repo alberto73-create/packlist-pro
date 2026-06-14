@@ -5,6 +5,8 @@ import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
+import { initAdmin } from './modules/admin.js';
+import { initCommunications, openFeedbackModal, renderSupportBanner } from './modules/communications.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // --- INIZIALIZZAZIONE ---
@@ -18,6 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
     document.documentElement.dataset.appVersion = APP_VERSION;
     setupEventListeners();
+    initAdmin();
+    initCommunications({ state: STATE, version: APP_VERSION });
     Ctrl.updateConfigUI();
 
     if (Object.keys(STATE.list).length > 0) {
@@ -39,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
 
-    document.getElementById('generateBtn')?.addEventListener('click', () => Ctrl.generateList());
+    document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
@@ -158,6 +162,26 @@ function setupFabActions() {
 }
 
 async function handleControlClick(event) {
+    const genderButton = event.target.closest?.('.gender-btn');
+    if (genderButton) {
+        const input = document.getElementById('gender');
+        if (input) input.value = genderButton.dataset.gender;
+        syncConfig();
+        return;
+    }
+
+    const transportButton = event.target.closest?.('.transport-btn');
+    if (transportButton) {
+        const input = document.getElementById('transport');
+        const option = [...(input?.options || [])].find(item => item.value === transportButton.dataset.transport);
+        if (option) {
+            option.selected = !option.selected;
+            if (![...(input?.selectedOptions || [])].length) option.selected = true;
+        }
+        syncConfig();
+        return;
+    }
+
     const weatherButton = event.target.closest?.('.weather-btn');
     if (weatherButton) {
         Ctrl.toggleWeather(weatherButton.dataset.weather);
@@ -191,6 +215,7 @@ async function handleControlClick(event) {
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
     else if (fabItem.id === 'showStatsBtn') Ctrl.showStatsSummary();
+    else if (fabItem.id === 'feedbackBtn') openFeedbackModal();
     else if (fabItem.id === 'resetSessionBtn' && confirm('Resettare tutta la sessione?')) Ctrl.resetState();
 
     toggleFabMenu(false);
@@ -200,12 +225,15 @@ async function handleControlClick(event) {
 function syncConfig() {
     const nights = Number.parseInt(document.getElementById('nights')?.value, 10);
     const gender = document.getElementById('gender')?.value || 'U';
-    const transport = document.getElementById('transport')?.value || 'auto';
+    const transportInput = document.getElementById('transport');
+    const transports = [...(transportInput?.selectedOptions || [])].map(option => option.value);
+    const transport = transports[0] || 'car';
     const laundryFreq = Number.parseInt(document.getElementById('laundryFreq')?.value, 10);
     const laundryBuffer = Number.parseInt(document.getElementById('laundryBuffer')?.value, 10);
     
-    Ctrl.setConfig({ nights, gender, transport, laundryFreq, laundryBuffer });
+    Ctrl.setConfig({ nights, gender, transport, transports, laundryFreq, laundryBuffer });
     Ctrl.generateList();
+    renderSupportBanner('afterGenerate');
 }
 
 // --- FAB MENU ---

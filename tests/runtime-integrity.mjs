@@ -21,7 +21,10 @@ assert.equal(new Set(ids).size, ids.length, 'HTML ids must be unique');
 assert.equal((html.match(/<link rel="stylesheet"/g) || []).length, 1, 'the runtime must load exactly one app stylesheet');
 assert.equal((html.match(/<script type="module"/g) || []).length, 1, 'the runtime must load exactly one module entry point');
 const app = readFileSync('js/app.js', 'utf8');
+const admin = readFileSync('js/modules/admin.js', 'utf8');
+const communications = readFileSync('js/modules/communications.js', 'utf8');
 const db = readFileSync('js/modules/db.js', 'utf8');
+const dbData = readFileSync('js/modules/db-data.js', 'utf8');
 const controller = readFileSync('js/modules/controller.js', 'utf8');
 const pwa = readFileSync('js/modules/pwa.js', 'utf8');
 const sw = readFileSync('sw.js', 'utf8');
@@ -48,9 +51,29 @@ assert.doesNotMatch(sw, /client => client\.navigate\(client\.url\)/, 'activation
 assert.match(screenshot, /previewUrl\(port\)/, 'visual regression screenshot must render representative item rows');
 assert.match(screenshot, /dbus\|UPower/i, 'headless environment noise must be filtered');
 assert.match(screenshot, /child\.kill\('SIGKILL'\)/, 'screenshot capture must have a timeout');
+assert.match(screenshot, /maxRetries:\s*5/, 'screenshot profile cleanup must tolerate transient Chrome file locks');
+assert.match(screenshot, /server\.close\(resolveClose\)/, 'screenshot server must close before temporary files are removed');
+assert.match(screenshot, /const screenshotReady = existsSync\(output\)/, 'a valid screenshot must be the primary success condition');
+assert.match(screenshot, /PHONE_REGISTRATION_ERROR/, 'harmless Chrome registration noise must be filtered');
 assert.match(css, /\.fab-container \{[\s\S]*pointer-events: none;/);
 assert.match(css, /\.fab-menu \{[\s\S]*position: absolute;/);
 assert.match(css, /\.modern-switch:checked::after/);
+assert.match(css, /\.admin-toggle input\[type="checkbox"\]:checked::after/, 'admin worn control must show a visible checkmark');
+assert.match(css, /\.admin-field\.is-modified/, 'admin fields must visually identify unsaved changes');
+assert.match(admin, /markModified\(e\.target\)/, 'admin editor must mark changed parameters');
+assert.match(admin, /data-transport-mode/, 'admin items must expose per-item transport compatibility');
+assert.match(admin, /data-weather-mode/, 'admin items must expose per-item weather compatibility');
+assert.match(controller, /isWeatherCompatible\(item, config\.weather\)/, 'generated items must be filtered by per-item weather compatibility');
+assert.match(admin, /group\.querySelectorAll\('\[data-transport-mode\]'\)/, 'transport chip changes must update in place without resetting scroll');
+assert.match(admin, /adminPasswordToggle/, 'admin login must expose a password visibility control');
+assert.match(admin, /data-quantity="every"/, 'admin items must expose quantity frequency rules');
+assert.match(controller, /isTransportCompatible\(item, config\.transports\)/, 'generated items must be filtered by per-item transport compatibility');
+assert.match(controller, /Math\.ceil\(coveredDays/, 'quantity frequency must round up');
+assert.match(html, /option value="camper"/, 'the trip transport selector must expose camper');
+assert.match(html, /class="choice-btn transport-btn"/, 'public transport selection must use compact visual buttons');
+assert.match(html, /class="choice-btn gender-btn"/, 'public gender selection must use compact visual buttons');
+assert.match(html, /option value="walking"/, 'walking and trekking must use one canonical transport mode');
+assert.doesNotMatch(html, /option value="backpack"/, 'backpack must not be duplicated as a transport mode');
 assert.match(html, /id="itemWeight"/);
 assert.match(html, /id="itemBaggage"/);
 assert.match(html, /id="baggageSetupModal"/);
@@ -68,8 +91,10 @@ assert.match(css, /\.baggage-section\.over-limit/);
 assert.match(css, /\.activity-grid > \.act-btn \{/);
 assert.match(css, /border: 2px solid rgba\(148, 163, 184, \.5\)/);
 const activityButtons = [...html.matchAll(/<button[^>]+class="act-btn"[^>]+data-activity="([^"]+)"/g)].map(([, id]) => id);
-const extraDatabase = db.slice(db.indexOf('  extra: {'));
-const activityDatabaseIds = [...extraDatabase.matchAll(/^    ([a-z_]+): \[/gm)].map(([, id]) => id);
+const extraStart = dbData.search(/^\s*(?:extra|"extra"):\s*\{/m);
+assert.ok(extraStart >= 0, 'DB_DATA.extra must exist in serialized or object-literal form');
+const extraDatabase = dbData.slice(extraStart);
+const activityDatabaseIds = [...extraDatabase.matchAll(/^\s{4}(?:([a-z_]+)|"([a-z_]+)"):\s*\[/gm)].map(([, plain, quoted]) => plain || quoted);
 assert.deepEqual(activityButtons, activityDatabaseIds, 'all database activities must exist statically in index.html');
 assert.doesNotMatch(`${app}\n${readFileSync('js/modules/ui.js', 'utf8')}`, /renderActivities/, 'activity visibility must not depend on dynamic rendering');
 
@@ -80,3 +105,11 @@ for (const route of ['/', '/index.html', '/js/(.*)', '/css/(.*)', '/sw.js']) {
 }
 
 console.log(`Runtime integrity passed: one HTML entry point, version ${version}, cache-safe assets`);
+
+// Communications backend remains optional, isolated and never hardcodes a personal endpoint/admin key.
+assert.match(communications, /packlist_apps_script_settings/);
+assert.match(communications, /packlist_remote_feedback_pending/);
+assert.match(communications, /loadRemoteCommunicationSettings/);
+assert.match(communications, /retryPendingFeedback/);
+assert.match(communications, /action:\s*'saveCommunication'/);
+assert.doesNotMatch(communications, /script\.google\.com\/macros\/s\//, 'Apps Script endpoint must be configured by the admin');
