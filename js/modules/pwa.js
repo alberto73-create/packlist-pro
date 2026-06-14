@@ -60,7 +60,7 @@ export function setupInstallPrompt() {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        showInstallBanner(true);
+        if (!isInstallBannerDismissed()) showInstallBanner(true);
     });
 
     window.addEventListener('appinstalled', () => {

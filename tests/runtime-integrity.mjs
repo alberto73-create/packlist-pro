@@ -163,3 +163,7 @@ assert.match(html, /data-gender="U"[^>]*>🧑 Unisex/);
 assert.match(html, /id="shareQuickBtn"/);
 assert.match(html, /class="fab-more"/);
 assert.match(css, /\.cat-box\.complete/);
+
+assert.match(app, /const scheduleConfigSync = U\.debounce\(syncConfig, 180\);[\s\S]*function setupEventListeners/, 'debounced sync must be shared with delegated controls');
+assert.doesNotMatch(app, /function setupEventListeners\(\) \{[\s\S]{0,120}const scheduleConfigSync/, 'debounced sync must not be scoped only to setupEventListeners');
+assert.match(pwa, /if \(!isInstallBannerDismissed\(\)\) showInstallBanner\(true\)/);

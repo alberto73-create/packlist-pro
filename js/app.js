@@ -9,6 +9,9 @@ import { initAdmin } from './modules/admin.js';
 import { initCommunications, openFeedbackModal, renderSupportBanner } from './modules/communications.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
+// Shared by native input listeners and the delegated visual controls.
+const scheduleConfigSync = U.debounce(syncConfig, 180);
+
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
     // La UI deve essere interattiva subito: la PWA viene inizializzata in background.
