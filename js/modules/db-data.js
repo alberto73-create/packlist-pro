@@ -1322,7 +1322,7 @@ export const DB_DATA = {
         }
       },
       {
-        "n": "Borraccia 1L",
+        "n": "Borraccia",
         "q": "f",
         "cat": "Trekking",
         "s": "U",
