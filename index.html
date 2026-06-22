@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.10.15">
+    <link rel="stylesheet" href="./css/style.css?v=1.10.16">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
         </div>
         <div class="header-right">
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.15</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.16</span>
         </div>
     </div>
 
@@ -193,6 +193,8 @@
         </div>
         <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
         <div class="weight-track" style="margin-top:7px"><div class="weight-fill light" id="weightFill" style="width:0%"></div></div>
+        <div class="stats-baggage-actions"><button type="button" class="btn-secondary" id="statsBarManageBaggages">🧳 Gestisci Bagagli</button></div>
+        <div class="baggage-weight-strips" id="baggageWeightStrips" aria-live="polite"></div>
         <div class="weight-legend">
             <span class="w-tick tl">Leggero &lt;5 kg</span>
             <span class="w-tick tm">Medio 5–10 kg</span>
@@ -277,6 +279,6 @@
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.10.15"></script>
+    <script type="module" src="./js/app.js?v=1.10.16"></script>
 </body>
 </html>

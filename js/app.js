@@ -138,7 +138,8 @@ function setupBaggageModals() {
         View.openBaggageManager(STATE, U);
     });
     document.getElementById('statsSummaryClose')?.addEventListener('click', View.closeStatsSummary);
-    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); if (event.target.closest?.('#statsManageBaggages')) View.openBaggageManager(STATE, U); });
+    document.getElementById('statsBarManageBaggages')?.addEventListener('click', () => View.openBaggageManager(STATE, U));
+    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); if (event.target.closest?.('#statsManageBaggages')) View.openBaggageManager(STATE, U); if (event.target.closest?.('#quickMoveApply')) { const category = document.getElementById('quickMoveCategory')?.value; const baggageId = document.getElementById('quickMoveBaggage')?.value; Ctrl.moveCategoryToBaggage(category, baggageId); Ctrl.showStatsSummary(); } });
     document.getElementById('statsSummaryModal')?.addEventListener('change', event => { if (event.target.id === 'statsWeightMode') { document.getElementById('statsWeightTotal').hidden = event.target.value !== 'total'; document.getElementById('statsWeightBaggage').hidden = event.target.value !== 'baggage'; } });
 }
 

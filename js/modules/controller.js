@@ -494,6 +494,19 @@ export function moveAllBaggageItems(fromId, toId) {
     View.list(STATE, U); View.stats(STATE, U); saveState(); return true;
 }
 
+
+export function moveCategoryToBaggage(category, baggageId) {
+    if (!category || !STATE.baggages.some(bag => bag.id === baggageId)) return 0;
+    let moved = 0;
+    Object.entries(STATE.list).forEach(([cat, items]) => {
+        if (cat !== category) return;
+        items.forEach(item => { item.baggageId = baggageId; moved++; });
+    });
+    View.list(STATE, U); View.stats(STATE, U); saveState();
+    U.toast(moved ? `${moved} item “${category}” spostati` : `Nessun item in “${category}”`);
+    return moved;
+}
+
 export function deleteBaggage(id, moveToId = null) {
     if (STATE.baggages.length <= 1) return false;
     if (moveToId && !STATE.baggages.some(bag => bag.id === moveToId && bag.id !== id)) return false;
@@ -679,7 +692,8 @@ export function showStatsSummary() {
         return `${bag.name}: ${U.weight(weight)}${bag.limit ? ` / ${bag.limit} kg` : ''}`;
     });
     const baggageWeights = STATE.baggages.map(bag => ({ name: bag.name, limit: bag.limit || '', weight: U.weight(all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0)) }));
-    View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines, baggageWeights });
+    const categories = Object.keys(STATE.list).sort((a, b) => a.localeCompare(b));
+    View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines, baggageWeights, categories, baggages: STATE.baggages });
 }
 
 async function exportPdfFallback(error = null) {

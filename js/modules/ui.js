@@ -222,6 +222,17 @@ export function stats(state, U) {
     const fillEl = document.getElementById('weightFill');
     fillEl.style.width = `${Math.min(suitcaseG / 25000 * 100, 100)}%`;
     fillEl.className   = `weight-fill ${wClass}`;
+
+    const strips = document.getElementById('baggageWeightStrips');
+    if (strips) {
+        strips.innerHTML = state.baggages.map(bag => {
+            const bagWeight = all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+            const bagLimitG = bag.limit ? bag.limit * 1000 : 25000;
+            const bagClass = bagWeight >= 10000 ? 'heavy' : bagWeight >= 5000 ? 'mid' : 'light';
+            const pct = Math.min(bagWeight / Math.max(1, bagLimitG) * 100, 100);
+            return `<div class="baggage-weight-strip"><div><strong>${U.esc(bag.name)}</strong><span>${U.weight(bagWeight)}${bag.limit ? ` / ${bag.limit} kg` : ''}</span></div><div class="weight-track"><div class="weight-fill ${bagClass}" style="width:${pct}%"></div></div></div>`;
+        }).join('');
+    }
 }
 
 /**
@@ -336,12 +347,12 @@ export function filterListBySearch(term) {
     });
 }
 
-export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines, baggageWeights = [] }) {
+export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines, baggageWeights = [], categories = [], baggages = [] }) {
     const modal = document.getElementById('statsSummaryModal');
     const content = document.getElementById('statsSummaryContent');
     if (!modal || !content) return;
     const safe = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><div class="stats-baggage-tools"><button type="button" class="btn-secondary" id="statsManageBaggages">🧳 Gestisci Bagagli</button><label class="option-field"><span><strong>Vista peso</strong><small>Totale o diviso per bagaglio</small></span><select id="statsWeightMode"><option value="total">Peso totale</option><option value="baggage">Peso per bagaglio</option></select></label></div><div id="statsWeightTotal"><h3>Peso totale</h3><ul><li>Totale lista: ${safe(totalWeight)}</li><li>In valigia: ${safe(suitcaseWeight)}</li><li>Indossato: ${safe(wornWeight)}</li></ul></div><div id="statsWeightBaggage" hidden><h3>Peso per bagaglio</h3><ul>${baggageWeights.map(bag => `<li>${safe(bag.name)}: ${safe(bag.weight)}${bag.limit ? ` / ${safe(bag.limit)} kg` : ''}</li>`).join('')}</ul></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
+    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><div class="stats-baggage-tools"><button type="button" class="btn-secondary" id="statsManageBaggages">🧳 Gestisci Bagagli</button><label class="option-field"><span><strong>Vista peso</strong><small>Totale o diviso per bagaglio</small></span><select id="statsWeightMode"><option value="total">Peso totale</option><option value="baggage">Peso per bagaglio</option></select></label></div><div class="quick-baggage-move"><h3>Spostamenti rapidi</h3><div><select id="quickMoveCategory">${categories.map(cat => `<option value="${safe(cat)}">${safe(cat)}</option>`).join('')}</select><select id="quickMoveBaggage">${baggages.map(bag => `<option value="${safe(bag.id)}">${safe(bag.name)}</option>`).join('')}</select><button type="button" class="btn-secondary" id="quickMoveApply">Sposta categoria nel bagaglio</button></div><small>Esempio: seleziona Trekking e Zaino trekking per spostare tutto l’equipaggiamento tecnico in un solo bagaglio.</small></div><div id="statsWeightTotal"><h3>Peso totale</h3><ul><li>Totale lista: ${safe(totalWeight)}</li><li>In valigia: ${safe(suitcaseWeight)}</li><li>Indossato: ${safe(wornWeight)}</li></ul></div><div id="statsWeightBaggage" hidden><h3>Peso per bagaglio</h3><ul>${baggageWeights.map(bag => `<li>${safe(bag.name)}: ${safe(bag.weight)}${bag.limit ? ` / ${safe(bag.limit)} kg` : ''}</li>`).join('')}</ul></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
     modal.classList.add('visible');
     modal.setAttribute('aria-hidden', 'false');
     document.getElementById('statsSummaryClose')?.focus();
