@@ -162,6 +162,12 @@ assert.match(html, /id="feedbackBtn"/);
 assert.match(app, /fabItem\.id === 'feedbackBtn'\) openFeedbackModal\(\)/, 'the Feedback FAB action must open the feedback modal');
 assert.doesNotMatch(html, /id="adminFabBtn"/, 'admin entry must not be duplicated in the FAB');
 assert.match(html, /id="removeCheckedBtn"/);
+assert.match(html, /id="act-speleo"/);
+assert.match(html, /data-activity="speleo"/);
+assert.match(html, /<span>Speleo<\/span>/);
+assert.match(dbData, /"speleo"\s*:\s*\[/);
+assert.doesNotMatch(`${html}
+${dbData}`, /Forra\/Speleo|forra_speleo/);
 assert.match(communications, /class="feedback-stars"/);
 assert.match(communications, /<h2 id="feedbackTitle">Lascia un feedback<\/h2>/);
 assert.equal((communications.match(/data-rating="\$\{x\}"/g) || []).length, 1, 'feedback must render its five stars from one canonical 1..5 list');
