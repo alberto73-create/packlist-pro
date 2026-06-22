@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const versionElement = document.getElementById('appVersion');
     if (versionElement) versionElement.textContent = `App v${APP_VERSION}`;
     document.documentElement.dataset.appVersion = APP_VERSION;
+    globalThis.APP_VERSION = APP_VERSION;
     setupEventListeners();
     initAdmin();
     initCommunications({ state: STATE, version: APP_VERSION });
@@ -43,7 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- SETUP EVENT LISTENERS ---
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
-    const scheduleConfigSync = U.debounce(syncConfig, 180);
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
