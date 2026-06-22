@@ -72,6 +72,8 @@ assert.match(adminModule, /markModified\(e\.target\)/, 'admin editor must mark c
 assert.match(adminModule, /<details class="admin-item"/, 'admin items must be compact details by default');
 assert.match(adminModule, /<summary class="admin-item-title"/, 'admin item title must be the expandable summary');
 assert.match(css, /admin-item\[open\] \.admin-item-title i/, 'admin chevron must rotate when an item opens');
+assert.match(css, /admin-section\[open\] > summary::after/, 'admin section summaries must expose a rotating chevron');
+assert.match(css, /\.admin-item-title i \{[\s\S]*background: transparent !important;/, 'admin item chevron must not use a boxed background');
 assert.match(css, /\.setup-warning\.visible/, 'setup warning must have visible styling');
 assert.match(css, /\.share-quick[\s\S]*linear-gradient/, 'share quick button must have a stronger visual treatment');
 assert.match(css, /--card-glass:/, 'premium visual system must expose shared card tokens');
@@ -92,6 +94,9 @@ assert.match(html, /class="choice-btn gender-btn"/, 'public gender selection mus
 assert.match(html, /id="setupWarning"/, 'setup warning must be rendered inline');
 assert.match(html, /<span>Piscina<\/span>/, 'pool activity must be separate from beach');
 assert.match(html, /<span>Spiaggia\/Mare<\/span>/, 'beach and sea activity must be explicit');
+assert.match(html, /data-activity="citta"/, 'city activity must be available in the public activity grid');
+assert.match(dbData, /"citta": \[/, 'city activity must exist in DB_DATA.extra');
+assert.match(css, /admin-item-title::marker[\s\S]*content: '' !important;/, 'admin details native markers must be hidden to avoid duplicate arrows');
 assert.match(app, /validateSetupForGenerate\(\)/, 'generate button must validate initial setup before generating');
 assert.match(controller, /export function validateSetupForGenerate/, 'setup validation must be reusable and testable');
 assert.match(controller, /isDepartureWornDailyItem/, 'daily base clothing must account for the item worn at departure');

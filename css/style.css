@@ -1043,7 +1043,7 @@
 /* Backend Apps Script nella tab Comunicazioni */
 .apps-script-admin{margin:18px 0;padding:14px;border:1px solid var(--border2);border-radius:12px;background:rgba(2,6,23,.28)}.apps-script-admin form{margin:12px 0}.admin-remote-status{min-height:22px;margin:8px 0;color:var(--violet-h);font-size:.72rem;font-weight:800}.apps-script-admin input[type="password"]{font-family:monospace}@media(max-width:650px){.apps-script-admin{padding:10px}.apps-script-admin .admin-feedback-actions{display:grid;grid-template-columns:1fr}.apps-script-admin .admin-feedback-actions button{min-height:42px}}
 
-/* UX polish v1.10.10: controlli più coerenti e admin compatto */
+/* UX polish v1.10.14: controlli più coerenti e admin compatto */
 .card,
 .cat-box,
 .stats-bar,
@@ -1148,7 +1148,7 @@
     .admin-item-title em { display: none; }
 }
 
-/* Premium visual refinement v1.10.10 */
+/* Premium visual refinement v1.10.14 */
 :root {
     --bg-deep: #070b14;
     --card-glass: rgba(15, 23, 42, .72);
@@ -1404,4 +1404,226 @@ button:disabled,
         scroll-behavior: auto !important;
         transition-duration: .01ms !important;
     }
+}
+
+/* v1.10.14: animazioni più rapide e chevron admin più leggibile */
+:root {
+    --motion-fast: 95ms;
+    --motion-med: 135ms;
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, .24);
+    --shadow-elevated: 0 18px 48px rgba(0, 0, 0, .34);
+}
+
+.card,
+.stats-bar,
+.cat-box,
+.item-options-card,
+.admin-panel,
+.communication-banner {
+    backdrop-filter: blur(8px);
+}
+
+.btn-main,
+.btn-sm,
+.btn-secondary,
+.admin-tabs button,
+.admin-content button,
+.fab-item,
+.fab-main,
+.choice-btn,
+.weather-btn,
+.activity-grid > .act-btn,
+.admin-item {
+    transition-property: transform, border-color, background, color, opacity;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--ease-premium);
+}
+
+.btn-main:hover,
+.btn-sm:hover,
+.btn-secondary:hover,
+.fab-item:hover,
+.choice-btn:hover,
+.weather-btn:hover,
+.activity-grid > .act-btn:hover { transform: translateY(-1px); }
+
+.fab-menu {
+    transition-duration: var(--motion-med);
+}
+.fab-menu:not(.open) { transform: translateY(6px) scale(.985); }
+
+.admin-item {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.admin-item:hover,
+.admin-item:focus-within {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .055);
+}
+.admin-item-fields {
+    animation-duration: 120ms;
+}
+
+.admin-item-title i {
+    position: relative;
+    font-size: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .98));
+    transition: transform 140ms var(--ease-premium), border-color 95ms var(--ease-premium), background 95ms var(--ease-premium);
+}
+.admin-item-title i::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid #f8fafc;
+    border-bottom: 2px solid #f8fafc;
+    transform: translateY(-2px) rotate(45deg);
+}
+.admin-item[open] .admin-item-title i { transform: rotate(180deg); }
+
+.setup-warning.visible,
+.modal-backdrop.visible,
+.admin-modal { animation-duration: 130ms; }
+.admin-unsaved.saved { animation-duration: 420ms; }
+
+/* v1.10.14: modalità più snella, niente effetti percepiti come lenti */
+:root {
+    --motion-fast: 60ms;
+    --motion-med: 90ms;
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, .22);
+    --shadow-elevated: 0 12px 34px rgba(0, 0, 0, .3);
+}
+
+.card,
+.stats-bar,
+.cat-box,
+.item-options-card,
+.admin-panel,
+.communication-banner,
+.admin-panel header,
+.admin-save,
+.admin-tabs {
+    backdrop-filter: none !important;
+}
+
+.btn-main,
+.btn-sm,
+.btn-secondary,
+.admin-tabs button,
+.admin-content button,
+.fab-item,
+.fab-main,
+.choice-btn,
+.weather-btn,
+.activity-grid > .act-btn,
+.admin-item,
+.share-quick {
+    transition: border-color 60ms linear, background-color 60ms linear, color 60ms linear, opacity 60ms linear !important;
+}
+
+.btn-main:hover,
+.btn-sm:hover,
+.btn-secondary:hover,
+.fab-item:hover,
+.choice-btn:hover,
+.weather-btn:hover,
+.activity-grid > .act-btn:hover,
+.admin-add:hover,
+.admin-tabs button:hover {
+    transform: none !important;
+}
+
+.btn-main:active,
+.btn-sm:active,
+.btn-secondary:active,
+.fab-item:active,
+.choice-btn:active,
+.weather-btn:active,
+.activity-grid > .act-btn:active {
+    transform: scale(.995) !important;
+}
+
+.fab-menu,
+.fab-menu.open,
+.fab-menu:not(.open) {
+    transition: opacity 80ms linear, visibility 80ms linear !important;
+    transform: none !important;
+}
+
+.admin-item,
+.admin-item:hover,
+.admin-item:focus-within {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.admin-item-fields,
+.setup-warning.visible,
+.modal-backdrop.visible,
+.admin-modal,
+.admin-unsaved.saved {
+    animation: none !important;
+}
+.admin-item-title i {
+    transition: transform 90ms linear, border-color 60ms linear, background-color 60ms linear !important;
+}
+
+/* v1.10.14: chevron admin uniforme su sezioni e item, senza riquadro */
+.admin-section summary {
+    display: grid !important;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+}
+.admin-section summary::after {
+    content: '';
+    width: 11px;
+    height: 11px;
+    margin-inline: 4px 2px;
+    border-right: 2px solid #e8edf5;
+    border-bottom: 2px solid #e8edf5;
+    opacity: .9;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 90ms linear, opacity 60ms linear;
+}
+.admin-section[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
+}
+.admin-section summary:hover::after,
+.admin-section summary:focus-visible::after { opacity: 1; }
+
+.admin-item-title i {
+    width: 28px;
+    height: 28px;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.admin-item-title i::before {
+    width: 12px;
+    height: 12px;
+    border-right-color: #e8edf5;
+    border-bottom-color: #e8edf5;
+    opacity: .95;
+}
+.admin-item-title:hover i { background: transparent !important; border-color: transparent !important; }
+@media(max-width:650px){
+    .admin-section summary { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .admin-item-title i { width: 36px; height: 36px; }
+}
+
+
+/* v1.10.14: rimuove marker nativi duplicati nei details admin */
+.admin-section summary,
+.admin-item-title {
+    list-style: none !important;
+}
+.admin-section summary::marker,
+.admin-item-title::marker {
+    content: '' !important;
+    display: none !important;
+}
+.admin-section summary::-webkit-details-marker,
+.admin-item-title::-webkit-details-marker {
+    display: none !important;
 }
