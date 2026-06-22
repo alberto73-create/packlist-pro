@@ -48,6 +48,7 @@ function setupEventListeners() {
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); maybeShowAutomaticFeedback('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
+    document.getElementById('feedbackBtn')?.addEventListener('click', openFeedbackModal);
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);

@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.10.16">
+    <link rel="stylesheet" href="./css/style.css?v=1.10.17">
 </head>
 
 <body>
@@ -54,8 +54,9 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
+            <button type="button" class="header-feedback" id="feedbackBtn" aria-label="Lascia feedback">💬</button>
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.16</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.17</span>
         </div>
     </div>
 
@@ -213,6 +214,7 @@
     <div id="results" class="list-grid"></div>
     <div id="supportAfterGenerateMount"></div>
     <div id="supportFooterMount"></div>
+    <button type="button" id="shareListBtn" hidden>Condividi lista</button>
 
 </div>
 
@@ -226,14 +228,12 @@
         <div style="height:1px; background:var(--border); margin:3px 0;"></div>
         <button type="button" class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
         <button type="button" class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
-        <button type="button" class="fab-item" id="exportCsvBtn"><span class="fab-item-icon">📊</span><span>Esporta CSV</span></button>
-        <button type="button" class="fab-item" id="shareListBtn"><span class="fab-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/></svg></span><span>Condividi lista</span></button>
         <button type="button" class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
+        <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
         <button type="button" class="fab-item" id="removeCheckedBtn"><span class="fab-item-icon">✅</span><span>Rimuovi presi</span></button>
-        <details class="fab-more"><summary>••• Altri strumenti</summary><div>
+        <details class="fab-more"><summary><span>••• Altri strumenti</span></summary><div>
             <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📈</span><span>Statistiche</span></button>
-            <button type="button" class="fab-item" id="feedbackBtn"><span class="fab-item-icon">💬</span><span>Lascia feedback</span></button>
-            <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+            <button type="button" class="fab-item" id="exportCsvBtn"><span class="fab-item-icon">📊</span><span>Esporta CSV</span></button>
         </div></details>
     </div>
     <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
@@ -279,6 +279,6 @@
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.10.16"></script>
+    <script type="module" src="./js/app.js?v=1.10.17"></script>
 </body>
 </html>
