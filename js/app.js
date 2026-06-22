@@ -6,7 +6,8 @@ import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
 import { initAdmin } from './modules/admin.js';
-import { initCommunications, openFeedbackModal, renderSupportBanner } from './modules/communications.js';
+import { initCommunications, openFeedbackModal, renderSupportBanner, maybeShowAutomaticFeedback } from './modules/communications.js';
+import { logAnonymousEvent } from './modules/anonymous-logs.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // Shared by native input listeners and the delegated visual controls.
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
 
-    document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
+    document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); maybeShowAutomaticFeedback('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
@@ -137,7 +138,8 @@ function setupBaggageModals() {
         View.openBaggageManager(STATE, U);
     });
     document.getElementById('statsSummaryClose')?.addEventListener('click', View.closeStatsSummary);
-    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); });
+    document.getElementById('statsSummaryModal')?.addEventListener('click', event => { if (event.target.id === 'statsSummaryModal') View.closeStatsSummary(); if (event.target.closest?.('#statsManageBaggages')) View.openBaggageManager(STATE, U); });
+    document.getElementById('statsSummaryModal')?.addEventListener('change', event => { if (event.target.id === 'statsWeightMode') { document.getElementById('statsWeightTotal').hidden = event.target.value !== 'total'; document.getElementById('statsWeightBaggage').hidden = event.target.value !== 'baggage'; } });
 }
 
 function setupTemplateActions() {
@@ -180,8 +182,8 @@ async function handleControlClick(event) {
         const option = [...(input?.options || [])].find(item => item.value === transportButton.dataset.transport);
         if (option) {
             option.selected = !option.selected;
-            if (![...(input?.selectedOptions || [])].length) option.selected = true;
-        }
+            }
+        logAnonymousEvent({ eventType:'transport_selected', newValue: transportButton.dataset.transport, context: STATE.config });
         scheduleConfigSync();
         return;
     }
@@ -189,12 +191,14 @@ async function handleControlClick(event) {
     const weatherButton = event.target.closest?.('.weather-btn');
     if (weatherButton) {
         Ctrl.toggleWeather(weatherButton.dataset.weather);
+        logAnonymousEvent({ eventType:'weather_selected', newValue: weatherButton.dataset.weather, context: STATE.config });
         return;
     }
 
     const activityButton = event.target.closest?.('.act-btn');
     if (activityButton) {
         Ctrl.toggleActivity(activityButton.dataset.activity);
+        logAnonymousEvent({ eventType:'activity_selected', newValue: activityButton.dataset.activity, context: STATE.config });
         return;
     }
 
@@ -213,9 +217,8 @@ async function handleControlClick(event) {
         'filter-essentials': 'essentials'
     };
     if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
-    else if (fabItem.id === 'manageBaggagesBtn') View.openBaggageManager(STATE, U);
-    else if (fabItem.id === 'copyListBtn') await Ctrl.copyList();
-    else if (fabItem.id === 'exportPdfBtn') await Ctrl.exportPDF();
+    else if (fabItem.id === 'copyListBtn') { await Ctrl.copyList(); maybeShowAutomaticFeedback('afterExport'); }
+    else if (fabItem.id === 'exportPdfBtn') { await Ctrl.exportPDF(); maybeShowAutomaticFeedback('afterExport'); }
     else if (fabItem.id === 'exportCsvBtn') Ctrl.exportStatsCSV();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
@@ -231,16 +234,19 @@ async function handleControlClick(event) {
 // --- FUNZIONI DI CONFIGURAZIONE ---
 function syncConfig() {
     const nights = Number.parseInt(document.getElementById('nights')?.value, 10);
-    const gender = document.getElementById('gender')?.value || 'U';
+    const gender = document.getElementById('gender')?.value || '';
     const transportInput = document.getElementById('transport');
     const transports = [...(transportInput?.selectedOptions || [])].map(option => option.value);
-    const transport = transports[0] || 'car';
+    const transport = transports[0] || '';
     const laundryFreq = Number.parseInt(document.getElementById('laundryFreq')?.value, 10);
     const laundryBuffer = Number.parseInt(document.getElementById('laundryBuffer')?.value, 10);
     
     Ctrl.setConfig({ nights, gender, transport, transports, laundryFreq, laundryBuffer });
-    Ctrl.generateList();
-    renderSupportBanner('afterGenerate');
+    logAnonymousEvent({ eventType:'gender_selected', newValue: gender, context: STATE.config });
+    if (Object.keys(STATE.list).length > 0 && Ctrl.validateSetupForGenerate()) {
+        Ctrl.generateList();
+        renderSupportBanner('afterGenerate');
+    }
 }
 
 // --- FAB MENU ---

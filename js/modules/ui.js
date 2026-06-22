@@ -336,12 +336,12 @@ export function filterListBySearch(term) {
     });
 }
 
-export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines }) {
+export function openStatsSummary({ done, total, totalWeight, suitcaseWeight, wornWeight, baggageLines, baggageWeights = [] }) {
     const modal = document.getElementById('statsSummaryModal');
     const content = document.getElementById('statsSummaryContent');
     if (!modal || !content) return;
     const safe = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
+    content.innerHTML = `<div class="stats-summary-grid"><div><strong>${safe(done)}/${safe(total)}</strong><span>Item presi</span></div><div><strong>${safe(totalWeight)}</strong><span>Peso totale</span></div><div><strong>${safe(suitcaseWeight)}</strong><span>In valigia</span></div><div><strong>${safe(wornWeight)}</strong><span>Indossato</span></div></div><div class="stats-baggage-tools"><button type="button" class="btn-secondary" id="statsManageBaggages">🧳 Gestisci Bagagli</button><label class="option-field"><span><strong>Vista peso</strong><small>Totale o diviso per bagaglio</small></span><select id="statsWeightMode"><option value="total">Peso totale</option><option value="baggage">Peso per bagaglio</option></select></label></div><div id="statsWeightTotal"><h3>Peso totale</h3><ul><li>Totale lista: ${safe(totalWeight)}</li><li>In valigia: ${safe(suitcaseWeight)}</li><li>Indossato: ${safe(wornWeight)}</li></ul></div><div id="statsWeightBaggage" hidden><h3>Peso per bagaglio</h3><ul>${baggageWeights.map(bag => `<li>${safe(bag.name)}: ${safe(bag.weight)}${bag.limit ? ` / ${safe(bag.limit)} kg` : ''}</li>`).join('')}</ul></div><h3>Bagagli</h3><ul>${baggageLines.map(line => `<li>${safe(line)}</li>`).join('')}</ul>`;
     modal.classList.add('visible');
     modal.setAttribute('aria-hidden', 'false');
     document.getElementById('statsSummaryClose')?.focus();

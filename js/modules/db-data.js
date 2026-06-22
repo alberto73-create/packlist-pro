@@ -1468,11 +1468,35 @@ export const DB_DATA = {
         }
       },
       {
-        "n": "Cuffia/Occhialini",
+        "n": "Cuffia",
         "q": "f",
         "cat": "Nuoto",
         "s": "U",
         "w": 80,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Occhialini",
+        "q": "f",
+        "cat": "Nuoto",
+        "s": "U",
+        "w": 60,
         "v": 1,
         "worn": false,
         "bulk": 1,
@@ -1522,30 +1546,6 @@ export const DB_DATA = {
         "s": "U",
         "w": 400,
         "v": 3,
-        "worn": false,
-        "bulk": 1,
-        "transportModes": [
-          "tutti"
-        ],
-        "weatherModes": [
-          "tutti"
-        ],
-        "quantityRule": {
-          "type": "fixed",
-          "base": 1,
-          "every": 1,
-          "min": 1,
-          "max": 0,
-          "laundry": false
-        }
-      },
-      {
-        "n": "Maschera snorkeling",
-        "q": "f",
-        "cat": "Nuoto",
-        "s": "U",
-        "w": 300,
-        "v": 2,
         "worn": false,
         "bulk": 1,
         "transportModes": [
@@ -1692,6 +1692,30 @@ export const DB_DATA = {
         "s": "U",
         "w": 150,
         "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Maschera snorkeling",
+        "q": "f",
+        "cat": "Spiaggia",
+        "s": "U",
+        "w": 300,
+        "v": 2,
         "worn": false,
         "bulk": 1,
         "transportModes": [
