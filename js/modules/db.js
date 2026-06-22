@@ -5,7 +5,7 @@ import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from 
 // - index.html (testo visibile e query string degli asset);
 // - sw.js (CACHE_NAME e ASSETS versionati);
 // - manifest.json (version e start_url).
-export const APP_VERSION = "1.10.13";
+export const APP_VERSION = "1.10.14";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default

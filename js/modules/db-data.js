@@ -1710,6 +1710,128 @@ export const DB_DATA = {
         }
       }
     ],
+    "citta": [
+      {
+        "n": "Zainetto urbano",
+        "q": "f",
+        "cat": "Città",
+        "s": "U",
+        "w": 350,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Borraccia compatta",
+        "q": "f",
+        "cat": "Città",
+        "s": "U",
+        "w": 180,
+        "v": 2,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "City pass / tessera trasporti",
+        "q": "f",
+        "cat": "Città",
+        "s": "U",
+        "w": 20,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Powerbank leggero",
+        "q": "f",
+        "cat": "Città",
+        "s": "U",
+        "w": 180,
+        "v": 2,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Shopping bag pieghevole",
+        "q": "f",
+        "cat": "Città",
+        "s": "U",
+        "w": 60,
+        "v": 3,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      }
+    ],
     "lavoro": [
       {
         "n": "Laptop + Caricatore",

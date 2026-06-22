@@ -94,6 +94,9 @@ assert.match(html, /class="choice-btn gender-btn"/, 'public gender selection mus
 assert.match(html, /id="setupWarning"/, 'setup warning must be rendered inline');
 assert.match(html, /<span>Piscina<\/span>/, 'pool activity must be separate from beach');
 assert.match(html, /<span>Spiaggia\/Mare<\/span>/, 'beach and sea activity must be explicit');
+assert.match(html, /data-activity="citta"/, 'city activity must be available in the public activity grid');
+assert.match(dbData, /"citta": \[/, 'city activity must exist in DB_DATA.extra');
+assert.match(css, /admin-item-title::marker[\s\S]*content: '' !important;/, 'admin details native markers must be hidden to avoid duplicate arrows');
 assert.match(app, /validateSetupForGenerate\(\)/, 'generate button must validate initial setup before generating');
 assert.match(controller, /export function validateSetupForGenerate/, 'setup validation must be reusable and testable');
 assert.match(controller, /isDepartureWornDailyItem/, 'daily base clothing must account for the item worn at departure');
