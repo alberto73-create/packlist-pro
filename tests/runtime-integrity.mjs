@@ -74,6 +74,10 @@ assert.match(adminModule, /<summary class="admin-item-title"/, 'admin item title
 assert.match(css, /admin-item\[open\] \.admin-item-title i/, 'admin chevron must rotate when an item opens');
 assert.match(css, /\.setup-warning\.visible/, 'setup warning must have visible styling');
 assert.match(css, /\.share-quick[\s\S]*linear-gradient/, 'share quick button must have a stronger visual treatment');
+assert.match(css, /--card-glass:/, 'premium visual system must expose shared card tokens');
+assert.match(css, /--shadow-elevated:/, 'premium visual system must expose shared elevation tokens');
+assert.match(css, /prefers-reduced-motion: reduce/, 'premium animations must respect reduced motion');
+assert.match(css, /\.fab-menu:not\(\.open\)[\s\S]*scale\(\.97\)/, 'FAB menu must animate with transform and opacity');
 assert.match(adminModule, /data-transport-mode/, 'admin items must expose per-item transport compatibility');
 assert.match(adminModule, /data-weather-mode/, 'admin items must expose per-item weather compatibility');
 assert.match(controller, /isWeatherCompatible\(item, config\.weather\)/, 'generated items must be filtered by per-item weather compatibility');
