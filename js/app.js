@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
     Ctrl.setupEventDelegation();
 
-    document.getElementById('generateBtn')?.addEventListener('click', () => { Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
+    document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {

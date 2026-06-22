@@ -100,7 +100,10 @@ const underwearRule = db.DB.base.find(item => item.n === 'Mutande');
 underwearRule.quantityRule = { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true };
 Ctrl.setConfig({ nights: 9, laundry: true, laundryFreq: 4, laundryBuffer: 1 });
 Ctrl.generateList();
-assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 5, 'laundry frequency and buffer must cap daily clothing quantities');
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 4, 'laundry frequency and buffer must account for underwear worn at departure');
+Ctrl.setConfig({ nights: 1, laundry: false });
+Ctrl.generateList();
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 1, 'one night must not pack two underwear when one is worn at departure');
 delete pants.quantityRule;
 delete underwearRule.quantityRule;
 Ctrl.setConfig({ laundry: false });
@@ -125,15 +128,15 @@ for (const fixedName of ['Pigiama', 'Pantaloni casual', 'Multipresa viaggio']) {
     assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === fixedName).q, 1, `${fixedName} must be a fixed 1x item`);
 }
 let underwear = Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande');
-assert.equal(underwear.q, 16);
+assert.equal(underwear.q, 15);
 Ctrl.toggleLaundry();
 underwear = Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande');
-assert.equal(underwear.q, 4, 'laundry must reduce daily clothes to frequency + buffer');
+assert.equal(underwear.q, 3, 'laundry must reduce daily clothes and account for departure-worn underwear');
 Ctrl.setConfig({ nights: 6, laundry: false, laundryFreq: 3, laundryBuffer: 0 });
 Ctrl.generateList();
-assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 7, 'without laundry daily clothes must cover every travel day');
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 6, 'without laundry daily clothes must cover travel days minus the departure-worn item');
 Ctrl.toggleLaundry();
-assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 3, 'with laundry and zero buffer daily clothes must match laundry frequency');
+assert.equal(Object.values(db.STATE.list).flat().find(item => item.n === 'Mutande').q, 2, 'with laundry and zero buffer daily clothes must account for the departure-worn item');
 
 const initialItems = Object.values(db.STATE.list).flat().length;
 Ctrl.setupEventDelegation();

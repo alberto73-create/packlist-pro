@@ -25,6 +25,7 @@ function calculateQty(item, config) {
     if (config.laundry && rule.laundry) {
         coveredDays = Math.min(totalDays, Math.max(1, Number(config.laundryFreq) || 3) + Math.max(0, Number(config.laundryBuffer) || 0));
     }
+    if (rule.type === 'perDay' && isDepartureWornDailyItem(item)) coveredDays = Math.max(1, coveredDays - 1);
     let qty = rule.type === 'fixed'
         ? Math.max(1, Number(rule.base) || 1)
         : Math.ceil(coveredDays / Math.max(1, Number(rule.every) || 1)) * Math.max(1, Number(rule.base) || 1);
@@ -48,11 +49,41 @@ function isWeatherCompatible(item, selectedWeather) {
     return modes.includes('tutti') || selectedWeather.some(weather => modes.includes(weather));
 }
 
+function isDepartureWornDailyItem(item) {
+    return item.cat === 'Abbigliamento Base' && /^(Mutande|Calze|Canottiere\/Sottogiacca|T-shirt)$/i.test(item.n || '');
+}
+
+function showSetupWarning(missing = []) {
+    const message = missing.length ? `Completa prima: ${missing.join(', ')}.` : '';
+    const warning = document.getElementById('setupWarning');
+    if (warning) {
+        warning.textContent = message;
+        warning.classList.toggle('visible', Boolean(message));
+    }
+    if (message) U.toast(message);
+}
+
+function missingSetupFields(config) {
+    const missing = [];
+    if (!config.gender) missing.push('sesso');
+    if (!config.transports.length) missing.push('mezzo');
+    if (!config.weather.length) missing.push('meteo');
+    if (!config.activities.length) missing.push('almeno un’attività');
+    return missing;
+}
+
+export function validateSetupForGenerate() {
+    const missing = missingSetupFields(STATE.config);
+    showSetupWarning(missing);
+    return missing.length === 0;
+}
+
 /**
  * Genera la lista completa dagli item del database
  */
 export function generateList() {
     const config = STATE.config;
+    showSetupWarning();
     const previousItems = new Map(
         Object.values(STATE.list).flat().filter(item => !item.custom).map(item => [itemKey(item.cat, item.n), item])
     );
@@ -1042,8 +1073,8 @@ function normalizeConfig(config = {}) {
     const requestedTransports = Array.isArray(config.transports) && config.transports.length
         ? config.transports
         : config.transport !== undefined ? [config.transport] : normalized.transports;
-    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : [normalized.transport]).map(normalizeTransportMode))];
-    normalized.transport = normalized.transports[0] || 'car';
+    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : []).map(normalizeTransportMode).filter(Boolean))];
+    normalized.transport = normalized.transports[0] || '';
     return normalized;
 }
 
