@@ -284,6 +284,20 @@ assert.match(controller, /CompressionStream/);
 assert.match(controller, /navigator\.share/);
 assert.match(html, /data-weather="sun"/);
 assert.match(html, /id="act-trekking" data-activity="trekking"/);
+assert.match(html, /id="act-speleo" data-activity="speleo"/);
+assert.match(html, /<span>Speleo<\/span>/);
+assert.ok(Array.isArray(db.DB.extra.speleo), 'DB_DATA.extra.speleo must exist');
+for (const requiredSpeleoItem of ['Luce di backup', 'Custodia impermeabile telefono', 'Cambio asciutto post escursione', 'Sacchetto per vestiti bagnati']) {
+    assert.ok(db.DB.extra.speleo.some(item => item.n === requiredSpeleoItem), `Speleo must include ${requiredSpeleoItem}`);
+}
+db.setState({ list: {} });
+Ctrl.setConfig({ gender: 'U', transports: ['car'], transport: 'car', weather: ['sun'], activities: ['trekking', 'ferrata', 'speleo'] });
+Ctrl.generateList();
+const trekkingFerrataSpeleoItems = Object.values(db.STATE.list).flat().map(item => item.n);
+for (const sharedName of ['Scarponi trekking', 'Calze trekking', 'Casco (ferrata/alpinismo)', 'Guanti da ferrata', 'Torcia frontale', 'Borraccia', 'Kit primo soccorso', 'Snack energetici', 'Mappa/GPS', 'Coperta termica']) {
+    assert.ok(trekkingFerrataSpeleoItems.includes(sharedName), `${sharedName} must be generated for Trekking/Ferrata/Speleo`);
+    assert.equal(trekkingFerrataSpeleoItems.filter(name => name === sharedName).length, 1, `${sharedName} must not be duplicated`);
+}
 assert.doesNotMatch(`${app}\n${readFileSync(new URL('../js/modules/ui.js', import.meta.url), 'utf8')}`, /renderActivities/);
 
 console.log('Packlist Pro interaction smoke test passed');
