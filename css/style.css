@@ -1043,7 +1043,7 @@
 /* Backend Apps Script nella tab Comunicazioni */
 .apps-script-admin{margin:18px 0;padding:14px;border:1px solid var(--border2);border-radius:12px;background:rgba(2,6,23,.28)}.apps-script-admin form{margin:12px 0}.admin-remote-status{min-height:22px;margin:8px 0;color:var(--violet-h);font-size:.72rem;font-weight:800}.apps-script-admin input[type="password"]{font-family:monospace}@media(max-width:650px){.apps-script-admin{padding:10px}.apps-script-admin .admin-feedback-actions{display:grid;grid-template-columns:1fr}.apps-script-admin .admin-feedback-actions button{min-height:42px}}
 
-/* UX polish v1.10.11: controlli più coerenti e admin compatto */
+/* UX polish v1.10.12: controlli più coerenti e admin compatto */
 .card,
 .cat-box,
 .stats-bar,
@@ -1148,7 +1148,7 @@
     .admin-item-title em { display: none; }
 }
 
-/* Premium visual refinement v1.10.11 */
+/* Premium visual refinement v1.10.12 */
 :root {
     --bg-deep: #070b14;
     --card-glass: rgba(15, 23, 42, .72);
@@ -1406,7 +1406,7 @@ button:disabled,
     }
 }
 
-/* v1.10.11: animazioni più rapide e chevron admin più leggibile */
+/* v1.10.12: animazioni più rapide e chevron admin più leggibile */
 :root {
     --motion-fast: 95ms;
     --motion-med: 135ms;
@@ -1486,3 +1486,83 @@ button:disabled,
 .modal-backdrop.visible,
 .admin-modal { animation-duration: 130ms; }
 .admin-unsaved.saved { animation-duration: 420ms; }
+
+/* v1.10.12: modalità più snella, niente effetti percepiti come lenti */
+:root {
+    --motion-fast: 60ms;
+    --motion-med: 90ms;
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, .22);
+    --shadow-elevated: 0 12px 34px rgba(0, 0, 0, .3);
+}
+
+.card,
+.stats-bar,
+.cat-box,
+.item-options-card,
+.admin-panel,
+.communication-banner,
+.admin-panel header,
+.admin-save,
+.admin-tabs {
+    backdrop-filter: none !important;
+}
+
+.btn-main,
+.btn-sm,
+.btn-secondary,
+.admin-tabs button,
+.admin-content button,
+.fab-item,
+.fab-main,
+.choice-btn,
+.weather-btn,
+.activity-grid > .act-btn,
+.admin-item,
+.share-quick {
+    transition: border-color 60ms linear, background-color 60ms linear, color 60ms linear, opacity 60ms linear !important;
+}
+
+.btn-main:hover,
+.btn-sm:hover,
+.btn-secondary:hover,
+.fab-item:hover,
+.choice-btn:hover,
+.weather-btn:hover,
+.activity-grid > .act-btn:hover,
+.admin-add:hover,
+.admin-tabs button:hover {
+    transform: none !important;
+}
+
+.btn-main:active,
+.btn-sm:active,
+.btn-secondary:active,
+.fab-item:active,
+.choice-btn:active,
+.weather-btn:active,
+.activity-grid > .act-btn:active {
+    transform: scale(.995) !important;
+}
+
+.fab-menu,
+.fab-menu.open,
+.fab-menu:not(.open) {
+    transition: opacity 80ms linear, visibility 80ms linear !important;
+    transform: none !important;
+}
+
+.admin-item,
+.admin-item:hover,
+.admin-item:focus-within {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.admin-item-fields,
+.setup-warning.visible,
+.modal-backdrop.visible,
+.admin-modal,
+.admin-unsaved.saved {
+    animation: none !important;
+}
+.admin-item-title i {
+    transition: transform 90ms linear, border-color 60ms linear, background-color 60ms linear !important;
+}
