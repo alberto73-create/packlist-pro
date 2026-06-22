@@ -178,6 +178,17 @@ Ctrl.updateItemOptions(firstUid, { quantity: 5, weight: 275, worn: false, bulky:
 
 assert.equal(await Ctrl.exportPDF(), true);
 assert.equal(printCalled, true);
+printCalled = false;
+navigator.onLine = false;
+const originalPrint = window.print;
+delete window.print;
+window.jspdf = { jsPDF: class BrokenPdf { constructor() { throw new Error('PDF engine unavailable'); } } };
+clipboardText = '';
+assert.equal(await Ctrl.exportPDF(), true, 'PDF failures must fall back instead of throwing');
+assert.match(clipboardText, /Packlist Pro/, 'PDF fallback must copy the list when printing is unavailable');
+window.print = originalPrint;
+navigator.onLine = true;
+window.jspdf = null;
 assert.equal(Ctrl.saveTemplate('Rio'), true);
 assert.equal(db.STATE.listName, 'Rio', 'saved template name must become the list name');
 assert.equal(JSON.parse(localStorage.getItem('packlist_state')).listName, 'Rio', 'list name must be persisted');
