@@ -72,6 +72,8 @@ assert.match(adminModule, /markModified\(e\.target\)/, 'admin editor must mark c
 assert.match(adminModule, /<details class="admin-item"/, 'admin items must be compact details by default');
 assert.match(adminModule, /<summary class="admin-item-title"/, 'admin item title must be the expandable summary');
 assert.match(css, /admin-item\[open\] \.admin-item-title i/, 'admin chevron must rotate when an item opens');
+assert.match(css, /admin-section\[open\] > summary::after/, 'admin section summaries must expose a rotating chevron');
+assert.match(css, /\.admin-item-title i \{[\s\S]*background: transparent !important;/, 'admin item chevron must not use a boxed background');
 assert.match(css, /\.setup-warning\.visible/, 'setup warning must have visible styling');
 assert.match(css, /\.share-quick[\s\S]*linear-gradient/, 'share quick button must have a stronger visual treatment');
 assert.match(css, /--card-glass:/, 'premium visual system must expose shared card tokens');

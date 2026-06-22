@@ -1043,7 +1043,7 @@
 /* Backend Apps Script nella tab Comunicazioni */
 .apps-script-admin{margin:18px 0;padding:14px;border:1px solid var(--border2);border-radius:12px;background:rgba(2,6,23,.28)}.apps-script-admin form{margin:12px 0}.admin-remote-status{min-height:22px;margin:8px 0;color:var(--violet-h);font-size:.72rem;font-weight:800}.apps-script-admin input[type="password"]{font-family:monospace}@media(max-width:650px){.apps-script-admin{padding:10px}.apps-script-admin .admin-feedback-actions{display:grid;grid-template-columns:1fr}.apps-script-admin .admin-feedback-actions button{min-height:42px}}
 
-/* UX polish v1.10.12: controlli più coerenti e admin compatto */
+/* UX polish v1.10.13: controlli più coerenti e admin compatto */
 .card,
 .cat-box,
 .stats-bar,
@@ -1148,7 +1148,7 @@
     .admin-item-title em { display: none; }
 }
 
-/* Premium visual refinement v1.10.12 */
+/* Premium visual refinement v1.10.13 */
 :root {
     --bg-deep: #070b14;
     --card-glass: rgba(15, 23, 42, .72);
@@ -1406,7 +1406,7 @@ button:disabled,
     }
 }
 
-/* v1.10.12: animazioni più rapide e chevron admin più leggibile */
+/* v1.10.13: animazioni più rapide e chevron admin più leggibile */
 :root {
     --motion-fast: 95ms;
     --motion-med: 135ms;
@@ -1487,7 +1487,7 @@ button:disabled,
 .admin-modal { animation-duration: 130ms; }
 .admin-unsaved.saved { animation-duration: 420ms; }
 
-/* v1.10.12: modalità più snella, niente effetti percepiti come lenti */
+/* v1.10.13: modalità più snella, niente effetti percepiti come lenti */
 :root {
     --motion-fast: 60ms;
     --motion-med: 90ms;
@@ -1565,4 +1565,49 @@ button:disabled,
 }
 .admin-item-title i {
     transition: transform 90ms linear, border-color 60ms linear, background-color 60ms linear !important;
+}
+
+/* v1.10.13: chevron admin uniforme su sezioni e item, senza riquadro */
+.admin-section summary {
+    display: grid !important;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+}
+.admin-section summary::after {
+    content: '';
+    width: 11px;
+    height: 11px;
+    margin-inline: 4px 2px;
+    border-right: 2px solid #e8edf5;
+    border-bottom: 2px solid #e8edf5;
+    opacity: .9;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 90ms linear, opacity 60ms linear;
+}
+.admin-section[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
+}
+.admin-section summary:hover::after,
+.admin-section summary:focus-visible::after { opacity: 1; }
+
+.admin-item-title i {
+    width: 28px;
+    height: 28px;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.admin-item-title i::before {
+    width: 12px;
+    height: 12px;
+    border-right-color: #e8edf5;
+    border-bottom-color: #e8edf5;
+    opacity: .95;
+}
+.admin-item-title:hover i { background: transparent !important; border-color: transparent !important; }
+@media(max-width:650px){
+    .admin-section summary { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .admin-item-title i { width: 36px; height: 36px; }
 }
