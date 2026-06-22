@@ -1,15 +1,19 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
 
 // js/modules/db.js - Database e costanti Packlist Pro
-export const APP_VERSION = "1.10.7";
+// Fonte principale della versione applicazione. A ogni release aggiornare anche:
+// - index.html (testo visibile e query string degli asset);
+// - sw.js (CACHE_NAME e ASSETS versionati);
+// - manifest.json (version e start_url).
+export const APP_VERSION = "1.10.10";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
 export const DEFAULT_CONFIG = {
   nights: 1, 
-  gender: 'U', 
-  transport: 'car',
-  transports: ['car'],
+  gender: '',
+  transport: '',
+  transports: [],
   weather: [], 
   activities: [],
   laundry: false, 

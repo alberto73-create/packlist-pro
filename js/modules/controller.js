@@ -25,6 +25,7 @@ function calculateQty(item, config) {
     if (config.laundry && rule.laundry) {
         coveredDays = Math.min(totalDays, Math.max(1, Number(config.laundryFreq) || 3) + Math.max(0, Number(config.laundryBuffer) || 0));
     }
+    if (rule.type === 'perDay' && isDepartureWornDailyItem(item)) coveredDays = Math.max(1, coveredDays - 1);
     let qty = rule.type === 'fixed'
         ? Math.max(1, Number(rule.base) || 1)
         : Math.ceil(coveredDays / Math.max(1, Number(rule.every) || 1)) * Math.max(1, Number(rule.base) || 1);
@@ -48,11 +49,41 @@ function isWeatherCompatible(item, selectedWeather) {
     return modes.includes('tutti') || selectedWeather.some(weather => modes.includes(weather));
 }
 
+function isDepartureWornDailyItem(item) {
+    return item.cat === 'Abbigliamento Base' && /^(Mutande|Calze|Canottiere\/Sottogiacca|T-shirt)$/i.test(item.n || '');
+}
+
+function showSetupWarning(missing = []) {
+    const message = missing.length ? `Completa prima: ${missing.join(', ')}.` : '';
+    const warning = document.getElementById('setupWarning');
+    if (warning) {
+        warning.textContent = message;
+        warning.classList.toggle('visible', Boolean(message));
+    }
+    if (message) U.toast(message);
+}
+
+function missingSetupFields(config) {
+    const missing = [];
+    if (!config.gender) missing.push('sesso');
+    if (!config.transports.length) missing.push('mezzo');
+    if (!config.weather.length) missing.push('meteo');
+    if (!config.activities.length) missing.push('almeno un’attività');
+    return missing;
+}
+
+export function validateSetupForGenerate() {
+    const missing = missingSetupFields(STATE.config);
+    showSetupWarning(missing);
+    return missing.length === 0;
+}
+
 /**
  * Genera la lista completa dagli item del database
  */
 export function generateList() {
     const config = STATE.config;
+    showSetupWarning();
     const previousItems = new Map(
         Object.values(STATE.list).flat().filter(item => !item.custom).map(item => [itemKey(item.cat, item.n), item])
     );
@@ -640,6 +671,27 @@ export function showStatsSummary() {
     View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines });
 }
 
+async function exportPdfFallback(error = null) {
+    if (error) console.warn('[Controller] Export PDF non disponibile:', error);
+    const offline = navigator.onLine === false;
+    const message = offline
+        ? 'PDF non disponibile offline: apro la stampa o copio la lista'
+        : 'PDF non disponibile: apro la stampa o copio la lista';
+
+    if (typeof window.print === 'function') {
+        try {
+            U.toast(message);
+            window.print();
+            return true;
+        } catch (printError) {
+            console.warn('[Controller] Fallback stampa non disponibile:', printError);
+        }
+    }
+
+    U.toast(offline ? 'Stampa non disponibile offline: copio la lista' : 'Stampa non disponibile: copio la lista');
+    return copyList();
+}
+
 export async function exportPDF() {
     const all = getAllItems();
     if (!all.length) {
@@ -648,13 +700,14 @@ export async function exportPDF() {
     }
 
     const jsPDF = window.jspdf?.jsPDF;
-    if (!jsPDF) {
-        U.toast('Modulo PDF non disponibile: apro la stampa per salvare come PDF');
-        window.print();
-        return true;
-    }
+    if (!jsPDF) return exportPdfFallback();
 
-    const doc = new jsPDF();
+    let doc;
+    try {
+        doc = new jsPDF();
+    } catch (error) {
+        return exportPdfFallback(error);
+    }
     const listName = String(STATE.listName || '').trim();
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
     doc.setFontSize(18);
@@ -676,8 +729,12 @@ export async function exportPDF() {
         doc.setFontSize(12); doc.setTextColor?.(17, 24, 39);
         doc.text(`${bag.name} · ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
         if (typeof doc.autoTable === 'function') {
-            doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
-            nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
+            try {
+                doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
+                nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
+            } catch (error) {
+                return exportPdfFallback(error);
+            }
         } else {
             nextY += 7;
             rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 20; } doc.text(row.join(' · '), 14, nextY); nextY += 6; });
@@ -705,7 +762,11 @@ export async function exportPDF() {
 
     const safeName = listName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
     const namePart = safeName ? `_${safeName}` : '';
-    doc.save(`packlist${namePart}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    try {
+        doc.save(`packlist${namePart}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (error) {
+        return exportPdfFallback(error);
+    }
     U.toast('PDF esportato');
     return true;
 }
@@ -1012,8 +1073,8 @@ function normalizeConfig(config = {}) {
     const requestedTransports = Array.isArray(config.transports) && config.transports.length
         ? config.transports
         : config.transport !== undefined ? [config.transport] : normalized.transports;
-    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : [normalized.transport]).map(normalizeTransportMode))];
-    normalized.transport = normalized.transports[0] || 'car';
+    normalized.transports = [...new Set((requestedTransports?.length ? requestedTransports : []).map(normalizeTransportMode).filter(Boolean))];
+    normalized.transport = normalized.transports[0] || '';
     return normalized;
 }
 
