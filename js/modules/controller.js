@@ -788,12 +788,16 @@ export async function exportPDF() {
     }
     const listName = String(STATE.listName || '').trim();
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
+    doc.setFillColor?.(99, 102, 241);
+    doc.rect?.(0, 0, 210, 28, 'F');
+    doc.setTextColor?.(255, 255, 255);
     doc.setFontSize(18);
     doc.text(documentTitle, 14, 18);
     doc.setFontSize(10);
-    doc.text(`${STATE.config.nights} notti · ${STATE.config.transport}`, 14, 26);
+    doc.text(`${STATE.config.nights} notti - ${STATE.config.transport}`, 14, 25);
+    doc.setTextColor?.(17, 24, 39);
 
-    let nextY = 34;
+    let nextY = 38;
     for (const bag of STATE.baggages) {
         const rows = [];
         Object.entries(STATE.list).forEach(([cat, items]) => {
@@ -805,17 +809,17 @@ export async function exportPDF() {
         const bagWeight = getAllItems().filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
         if (nextY > 248) { doc.addPage(); nextY = 20; }
         doc.setFontSize(12); doc.setTextColor?.(17, 24, 39);
-        doc.text(`${bag.name} · ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
+        doc.text(`${bag.name} - ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
         if (typeof doc.autoTable === 'function') {
             try {
-                doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
+                doc.autoTable({ head: [['Categoria', 'Item', 'Qt', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 5, margin: { top: 24, bottom: 24, left: 14 }, styles: { fontSize: 8 } });
                 nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
             } catch (error) {
                 return exportPdfFallback(error);
             }
         } else {
             nextY += 7;
-            rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 20; } doc.text(row.join(' · '), 14, nextY); nextY += 6; });
+            rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 24; } doc.text(row.join(' - '), 14, nextY); nextY += 7; });
             nextY += 6;
         }
     }
@@ -833,7 +837,7 @@ export async function exportPDF() {
         doc.roundedRect?.(cta.x + 5.2, cta.y + 4.1, 4.6, 4.1, 1, 1, 'F');
         doc.setFontSize(9);
         doc.setTextColor?.(255, 255, 255);
-        doc.text('Clicca qui per modificare gratuitamente la tua lista', cta.x + 15, cta.y + 7.5);
+        doc.text('Apri e modifica gratuitamente la tua lista Packlist Pro', cta.x + 15, cta.y + 7.5);
         if (typeof doc.link === 'function') doc.link(cta.x, cta.y, cta.width, cta.height, { url: shareUrl });
         else if (typeof doc.textWithLink === 'function') doc.textWithLink('Apri la lista', cta.x + 15, cta.y + 7.5, { url: shareUrl });
     }

@@ -17,10 +17,16 @@
   }
 
   function pdfText(value) {
-    return Array.from(String(value ?? '')).map(ch => {
+    return Array.from(String(value ?? '').normalize('NFKD')).map(ch => {
       const code = ch.charCodeAt(0);
-      return code >= 32 && code <= 126 ? ch : '?';
-    }).join('');
+      if (code >= 32 && code <= 126) return ch;
+      if (/[\u0300-\u036f]/.test(ch)) return '';
+      if (ch === '·' || ch === '•' || ch === '–' || ch === '—') return '-';
+      if (ch === '×') return 'x';
+      if (ch === '€') return 'EUR';
+      if (ch === '…') return '...';
+      return '';
+    }).join('').replace(/\s+-\s+/g, ' - ').replace(/\s{2,}/g, ' ').trim();
   }
 
   function download(blob, filename) {
@@ -42,6 +48,7 @@
       this.fontSize = 12;
       this.textColor = [0, 0, 0];
       this.fillColor = [255, 255, 255];
+      this.drawColor = [0, 0, 0];
       this.links = [];
     }
 
@@ -53,6 +60,7 @@
     setFontSize(size) { this.fontSize = Number(size) || this.fontSize; return this; }
     setTextColor(r = 0, g = r, b = r) { this.textColor = [r, g, b]; return this; }
     setFillColor(r = 0, g = r, b = r) { this.fillColor = [r, g, b]; return this; }
+    setDrawColor(r = 0, g = r, b = r) { this.drawColor = [r, g, b]; return this; }
 
     text(value, x, y) {
       const lines = Array.isArray(value) ? value : String(value ?? '').split('\n');
@@ -67,8 +75,13 @@
 
     rect(x, y, width, height, style = 'S') {
       const op = String(style).includes('F') ? 'f' : 'S';
-      const color = String(style).includes('F') ? this.fillColor : this.textColor;
+      const color = String(style).includes('F') ? this.fillColor : this.drawColor;
       this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${this._x(x).toFixed(2)} ${this._y(Number(y || 0) + Number(height || 0)).toFixed(2)} ${this._u(width).toFixed(2)} ${this._u(height).toFixed(2)} re ${op}`);
+      return this;
+    }
+
+    line(x1, y1, x2, y2) {
+      this._ops().push(`${this.drawColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} RG ${this._x(x1).toFixed(2)} ${this._y(y1).toFixed(2)} m ${this._x(x2).toFixed(2)} ${this._y(y2).toFixed(2)} l S`);
       return this;
     }
 
