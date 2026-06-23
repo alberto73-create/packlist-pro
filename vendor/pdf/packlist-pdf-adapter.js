@@ -2,8 +2,11 @@
 (function (global) {
   'use strict';
 
+  const mmToPt = 72 / 25.4;
   const pageWidth = 210;
   const pageHeight = 297;
+  const pageWidthPt = pageWidth * mmToPt;
+  const pageHeightPt = pageHeight * mmToPt;
 
   function esc(value) {
     return String(value ?? '')
@@ -43,7 +46,9 @@
     }
 
     _ops() { return this.pages[this.currentPage]; }
-    _y(y) { return pageHeight - Number(y || 0); }
+    _x(x) { return Number(x || 0) * mmToPt; }
+    _y(y) { return pageHeightPt - (Number(y || 0) * mmToPt); }
+    _u(value) { return Number(value || 0) * mmToPt; }
 
     setFontSize(size) { this.fontSize = Number(size) || this.fontSize; return this; }
     setTextColor(r = 0, g = r, b = r) { this.textColor = [r, g, b]; return this; }
@@ -53,7 +58,7 @@
       const lines = Array.isArray(value) ? value : String(value ?? '').split('\n');
       lines.forEach((line, index) => {
         const yy = Number(y || 0) + index * (this.fontSize * 0.45);
-        this._ops().push(`${this.textColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} rg BT /F1 ${this.fontSize} Tf ${Number(x || 0).toFixed(2)} ${this._y(yy).toFixed(2)} Td (${esc(pdfText(line))}) Tj ET`);
+        this._ops().push(`${this.textColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} rg BT /F1 ${this.fontSize} Tf ${this._x(x).toFixed(2)} ${this._y(yy).toFixed(2)} Td (${esc(pdfText(line))}) Tj ET`);
       });
       return this;
     }
@@ -63,7 +68,7 @@
     rect(x, y, width, height, style = 'S') {
       const op = String(style).includes('F') ? 'f' : 'S';
       const color = String(style).includes('F') ? this.fillColor : this.textColor;
-      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${Number(x || 0).toFixed(2)} ${this._y(Number(y || 0) + Number(height || 0)).toFixed(2)} ${Number(width || 0).toFixed(2)} ${Number(height || 0).toFixed(2)} re ${op}`);
+      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${this._x(x).toFixed(2)} ${this._y(Number(y || 0) + Number(height || 0)).toFixed(2)} ${this._u(width).toFixed(2)} ${this._u(height).toFixed(2)} re ${op}`);
       return this;
     }
 
@@ -86,10 +91,10 @@
       const pagesId = this.pages.length + contentIds.length + 2;
       this.pages.forEach((ops, index) => {
         const annotations = this.links.filter(link => link.page === index && link.url).map(link => {
-          const rect = [link.x, this._y(link.y + link.height), link.x + link.width, this._y(link.y)].map(v => Number(v || 0).toFixed(2)).join(' ');
+          const rect = [this._x(link.x), this._y(link.y + link.height), this._x(link.x + link.width), this._y(link.y)].map(v => Number(v || 0).toFixed(2)).join(' ');
           return `<< /Type /Annot /Subtype /Link /Rect [${rect}] /Border [0 0 0] /A << /S /URI /URI (${esc(link.url)}) >> >>`;
         });
-        pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentIds[index]} 0 R${annotations.length ? ` /Annots [${annotations.join(' ')}]` : ''} >>`));
+        pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidthPt.toFixed(2)} ${pageHeightPt.toFixed(2)}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentIds[index]} 0 R${annotations.length ? ` /Annots [${annotations.join(' ')}]` : ''} >>`));
       });
       add(`<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`);
       add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
