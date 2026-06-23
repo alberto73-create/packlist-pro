@@ -7,6 +7,7 @@ const ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
+    '/js/share-v4-loader.js?v=1.10.24',
     '/js/app.js?v=1.10.24',
     '/js/modules/controller.js',
     '/js/modules/db.js',
