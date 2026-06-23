@@ -31,11 +31,13 @@ export function list(state, U) {
             const sorted = [...items].sort((a,b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
             const box = document.createElement('div');
             box.className = `cat-box${sorted.every(item => item.checked) ? ' complete' : ''}`; box.dataset.cat = cat;
-            box.innerHTML = `<div class="cat-header"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${sorted.filter(i => !i.checked).length}/${items.length}</span></div>`;
-            sorted.forEach(item => box.appendChild(createItemRow(item, cat, U)));
+            box.innerHTML = `<button type="button" class="cat-header cat-toggle" aria-expanded="true"><span class="cat-name">${U.esc(cat)}</span><span class="cat-count">${sorted.filter(i => !i.checked).length}/${items.length}</span><i aria-hidden="true">⌄</i></button>`;
+            const catItems = document.createElement('div');
+            catItems.className = 'cat-items';
+            sorted.forEach(item => catItems.appendChild(createItemRow(item, cat, U)));
             const addRow = document.createElement('div'); addRow.className = 'add-custom';
             addRow.innerHTML = `<input type="text" placeholder="+ Aggiungi item personalizzato..." aria-label="Nuovo item in ${U.esc(cat)}"><button type="button" class="btn-sm" data-action="add">+ Aggiungi</button>`;
-            box.appendChild(addRow); section.appendChild(box);
+            catItems.appendChild(addRow); box.appendChild(catItems); section.appendChild(box);
         }
         frag.appendChild(section);
     }

@@ -2,12 +2,12 @@
 // Release checklist: mantenere questa versione allineata con APP_VERSION in js/modules/db.js,
 // con la versione visibile/query string in index.html e con version/start_url in manifest.json.
 // Cambiare CACHE_NAME a ogni release forza i browser a scaricare asset freschi.
-const CACHE_NAME = 'packlist-v1.10.19';
+const CACHE_NAME = 'packlist-v1.10.21';
 const ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
-    '/js/app.js?v=1.10.19',
+    '/js/app.js?v=1.10.21',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',
@@ -17,7 +17,7 @@ const ASSETS = [
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
-    '/css/style.css?v=1.10.19',
+    '/css/style.css?v=1.10.21',
     '/manifest.json',
     '/icons/icon-backpack.svg'
 ];

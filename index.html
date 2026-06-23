@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.10.19">
+    <link rel="stylesheet" href="./css/style.css?v=1.10.21">
 </head>
 
 <body>
@@ -56,7 +56,7 @@
         <div class="header-right">
             <button type="button" class="header-feedback" id="feedbackBtn" aria-label="Lascia feedback"><span aria-hidden="true">💬</span><span>Feedback</span></button>
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.19</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.21</span>
         </div>
     </div>
 
@@ -148,9 +148,9 @@
         <div class="laundry-info" id="laundryInfo"></div>
         <div class="template-row">
             <input type="text" id="templateName" placeholder="Nome lista (es. Rio)..." aria-label="Nome lista da salvare">
-            <button type="button" class="btn-sm" id="saveTemplateBtn">💾 Salva</button>
+            <button type="button" class="btn-sm" id="saveTemplateBtn">💾 Salva lista</button>
             <select id="templateSelect">
-                <option value="">📂 Carica template...</option>
+                <option value="">📂 Carica lista...</option>
             </select>
             <button type="button" class="btn-sm danger" id="deleteTemplateBtn">🗑️</button>
         </div>
@@ -280,6 +280,6 @@
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.10.19"></script>
+    <script type="module" src="./js/app.js?v=1.10.21"></script>
 </body>
 </html>

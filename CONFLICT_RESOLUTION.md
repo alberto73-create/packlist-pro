@@ -1,4 +1,4 @@
-# Architettura runtime canonica
+# Architettura runtime canonica e strategia anti-conflitti
 
 Questo repository contiene una sola applicazione web e un solo entry point runtime:
 
@@ -9,9 +9,65 @@ Questo repository contiene una sola applicazione web e un solo entry point runti
 
 Non aggiungere seconde pagine HTML, copie degli asset, rendering dinamici alternativi delle attività o handler diretti paralleli a `handleControlClick()`. In caso di conflitto, mantenere la versione che supera `npm test`: il test `runtime-integrity.mjs` verifica entry point unico, ID univoci, versione coerente e configurazione anti-cache.
 
-Quando cambia codice o stile visibile:
+## Regola pratica per ridurre conflitti
 
-1. aggiornare `APP_VERSION` in `js/modules/db.js`;
-2. usare la stessa versione nelle query asset di `index.html` e `sw.js`;
-3. incrementare `CACHE_NAME` in `sw.js`;
-4. eseguire `npm test`.
+I conflitti ricorrenti arrivano quasi sempre da file molto contesi: `index.html`, `css/style.css`, `js/modules/controller.js`, `js/modules/communications.js`, `js/modules/db.js`, `manifest.json` e `sw.js`.
+
+Per ridurli:
+
+1. lavora sempre da `main` aggiornato prima di aprire una nuova PR;
+2. evita più PR aperte che modificano gli stessi file globali;
+3. tieni le PR piccole e tematiche: dati DB, UI/FAB, feedback, template, PWA/versione;
+4. fai il bump versione solo alla fine della PR, non a ogni micro-modifica;
+5. se una PR resta aperta mentre `main` cambia, aggiornala subito con `git fetch origin && git rebase origin/main` oppure `git merge origin/main`.
+
+## Aggiornamento versione centralizzato
+
+Quando cambia codice o stile visibile, usa lo script dedicato invece di modificare manualmente più file:
+
+```bash
+npm run bump:version -- 1.10.22
+```
+
+Lo script aggiorna in modo coerente:
+
+- versione visibile e query string asset in `index.html`;
+- `APP_VERSION` in `js/modules/db.js`;
+- `CACHE_NAME` e asset versionati in `sw.js`;
+- `manifest.json`.
+
+Poi esegui sempre:
+
+```bash
+npm test
+```
+
+## Risoluzione conflitti consigliata
+
+Per aggiornare una PR in conflitto:
+
+```bash
+git fetch origin
+git checkout nome-branch-pr
+git rebase origin/main
+# risolvi i file indicati da Git
+git add .
+git rebase --continue
+npm test
+git push --force-with-lease
+```
+
+Se preferisci evitare rebase:
+
+```bash
+git fetch origin
+git checkout nome-branch-pr
+git merge origin/main
+# risolvi i file indicati da Git
+git add .
+git commit
+npm test
+git push
+```
+
+Quando i conflitti riguardano `index.html`, `sw.js`, `manifest.json` e `js/modules/db.js`, dopo la risoluzione riesegui `npm run bump:version -- <versione-finale>` per riallineare tutto.

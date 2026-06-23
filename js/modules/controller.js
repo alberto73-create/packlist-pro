@@ -539,6 +539,49 @@ function getAllItems() {
     return Object.values(STATE.list).flat();
 }
 
+function cloneData(value) {
+    return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function migrateActivities(activities = []) {
+    return [...new Set((Array.isArray(activities) ? activities : []).map(activity => activity === 'forra_speleo' ? 'speleo' : activity).filter(Boolean))];
+}
+
+function createTemplateSnapshot(name, existing = null) {
+    const now = new Date().toISOString();
+    return {
+        id: existing?.id || `template_${Date.now().toString(36)}`,
+        schemaVersion: 2,
+        name,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+        config: cloneData(STATE.config),
+        snapshot: {
+            list: cloneData(STATE.list),
+            baggages: cloneData(STATE.baggages),
+            baggageSetup: Boolean(STATE.baggageSetup),
+            filter: STATE.filter || 'all',
+            listName: name
+        }
+    };
+}
+
+function normalizeTemplateEntry(name, entry) {
+    const source = entry && typeof entry === 'object' ? entry : {};
+    const configSource = source.schemaVersion >= 2 ? source.config : source;
+    const config = normalizeConfig({ ...DEFAULT_CONFIG, ...configSource, activities: migrateActivities(configSource.activities) });
+    const snapshot = source.snapshot && typeof source.snapshot === 'object' ? source.snapshot : null;
+    return {
+        id: source.id || `template_${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_') || Date.now().toString(36)}`,
+        schemaVersion: Number(source.schemaVersion) || (snapshot ? 2 : 1),
+        name: String(source.name || name || '').trim(),
+        createdAt: source.createdAt || '',
+        updatedAt: source.updatedAt || '',
+        config,
+        snapshot
+    };
+}
+
 export function loadTemplateDropdown() {
     View.loadTemplateDropdown(getTemplates);
 }
@@ -546,12 +589,12 @@ export function loadTemplateDropdown() {
 export function saveTemplate(name) {
     const cleanName = name.trim();
     if (!cleanName) {
-        U.toast('Inserisci un nome per il template');
+        U.toast('Inserisci un nome per la lista');
         return false;
     }
 
     const templates = getTemplates();
-    templates[cleanName] = { ...STATE.config };
+    templates[cleanName] = createTemplateSnapshot(cleanName, templates[cleanName]);
     setState({ listName: cleanName });
     saveTemplates(templates);
     saveState();
@@ -560,34 +603,43 @@ export function saveTemplate(name) {
     const input = document.getElementById('templateName');
     if (input) input.value = '';
     logAnonymousEvent({ eventType:'template_saved', context: STATE.config });
-    U.toast(`Template "${cleanName}" salvato`);
+    U.toast(`Lista "${cleanName}" salvata`);
     return true;
 }
 
 export function loadTemplate(name) {
-    const template = getTemplates()[name];
-    if (!template) {
-        U.toast('Template non trovato');
+    const stored = getTemplates()[name];
+    if (!stored) {
+        U.toast('Lista salvata non trovata');
         return false;
     }
 
-    setConfig({ ...DEFAULT_CONFIG, ...template });
-    setState({ listName: name.trim() });
-    const nights = document.getElementById('nights');
-    const gender = document.getElementById('gender');
-    const transport = document.getElementById('transport');
-    const laundryFreq = document.getElementById('laundryFreq');
-    const laundryBuffer = document.getElementById('laundryBuffer');
-
-    if (nights) nights.value = STATE.config.nights;
-    if (gender) gender.value = STATE.config.gender;
-    if (transport?.options) [...transport.options].forEach(option => { option.selected = STATE.config.transports.includes(option.value); });
-    if (laundryFreq) laundryFreq.value = STATE.config.laundryFreq;
-    if (laundryBuffer) laundryBuffer.value = STATE.config.laundryBuffer;
-
-    if (validateSetupForGenerate()) generateList();
+    const template = normalizeTemplateEntry(name, stored);
+    const hasSnapshot = template.schemaVersion >= 2 && template.snapshot?.list;
+    if (hasSnapshot) {
+        const baggages = normalizeBaggages(template.snapshot.baggages);
+        setState({
+            config: template.config,
+            list: normalizeList(template.snapshot.list, baggages),
+            listName: template.name || name.trim(),
+            baggages,
+            baggageSetup: Boolean(template.snapshot.baggageSetup || baggages.length),
+            filter: template.snapshot.filter || 'all'
+        });
+        updateConfigUI();
+        View.updateFilterUI(STATE.filter);
+        View.list(STATE, U);
+        View.stats(STATE, U);
+        updateWarnings();
+        saveState();
+    } else {
+        setConfig(template.config);
+        setState({ listName: template.name || name.trim() });
+        if (validateSetupForGenerate()) generateList();
+        else { View.showEmptyState('Completa la configurazione e rigenera la lista.'); saveState(); }
+    }
     logAnonymousEvent({ eventType:'template_loaded', context: STATE.config });
-    U.toast(`Template "${name}" caricato`);
+    U.toast(`Lista "${name}" caricata`);
     return true;
 }
 
@@ -966,6 +1018,14 @@ export function setupEventDelegation() {
     results.addEventListener('click', (e) => {
         const target = e.target;
 
+        const categoryToggle = target.closest('.cat-toggle');
+        if (categoryToggle) {
+            const box = categoryToggle.closest('.cat-box');
+            const collapsed = box.classList.toggle('collapsed');
+            categoryToggle.setAttribute('aria-expanded', String(!collapsed));
+            return;
+        }
+
         // Bottone add custom: si trova fuori da .item-row, quindi va gestito prima.
         if (target.closest('[data-action="add"]')) {
             const addRow = target.closest('.add-custom');
@@ -1092,7 +1152,7 @@ function clampInteger(value, fallback, min, max) {
 function normalizeConfig(config = {}) {
     const normalized = { ...DEFAULT_CONFIG, ...STATE.config, ...config };
     normalized.weather = Array.isArray(normalized.weather) ? [...new Set(normalized.weather)] : [];
-    normalized.activities = Array.isArray(normalized.activities) ? [...new Set(normalized.activities)] : [];
+    normalized.activities = migrateActivities(normalized.activities);
     normalized.nights = clampInteger(normalized.nights, DEFAULT_CONFIG.nights, 0, 90);
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
