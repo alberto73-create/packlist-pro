@@ -71,3 +71,25 @@ git push
 ```
 
 Quando i conflitti riguardano `index.html`, `sw.js`, `manifest.json` e `js/modules/db.js`, dopo la risoluzione riesegui `npm run bump:version -- <versione-finale>` per riallineare tutto.
+
+## Conflitti solo di versione
+
+Se GitHub segnala conflitti limitati a `index.html`, `js/modules/db.js`, `manifest.json` e `sw.js`, di solito sono conflitti meccanici di versione/cache. Dopo aver allineato il branch, puoi usare il risolutore dedicato:
+
+```bash
+npm run resolve:version-conflicts
+```
+
+Il comando rimuove eventuali marker di conflitto da quei quattro file, sceglie la versione applicativa più alta già presente e riallinea versione visibile, `APP_VERSION`, `CACHE_NAME`, query string asset e `manifest.json`. Per forzare una versione finale specifica:
+
+```bash
+npm run resolve:version-conflicts -- 1.10.23
+```
+
+Poi esegui sempre:
+
+```bash
+npm test
+```
+
+Usa questo comando solo per conflitti meccanici di versione. Se nello stesso hunk ci sono modifiche funzionali a UI, DB o logica applicativa, risolvi prima manualmente quelle differenze e poi riallinea la versione.
