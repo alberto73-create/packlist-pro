@@ -1704,8 +1704,13 @@ button:disabled,
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     text-align: left;
     cursor: pointer;
+    appearance: none;
 }
 .baggage-heading { display: grid; min-width: 0; gap: 4px; }
 .baggage-title { color: var(--text); font-size: 1rem; font-weight: 900; }
