@@ -32,9 +32,13 @@ const versionedAssetPatterns = {
   'index.html css/style.css': /\.\/css\/style\.css\?v=(\d+\.\d+\.\d+)/g,
   'index.html js/share-v4-loader.js': /\.\/js\/share-v4-loader\.js\?v=(\d+\.\d+\.\d+)/g,
   'index.html js/app.js': /\.\/js\/app\.js\?v=(\d+\.\d+\.\d+)/g,
+  'index.html vendor/pdf/jspdf.umd.min.js': /\.\/vendor\/pdf\/jspdf\.umd\.min\.js\?v=(\d+\.\d+\.\d+)/g,
+  'index.html vendor/pdf/jspdf.plugin.autotable.min.js': /\.\/vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /css/style.css': /\/css\/style\.css\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /js/share-v4-loader.js': /\/js\/share-v4-loader\.js\?v=(\d+\.\d+\.\d+)/g,
-  'sw.js /js/app.js': /\/js\/app\.js\?v=(\d+\.\d+\.\d+)/g
+  'sw.js /js/app.js': /\/js\/app\.js\?v=(\d+\.\d+\.\d+)/g,
+  'sw.js /vendor/pdf/jspdf.umd.min.js': /\/vendor\/pdf\/jspdf\.umd\.min\.js\?v=(\d+\.\d+\.\d+)/g,
+  'sw.js /vendor/pdf/jspdf.plugin.autotable.min.js': /\/vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js\?v=(\d+\.\d+\.\d+)/g
 };
 
 for (const [label, regex] of Object.entries(versionedAssetPatterns)) {

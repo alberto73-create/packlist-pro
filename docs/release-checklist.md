@@ -19,6 +19,7 @@ Questa procedura evita disallineamenti tra versione applicazione, cache PWA, ass
 3. Verifica il diff e crea il commit della release.
 4. Esegui il deploy su Vercel.
 5. Dopo il deploy, fai hard refresh nel browser e testa la PWA installata per verificare che service worker e cache carichino la nuova versione.
+6. Testa anche l’export PDF offline dopo installazione/cache della PWA.
 
 ## File che devono restare allineati
 

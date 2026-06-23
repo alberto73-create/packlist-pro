@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 function collectFiles(directory, extension, results = []) {
@@ -115,6 +115,14 @@ assert.match(html, /id="baggageManagerModal"/);
 assert.match(html, /id="manageBaggagesBtn"/);
 assert.match(html, /app-logo-icon[^>]*><img src="\.\/icons\/icon-backpack\.svg"/);
 assert.doesNotMatch(html, /icons\/icon-(?:144|192|512)\.png/, 'visible runtime assets must keep using the text-only backpack SVG');
+assert.doesNotMatch(html, /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jspdf/, 'PDF export must not load jsPDF from CDN');
+assert.doesNotMatch(html, /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jspdf-autotable/, 'PDF export must not load AutoTable from CDN');
+assert.match(html, /\.\/vendor\/pdf\/jspdf\.umd\.min\.js\?v=1\.10\.25/, 'PDF export must load local jsPDF vendor file');
+assert.match(html, /\.\/vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js\?v=1\.10\.25/, 'PDF export must load local AutoTable vendor file');
+assert.ok(existsSync('vendor/pdf/jspdf.umd.min.js'), 'local jsPDF vendor file must exist');
+assert.ok(existsSync('vendor/pdf/jspdf.plugin.autotable.min.js'), 'local AutoTable vendor file must exist');
+assert.match(sw, /\/vendor\/pdf\/jspdf\.umd\.min\.js\?v=1\.10\.25/, 'service worker must precache local jsPDF vendor file');
+assert.match(sw, /\/vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js\?v=1\.10\.25/, 'service worker must precache local AutoTable vendor file');
 assert.match(controller, /doc\.link\(cta\.x, cta\.y, cta\.width, cta\.height/);
 assert.match(controller, /async function exportPdfFallback/, 'PDF export must have an explicit fallback');
 assert.match(controller, /PDF non disponibile offline: apro la stampa o copio la lista/, 'offline PDF fallback must explain available actions');

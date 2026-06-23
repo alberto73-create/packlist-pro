@@ -35,7 +35,7 @@ const updates = {
     );
     updated = replaceOrFail(
       updated,
-      /(\.\/(?:css\/style\.css|js\/share-v4-loader\.js|js\/app\.js)\?v=)\d+\.\d+\.\d+/g,
+      /(\.\/(?:css\/style\.css|js\/share-v4-loader\.js|js\/app\.js|vendor\/pdf\/jspdf\.umd\.min\.js|vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js)\?v=)\d+\.\d+\.\d+/g,
       `$1${version}`,
       'query string asset versionati in index.html'
     );
@@ -50,7 +50,7 @@ const updates = {
     );
     updated = replaceOrFail(
       updated,
-      /((?:\/js\/share-v4-loader\.js|\/js\/app\.js|\/css\/style\.css)\?v=)\d+\.\d+\.\d+/g,
+      /((?:\/js\/share-v4-loader\.js|\/js\/app\.js|\/css\/style\.css|\/vendor\/pdf\/jspdf\.umd\.min\.js|\/vendor\/pdf\/jspdf\.plugin\.autotable\.min\.js)\?v=)\d+\.\d+\.\d+/g,
       `$1${version}`,
       'asset versionati in sw.js'
     );
