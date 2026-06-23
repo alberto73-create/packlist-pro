@@ -19,6 +19,7 @@ const ASSETS = [
     '/js/modules/admin.js',
     '/js/modules/anonymous-logs.js',
     '/js/modules/communications.js',
+    '/js/modules/pdf-export.js',
     '/js/modules/pwa.js',
     '/js/modules/ui.js',
     '/js/modules/utils.js',
