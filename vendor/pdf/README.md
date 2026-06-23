@@ -1,19 +1,31 @@
-# PDF vendor assets
+# Packlist Pro PDF adapters
 
-These files are local PDF export assets used by Packlist Pro so the PWA does not load PDF code from a CDN at runtime.
+Packlist Pro uses local PDF adapters so PDF export can work without loading code from a CDN at runtime.
+
+## Chosen approach for this PR
+
+This PR intentionally keeps **Packlist Pro adapters**, not upstream jsPDF builds, because the official complete vendor files could not be obtained and verified reliably in this environment. The adapters are named accordingly so they do not pretend to be official jsPDF or jsPDF AutoTable distributions.
 
 ## Current files
 
-| File | Library/API | Version | Origin/source | License note |
+| File | API exposed | Version | Origin/source | License note |
 | --- | --- | --- | --- | --- |
-| `jspdf.umd.min.js` | Local jsPDF-compatible adapter exposing `window.jspdf.jsPDF` | Packlist Pro local adapter, not upstream jsPDF | Created in-repo for the offline-first PDF export step | Project license; replace with upstream jsPDF before claiming upstream jsPDF compatibility |
-| `jspdf.plugin.autotable.min.js` | Local AutoTable-compatible adapter exposing `doc.autoTable` | Packlist Pro local adapter, not upstream jsPDF AutoTable | Created in-repo for the offline-first PDF export step | Project license; replace with upstream jsPDF AutoTable before claiming upstream AutoTable compatibility |
+| `packlist-pdf-adapter.js` | Exposes `window.jspdf.jsPDF` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF build |
+| `packlist-autotable-adapter.js` | Adds `doc.autoTable` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF AutoTable build |
 
-## Upstream libraries originally used from CDN
+## Upstream libraries previously loaded from CDN
 
-The previous runtime CDN references were:
+The app previously loaded these runtime CDN assets:
 
 - jsPDF `2.5.1`: `https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js`
 - jsPDF AutoTable `3.5.31`: `https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js`
 
-Before merging a release that must vendor the full upstream libraries, replace the local adapters with the official upstream distribution files and keep this README updated with exact versions, source URLs, and license text/links.
+## Future safe upgrade path
+
+If the project needs the full upstream libraries instead of adapters, replace these adapter files with official distribution builds only after verifying:
+
+1. exact package versions (`jspdf@2.5.1`, `jspdf-autotable@3.5.31` or newer pinned versions);
+2. upstream source URL or npm package tarball;
+3. license text/link;
+4. file integrity/checksum;
+5. browser export PDF online and offline after service worker cache population.
