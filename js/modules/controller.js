@@ -4,6 +4,7 @@
 import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS, FILTER_MAP } from './db.js';
 import { U } from './utils.js';
 import * as View from './ui.js';
+import { logAnonymousEvent } from './anonymous-logs.js';
 
 /**
  * Calcola le quantità degli item in base alla configurazione
@@ -54,7 +55,7 @@ function isDepartureWornDailyItem(item) {
 }
 
 function showSetupWarning(missing = []) {
-    const message = missing.length ? `Completa prima: ${missing.join(', ')}.` : '';
+    const message = missing.length ? `Completa prima la configurazione viaggio: ${missing.join(', ')}.` : '';
     const warning = document.getElementById('setupWarning');
     if (warning) {
         warning.textContent = message;
@@ -155,6 +156,7 @@ export function generateList() {
     View.stats(STATE, U);
     updateWarnings();
     saveState();
+    logAnonymousEvent({ eventType:'packlist_generated', context: config });
     
     return newList;
 }
@@ -220,6 +222,7 @@ export function toggleItemChecked(uid) {
             View.updateItemRow(uid, item.checked);
             View.stats(STATE, U);
             saveState();
+            logAnonymousEvent({ eventType: item.checked ? 'item_marked_packed' : 'item_unmarked_packed', itemId: item.n, category: item.cat, context: STATE.config });
             return item.checked;
         }
     }
@@ -247,7 +250,9 @@ export function updateItemOptions(uid, { quantity, weight, worn, bulky, baggageI
     for (const cat in STATE.list) {
         const item = STATE.list[cat].find(i => i.uid === uid);
         if (!item) continue;
+        const oldQuantity = item.q;
         item.q = Math.max(1, Math.min(99, Number.parseInt(quantity, 10) || 1));
+        if (oldQuantity !== item.q) logAnonymousEvent({ eventType:'item_quantity_changed', itemId:item.n, category:item.cat, oldValue:oldQuantity, newValue:item.q, context:STATE.config });
         item.w = Math.max(1, Math.min(50000, Number.parseInt(weight, 10) || item.w || 100));
         item.worn = Boolean(worn);
         item.bulky = Boolean(bulky);
@@ -274,6 +279,7 @@ export function removeItem(uid) {
             View.list(STATE, U);
             View.stats(STATE, U);
             saveState();
+            logAnonymousEvent({ eventType:'item_removed', itemId:removed.n, category:removed.cat, context:STATE.config });
             return true;
         }
     }
@@ -307,6 +313,7 @@ export function addCustomItem(cat, name, weight = 100, volume = 1, baggageId = S
     View.list(STATE, U);
     View.stats(STATE, U);
     saveState();
+    logAnonymousEvent({ eventType:'item_added', itemId:item.n, category:item.cat, context:STATE.config });
     
     return item;
 }
@@ -487,6 +494,19 @@ export function moveAllBaggageItems(fromId, toId) {
     View.list(STATE, U); View.stats(STATE, U); saveState(); return true;
 }
 
+
+export function moveCategoryToBaggage(category, baggageId) {
+    if (!category || !STATE.baggages.some(bag => bag.id === baggageId)) return 0;
+    let moved = 0;
+    Object.entries(STATE.list).forEach(([cat, items]) => {
+        if (cat !== category) return;
+        items.forEach(item => { item.baggageId = baggageId; moved++; });
+    });
+    View.list(STATE, U); View.stats(STATE, U); saveState();
+    U.toast(moved ? `${moved} item “${category}” spostati` : `Nessun item in “${category}”`);
+    return moved;
+}
+
 export function deleteBaggage(id, moveToId = null) {
     if (STATE.baggages.length <= 1) return false;
     if (moveToId && !STATE.baggages.some(bag => bag.id === moveToId && bag.id !== id)) return false;
@@ -519,6 +539,49 @@ function getAllItems() {
     return Object.values(STATE.list).flat();
 }
 
+function cloneData(value) {
+    return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function migrateActivities(activities = []) {
+    return [...new Set((Array.isArray(activities) ? activities : []).map(activity => activity === 'forra_speleo' ? 'speleo' : activity).filter(Boolean))];
+}
+
+function createTemplateSnapshot(name, existing = null) {
+    const now = new Date().toISOString();
+    return {
+        id: existing?.id || `template_${Date.now().toString(36)}`,
+        schemaVersion: 2,
+        name,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+        config: cloneData(STATE.config),
+        snapshot: {
+            list: cloneData(STATE.list),
+            baggages: cloneData(STATE.baggages),
+            baggageSetup: Boolean(STATE.baggageSetup),
+            filter: STATE.filter || 'all',
+            listName: name
+        }
+    };
+}
+
+function normalizeTemplateEntry(name, entry) {
+    const source = entry && typeof entry === 'object' ? entry : {};
+    const configSource = source.schemaVersion >= 2 ? source.config : source;
+    const config = normalizeConfig({ ...DEFAULT_CONFIG, ...configSource, activities: migrateActivities(configSource.activities) });
+    const snapshot = source.snapshot && typeof source.snapshot === 'object' ? source.snapshot : null;
+    return {
+        id: source.id || `template_${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_') || Date.now().toString(36)}`,
+        schemaVersion: Number(source.schemaVersion) || (snapshot ? 2 : 1),
+        name: String(source.name || name || '').trim(),
+        createdAt: source.createdAt || '',
+        updatedAt: source.updatedAt || '',
+        config,
+        snapshot
+    };
+}
+
 export function loadTemplateDropdown() {
     View.loadTemplateDropdown(getTemplates);
 }
@@ -526,12 +589,12 @@ export function loadTemplateDropdown() {
 export function saveTemplate(name) {
     const cleanName = name.trim();
     if (!cleanName) {
-        U.toast('Inserisci un nome per il template');
+        U.toast('Inserisci un nome per la lista');
         return false;
     }
 
     const templates = getTemplates();
-    templates[cleanName] = { ...STATE.config };
+    templates[cleanName] = createTemplateSnapshot(cleanName, templates[cleanName]);
     setState({ listName: cleanName });
     saveTemplates(templates);
     saveState();
@@ -539,33 +602,44 @@ export function saveTemplate(name) {
 
     const input = document.getElementById('templateName');
     if (input) input.value = '';
-    U.toast(`Template "${cleanName}" salvato`);
+    logAnonymousEvent({ eventType:'template_saved', context: STATE.config });
+    U.toast(`Lista "${cleanName}" salvata`);
     return true;
 }
 
 export function loadTemplate(name) {
-    const template = getTemplates()[name];
-    if (!template) {
-        U.toast('Template non trovato');
+    const stored = getTemplates()[name];
+    if (!stored) {
+        U.toast('Lista salvata non trovata');
         return false;
     }
 
-    setConfig({ ...DEFAULT_CONFIG, ...template });
-    setState({ listName: name.trim() });
-    const nights = document.getElementById('nights');
-    const gender = document.getElementById('gender');
-    const transport = document.getElementById('transport');
-    const laundryFreq = document.getElementById('laundryFreq');
-    const laundryBuffer = document.getElementById('laundryBuffer');
-
-    if (nights) nights.value = STATE.config.nights;
-    if (gender) gender.value = STATE.config.gender;
-    if (transport?.options) [...transport.options].forEach(option => { option.selected = STATE.config.transports.includes(option.value); });
-    if (laundryFreq) laundryFreq.value = STATE.config.laundryFreq;
-    if (laundryBuffer) laundryBuffer.value = STATE.config.laundryBuffer;
-
-    generateList();
-    U.toast(`Template "${name}" caricato`);
+    const template = normalizeTemplateEntry(name, stored);
+    const hasSnapshot = template.schemaVersion >= 2 && template.snapshot?.list;
+    if (hasSnapshot) {
+        const baggages = normalizeBaggages(template.snapshot.baggages);
+        setState({
+            config: template.config,
+            list: normalizeList(template.snapshot.list, baggages),
+            listName: template.name || name.trim(),
+            baggages,
+            baggageSetup: Boolean(template.snapshot.baggageSetup || baggages.length),
+            filter: template.snapshot.filter || 'all'
+        });
+        updateConfigUI();
+        View.updateFilterUI(STATE.filter);
+        View.list(STATE, U);
+        View.stats(STATE, U);
+        updateWarnings();
+        saveState();
+    } else {
+        setConfig(template.config);
+        setState({ listName: template.name || name.trim() });
+        if (validateSetupForGenerate()) generateList();
+        else { View.showEmptyState('Completa la configurazione e rigenera la lista.'); saveState(); }
+    }
+    logAnonymousEvent({ eventType:'template_loaded', context: STATE.config });
+    U.toast(`Lista "${name}" caricata`);
     return true;
 }
 
@@ -648,6 +722,7 @@ export async function copyList() {
         document.execCommand('copy');
         area.remove();
     }
+    logAnonymousEvent({ eventType:'export_pdf_fallback_used', context: STATE.config });
     U.toast('Lista copiata');
     return true;
 }
@@ -668,7 +743,9 @@ export function showStatsSummary() {
         const weight = all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
         return `${bag.name}: ${U.weight(weight)}${bag.limit ? ` / ${bag.limit} kg` : ''}`;
     });
-    View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines });
+    const baggageWeights = STATE.baggages.map(bag => ({ name: bag.name, limit: bag.limit || '', weight: U.weight(all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0)) }));
+    const categories = Object.keys(STATE.list).sort((a, b) => a.localeCompare(b));
+    View.openStatsSummary({ done, total: all.length, totalWeight: U.weight(totalG), suitcaseWeight: U.weight(suitcaseG), wornWeight: U.weight(wornG), baggageLines, baggageWeights, categories, baggages: STATE.baggages });
 }
 
 async function exportPdfFallback(error = null) {
@@ -678,6 +755,7 @@ async function exportPdfFallback(error = null) {
         ? 'PDF non disponibile offline: apro la stampa o copio la lista'
         : 'PDF non disponibile: apro la stampa o copio la lista';
 
+    logAnonymousEvent({ eventType:'export_pdf_fallback_used', context: STATE.config });
     if (typeof window.print === 'function') {
         try {
             U.toast(message);
@@ -767,6 +845,7 @@ export async function exportPDF() {
     } catch (error) {
         return exportPdfFallback(error);
     }
+    logAnonymousEvent({ eventType:'export_pdf_used', context: STATE.config });
     U.toast('PDF esportato');
     return true;
 }
@@ -939,6 +1018,14 @@ export function setupEventDelegation() {
     results.addEventListener('click', (e) => {
         const target = e.target;
 
+        const categoryToggle = target.closest('.cat-toggle');
+        if (categoryToggle) {
+            const box = categoryToggle.closest('.cat-box');
+            const collapsed = box.classList.toggle('collapsed');
+            categoryToggle.setAttribute('aria-expanded', String(!collapsed));
+            return;
+        }
+
         // Bottone add custom: si trova fuori da .item-row, quindi va gestito prima.
         if (target.closest('[data-action="add"]')) {
             const addRow = target.closest('.add-custom');
@@ -1065,7 +1152,7 @@ function clampInteger(value, fallback, min, max) {
 function normalizeConfig(config = {}) {
     const normalized = { ...DEFAULT_CONFIG, ...STATE.config, ...config };
     normalized.weather = Array.isArray(normalized.weather) ? [...new Set(normalized.weather)] : [];
-    normalized.activities = Array.isArray(normalized.activities) ? [...new Set(normalized.activities)] : [];
+    normalized.activities = migrateActivities(normalized.activities);
     normalized.nights = clampInteger(normalized.nights, DEFAULT_CONFIG.nights, 0, 90);
     normalized.laundryFreq = clampInteger(normalized.laundryFreq, DEFAULT_CONFIG.laundryFreq, 1, 14);
     normalized.laundryBuffer = clampInteger(normalized.laundryBuffer, DEFAULT_CONFIG.laundryBuffer, 0, 5);
