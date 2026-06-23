@@ -5,6 +5,7 @@ import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
+import { exportStyledPDF } from './modules/pdf-export.js';
 import { initAdmin } from './modules/admin.js';
 import { initCommunications, openFeedbackModal, renderSupportBanner, maybeShowAutomaticFeedback } from './modules/communications.js';
 import { logAnonymousEvent } from './modules/anonymous-logs.js';
@@ -220,7 +221,7 @@ async function handleControlClick(event) {
     };
     if (filters[fabItem.id]) Ctrl.setFilter(filters[fabItem.id]);
     else if (fabItem.id === 'copyListBtn') { await Ctrl.copyList(); maybeShowAutomaticFeedback('afterExport'); }
-    else if (fabItem.id === 'exportPdfBtn') { await Ctrl.exportPDF(); maybeShowAutomaticFeedback('afterExport'); }
+    else if (fabItem.id === 'exportPdfBtn') { await exportStyledPDF(); maybeShowAutomaticFeedback('afterExport'); }
     else if (fabItem.id === 'exportCsvBtn') Ctrl.exportStatsCSV();
     else if (fabItem.id === 'shareListBtn') await Ctrl.shareList();
     else if (fabItem.id === 'uncheckAllBtn') Ctrl.uncheckAll();
@@ -271,5 +272,6 @@ window.App = {
     U,
     generateList: () => Ctrl.generateList(),
     resetState: () => Ctrl.resetState(),
-    exportCSV: () => Ctrl.exportStatsCSV()
+    exportCSV: () => Ctrl.exportStatsCSV(),
+    exportPDF: () => exportStyledPDF()
 };
