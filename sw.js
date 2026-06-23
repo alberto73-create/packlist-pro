@@ -9,6 +9,8 @@ const ASSETS = [
     '/offline.html',
     '/js/share-v4-loader.js?v=1.10.25',
     '/js/app.js?v=1.10.25',
+    '/vendor/pdf/packlist-pdf-adapter.js?v=1.10.25',
+    '/vendor/pdf/packlist-autotable-adapter.js?v=1.10.25',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',
@@ -20,7 +22,9 @@ const ASSETS = [
     '/js/modules/utils.js',
     '/css/style.css?v=1.10.25',
     '/manifest.json',
-    '/icons/icon-backpack.svg'
+    '/icons/icon-backpack.svg',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png'
 ];
 const PRECACHE_URLS = new Set(ASSETS);
 

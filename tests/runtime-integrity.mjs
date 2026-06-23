@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 function collectFiles(directory, extension, results = []) {
@@ -114,7 +114,19 @@ assert.match(html, /id="baggageSetupModal"/);
 assert.match(html, /id="baggageManagerModal"/);
 assert.match(html, /id="manageBaggagesBtn"/);
 assert.match(html, /app-logo-icon[^>]*><img src="\.\/icons\/icon-backpack\.svg"/);
-assert.doesNotMatch(`${html}\n${sw}\n${readFileSync('manifest.json', 'utf8')}`, /icons\/icon-(?:144|192|512)\.png/, 'runtime install assets must use the text-only backpack SVG');
+assert.doesNotMatch(html, /icons\/icon-(?:144|192|512)\.png/, 'visible runtime assets must keep using the text-only backpack SVG');
+assert.doesNotMatch(html, /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jspdf/, 'PDF export must not load jsPDF from CDN');
+assert.doesNotMatch(html, /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jspdf-autotable/, 'PDF export must not load AutoTable from CDN');
+assert.match(html, /\.\/vendor\/pdf\/packlist-pdf-adapter\.js\?v=1\.10\.25/, 'PDF export must load the local Packlist PDF adapter');
+assert.match(html, /\.\/vendor\/pdf\/packlist-autotable-adapter\.js\?v=1\.10\.25/, 'PDF export must load the local Packlist AutoTable adapter');
+assert.ok(existsSync('vendor/pdf/packlist-pdf-adapter.js'), 'local Packlist PDF adapter must exist');
+assert.ok(existsSync('vendor/pdf/packlist-autotable-adapter.js'), 'local Packlist AutoTable adapter must exist');
+assert.ok(!existsSync('vendor/pdf/jspdf.umd.min.js'), 'Packlist adapters must not be named as official jsPDF builds');
+assert.ok(!existsSync('vendor/pdf/jspdf.plugin.autotable.min.js'), 'Packlist adapters must not be named as official AutoTable builds');
+assert.doesNotMatch(readFileSync('vendor/pdf/packlist-pdf-adapter.js', 'utf8'), /Packlist Pro local adapter/, 'adapter provenance wording must use the current Packlist adapter naming');
+assert.doesNotMatch(readFileSync('vendor/pdf/packlist-autotable-adapter.js', 'utf8'), /Packlist Pro local adapter/, 'adapter provenance wording must use the current Packlist adapter naming');
+assert.match(sw, /\/vendor\/pdf\/packlist-pdf-adapter\.js\?v=1\.10\.25/, 'service worker must precache the local Packlist PDF adapter');
+assert.match(sw, /\/vendor\/pdf\/packlist-autotable-adapter\.js\?v=1\.10\.25/, 'service worker must precache the local Packlist AutoTable adapter');
 assert.match(controller, /doc\.link\(cta\.x, cta\.y, cta\.width, cta\.height/);
 assert.match(controller, /async function exportPdfFallback/, 'PDF export must have an explicit fallback');
 assert.match(controller, /PDF non disponibile offline: apro la stampa o copio la lista/, 'offline PDF fallback must explain available actions');
