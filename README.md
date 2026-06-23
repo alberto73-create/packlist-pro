@@ -1,90 +1,125 @@
 # Packlist Pro 🎒
 
-Una web app progressiva (PWA) per generare liste di viaggio perfette in pochi secondi. Ottimizzata per attività, condizioni meteo e durata del viaggio.
+Packlist Pro è una PWA in JavaScript vanilla per creare liste bagaglio personalizzate in base a durata, attività, meteo, mezzo di trasporto e preferenze di viaggio.
 
-## ✨ Caratteristiche
+## ✨ Caratteristiche principali
 
-- **Generazione Intelligente**: Crea liste di viaggio personalizzate in base a:
-  - Tipo di attività (trekking, mare, città, montagna, ecc.)
-  - Condizioni meteo previste
-  - Durata del viaggio
-  - Preferenze personali
+- **Generazione intelligente della lista**
+  - notti di viaggio, inclusa modalità gita in giornata;
+  - sesso/unisex;
+  - multi-mezzo: auto, moto, aereo, treno, camper, trekking/a piedi;
+  - meteo multiplo: sole, pioggia, freddo;
+  - attività multiple, incluse trekking, mare, città, campeggio, ferrata e speleo.
 
-- **Progressive Web App (PWA)**:
-  - Funziona offline grazie al Service Worker
-  - Installabile su desktop e mobile
-  - Design responsive per tutti i dispositivi
+- **Gestione bagagli**
+  - più bagagli nella stessa lista;
+  - assegnazione item a un bagaglio specifico;
+  - peso totale, peso per bagaglio e limite kg opzionale;
+  - item indossati esclusi dal peso del bagaglio.
 
-- **Export PDF**: Esporta la tua lista in formato PDF per averla sempre a portata di mano
+- **Template e condivisione**
+  - salvataggio/caricamento liste locali;
+  - snapshot completi con lista, bagagli e configurazione;
+  - link condivisibili con supporto multi-mezzo.
 
-- **Dark/Light Mode**: Interfaccia che si adatta alle preferenze di sistema
+- **PWA/offline**
+  - installabile su mobile e desktop;
+  - service worker con cache controllata;
+  - fallback offline e protezione dello stato locale durante gli aggiornamenti.
+
+- **Export e strumenti**
+  - esportazione PDF;
+  - copia lista;
+  - esportazione CSV statistiche;
+  - feedback e comunicazioni configurabili.
+
+- **Console amministrativa**
+  - accesso server-side tramite `ADMIN_PASSWORD`;
+  - modifica visuale del database item;
+  - compatibilità per meteo e mezzi su ogni item;
+  - regole quantità per giorno/notte/lavanderia;
+  - salvataggio DB tramite API e commit GitHub configurato da variabili ambiente.
 
 ## 🚀 Utilizzo
 
-1. Apri l'applicazione nel tuo browser
-2. Inserisci i dettagli del tuo viaggio:
-   - Destinazione
-   - Tipo di attività
-   - Durata
-   - Meteo previsto
-3. Genera la tua lista personalizzata
-4. Personalizza gli elementi secondo le tue esigenze
-5. Esporta in PDF se necessario
+1. Apri l’applicazione nel browser o dalla PWA installata.
+2. Imposta notti, sesso, mezzo, meteo e attività.
+3. Clicca **Aggiorna Packlist**.
+4. Spunta gli item man mano che li prepari.
+5. Modifica quantità, peso, bagaglio o stato “indossato” dalle opzioni articolo.
+6. Salva la lista come template, esportala in PDF o condividila con chi viaggia con te.
 
 ## 📱 Installazione PWA
 
-### Desktop (Chrome/Edge)
-- Clicca sull'icona di installazione nella barra degli indirizzi
-- Oppure vai su `Impostazioni` → `Installa Packlist Pro`
+### Desktop Chrome/Edge
 
-### Mobile (iOS Safari)
-- Tocca il pulsante "Condividi"
-- Seleziona "Aggiungi alla schermata Home"
+- Usa l’icona di installazione nella barra degli indirizzi.
+- In alternativa: menu browser → **Installa Packlist Pro**.
 
-### Mobile (Android Chrome)
-- Tocca il menu (tre puntini)
-- Seleziona "Installa app" o "Aggiungi a schermata home"
+### iOS Safari
+
+- Tocca **Condividi**.
+- Seleziona **Aggiungi alla schermata Home**.
+
+### Android Chrome
+
+- Tocca il menu con tre puntini.
+- Seleziona **Installa app** o **Aggiungi a schermata Home**.
 
 ## 🛠️ Tecnologie
 
-- **HTML5/CSS3** - Struttura e stile
-- **JavaScript Vanilla** - Logica dell'applicazione
-- **Service Worker** - Funzionalità offline
-- **Web App Manifest** - Installabilità PWA
-- **jsPDF** - Generazione PDF
-- **Google Fonts** - Tipografia (DM Sans, DM Mono)
+- HTML5/CSS3
+- JavaScript vanilla con moduli ES
+- Service Worker
+- Web App Manifest
+- Vercel Serverless Functions
+- GitHub Contents API per aggiornamento database admin
+- jsPDF e jsPDF AutoTable per export PDF
 
-## 📁 Struttura del Progetto
+## 📁 Struttura del progetto
 
-```
+```text
 packlist-pro/
-├── index.html        # Pagina principale dell'app
-├── css/style.css     # Stili dell'interfaccia
-├── js/app.js         # Entry point JavaScript dell'app
-├── js/modules/       # Moduli applicativi (controller, UI, DB, PWA, utils)
-├── manifest.json     # Manifest PWA per l'installazione
-├── sw.js             # Service Worker per funzionalità offline
-├── vercel.json       # Configurazione deploy/cache Vercel
-├── README.md         # Questa documentazione
-└── icons/            # Icone per PWA
+├── index.html                 # Pagina principale dell’app
+├── css/style.css              # Stili interfaccia
+├── js/app.js                  # Entry point JavaScript
+├── js/share-v4-loader.js      # Compatibilità link condivisi multi-mezzo
+├── js/modules/                # Moduli applicativi
+├── api/                       # API serverless Vercel
+├── manifest.json              # Manifest PWA
+├── sw.js                      # Service Worker
+├── tests/                     # Test runtime/smoke
+├── scripts/                   # Script manutenzione/versioni
+├── vercel.json                # Configurazione deploy/cache Vercel
+└── icons/                     # Icone PWA
 ```
 
-## 🖼️ Smoke test visuale
+## ✅ Test
 
-Per acquisire uno screenshot headless dell’app con Chrome o Chromium:
+```bash
+npm test
+```
+
+Il comando esegue controllo conflict marker, version resolver, runtime integrity, admin auth e smoke test applicativo.
+
+Per acquisire uno screenshot headless:
 
 ```bash
 npm run screenshot
 ```
 
-Lo script rileva automaticamente il browser oppure usa il percorso indicato in `CHROME_PATH`. La workflow `Visual smoke test` installa Chrome, esegue i test e pubblica lo screenshot come artifact per ogni pull request.
+La workflow **Visual smoke test** esegue test e screenshot sulle pull request e sui push verso `main`.
 
-## 🌐 Browser Supportati
+## 🔐 Console amministrativa
 
-- Chrome/Edge (versioni recenti)
-- Firefox (versioni recenti)
-- Safari (iOS 11.4+)
-- Samsung Internet
+La console admin richiede autenticazione server-side. Non inserire mai password, token GitHub o chiavi admin dentro i file statici della PWA.
+
+Variabili ambiente principali:
+
+- `ADMIN_PASSWORD`
+- `GITHUB_TOKEN`
+- `GITHUB_REPO`
+- `GITHUB_BRANCH` opzionale, default `main`
 
 ## 📄 Licenza
 
@@ -92,8 +127,4 @@ Questo progetto è open source.
 
 ---
 
-**Packlist Pro** - La tua packlist di viaggio intelligente 🌍
-
-## 🔐 Console amministrativa
-
-Una console amministrativa globale richiede autenticazione e autorizzazione server-side; username, password o privilegi inseriti nella PWA statica sarebbero esposti a tutti gli utenti. La proposta di architettura sicura e i passaggi necessari prima di aggiungere l'icona amministratore sono descritti in [`docs/admin-console.md`](docs/admin-console.md).
+**Packlist Pro** — la tua packlist di viaggio intelligente 🌍

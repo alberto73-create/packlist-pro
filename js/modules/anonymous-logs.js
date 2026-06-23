@@ -16,7 +16,16 @@ function roundTimestamp(date = new Date()) { date.setSeconds(0, 0); return date.
 function deviceClass() { return matchMedia?.('(pointer:coarse)')?.matches || innerWidth < 700 ? 'mobile' : 'desktop'; }
 function browserFamily() { const ua = navigator.userAgent || ''; if (/Firefox/i.test(ua)) return 'Firefox'; if (/Edg/i.test(ua)) return 'Edge'; if (/Chrome|Chromium/i.test(ua)) return 'Chrome'; if (/Safari/i.test(ua)) return 'Safari'; return 'Other'; }
 function cleanScalar(value) { if (typeof value === 'number' || typeof value === 'boolean') return value; if (Array.isArray(value)) return value.map(cleanScalar).filter(v => v !== undefined).slice(0, 20); if (typeof value === 'string') return value.toLowerCase().replace(/[^a-z0-9_ -]/gi, '').slice(0, 80); return undefined; }
-function sanitizeContext(context = {}) { return { nights: Number(context.nights) || 0, activities: Array.isArray(context.activities) ? context.activities.map(cleanScalar).filter(Boolean).slice(0, 20) : [], weatherModes: Array.isArray(context.weatherModes) ? context.weatherModes.map(cleanScalar).filter(Boolean).slice(0, 10) : [], transportModes: Array.isArray(context.transportModes) ? context.transportModes.map(cleanScalar).filter(Boolean).slice(0, 10) : [] }; }
+function sanitizeContext(context = {}) {
+  const weather = Array.isArray(context.weatherModes) ? context.weatherModes : context.weather;
+  const transports = Array.isArray(context.transportModes) ? context.transportModes : context.transports;
+  return {
+    nights: Number(context.nights) || 0,
+    activities: Array.isArray(context.activities) ? context.activities.map(cleanScalar).filter(Boolean).slice(0, 20) : [],
+    weatherModes: Array.isArray(weather) ? weather.map(cleanScalar).filter(Boolean).slice(0, 10) : [],
+    transportModes: Array.isArray(transports) ? transports.map(cleanScalar).filter(Boolean).slice(0, 10) : []
+  };
+}
 export function sanitizeAnonymousEvent(event = {}) {
   if (!ALLOWED_EVENTS.has(event.eventType)) return null;
   const clean = { eventType: event.eventType, timestamp: roundTimestamp(), appVersion: APP_VERSION, source: cleanScalar(event.source || 'packlist'), deviceClass: deviceClass(), browserFamily: browserFamily(), language: String(navigator.language || '').slice(0, 8), isOnline: navigator.onLine !== false };
