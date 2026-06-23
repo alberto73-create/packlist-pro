@@ -11,6 +11,8 @@ const ASSETS = [
     '/js/app.js?v=1.10.25',
     '/vendor/pdf/packlist-pdf-adapter.js?v=1.10.25',
     '/vendor/pdf/packlist-autotable-adapter.js?v=1.10.25',
+    '/vendor/pdf/jspdf.umd.min.js?v=1.10.25',
+    '/vendor/pdf/jspdf.plugin.autotable.min.js?v=1.10.25',
     '/js/modules/controller.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',

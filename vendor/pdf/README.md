@@ -12,6 +12,8 @@ This PR intentionally keeps **Packlist Pro adapters**, not upstream jsPDF builds
 | --- | --- | --- | --- | --- |
 | `packlist-pdf-adapter.js` | Exposes `window.jspdf.jsPDF` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF build |
 | `packlist-autotable-adapter.js` | Adds `doc.autoTable` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF AutoTable build |
+| `jspdf.umd.min.js` | Deprecated compatibility alias for stale PWA shells only | Packlist Pro adapter alias for app version `1.10.25` | Mirrors the local Packlist adapter so older cached app shells do not lose PDF export | Project license; not an upstream jsPDF build |
+| `jspdf.plugin.autotable.min.js` | Deprecated compatibility alias for stale PWA shells only | Packlist Pro adapter alias for app version `1.10.25` | Mirrors the local Packlist AutoTable adapter so older cached app shells do not lose PDF export | Project license; not an upstream jsPDF AutoTable build |
 
 ## Upstream libraries previously loaded from CDN
 
@@ -29,3 +31,7 @@ If the project needs the full upstream libraries instead of adapters, replace th
 3. license text/link;
 4. file integrity/checksum;
 5. browser export PDF online and offline after service worker cache population.
+
+## Legacy alias removal rule
+
+Keep the deprecated `jspdf.*` aliases for at least one full release cycle after the current Service Worker has been adopted by active clients. Removing them immediately can break browsers/PWAs still running a stale app shell that references the old filenames.
