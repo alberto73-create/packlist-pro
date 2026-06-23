@@ -19,11 +19,11 @@
     const columns = head[0] || [];
     let y = startY;
 
-    const ensureSpace = height => {
+    const ensureSpace = (height, repeatHeader = true) => {
       if (y + height <= bottom) return;
       this.addPage();
       y = Number(margin.top || 20);
-      if (columns.length) drawHeader();
+      if (repeatHeader && columns.length) drawHeader();
     };
 
     const drawTextCell = (text, x, yPos, width, isHead = false) => {
@@ -49,7 +49,7 @@
     };
 
     const drawHeader = () => {
-      ensureSpace(headHeight);
+      ensureSpace(headHeight, false);
       this.setFillColor?.(238, 242, 255);
       this.setDrawColor?.(199, 210, 254);
       this.rect(startX, y - 4.5, widths.reduce((sum, width) => sum + width, 0), headHeight, 'F');
