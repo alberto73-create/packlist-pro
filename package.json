@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node tests/no-conflict-markers.mjs && node tests/runtime-integrity.mjs && node tests/admin-auth.mjs && node tests/app-smoke.mjs",
     "check:conflicts": "node tests/no-conflict-markers.mjs",
-    "screenshot": "node scripts/capture-screenshot.mjs"
+    "screenshot": "node scripts/capture-screenshot.mjs",
+    "bump:version": "node scripts/bump-version.mjs"
   },
   "type": "module"
 }

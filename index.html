@@ -38,7 +38,7 @@
     <!-- Content Security Policy per sicurezza -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-elem 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com;">
 
-    <link rel="stylesheet" href="./css/style.css?v=1.10.14">
+    <link rel="stylesheet" href="./css/style.css?v=1.10.22">
 </head>
 
 <body>
@@ -54,8 +54,9 @@
             <span class="app-logo-text">Packlist Pro</span>
         </div>
         <div class="header-right">
+            <button type="button" class="header-feedback" id="feedbackBtn" aria-label="Lascia feedback"><span aria-hidden="true">💬</span><span>Feedback</span></button>
             <button type="button" class="admin-open" id="adminOpen" aria-label="Apri amministrazione">⚙</button>
-            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.14</span>
+            <span class="app-version" id="appVersion" title="Versione applicazione">App v1.10.22</span>
         </div>
     </div>
 
@@ -87,6 +88,7 @@
             <div class="input-box">
                 <label>👤 SESSO</label>
                 <select id="gender" class="visual-select-source" aria-label="Sesso">
+                    <option value="">Seleziona sesso…</option>
                     <option value="U">🧑 Unisex</option>
                     <option value="M">👨 Maschio</option>
                     <option value="F">👩 Femmina</option>
@@ -102,6 +104,7 @@
             <div class="input-box">
                 <label>🚗 MEZZO</label>
                 <select id="transport" class="visual-select-source" multiple aria-label="Mezzi di trasporto">
+                    <option value="" disabled>Seleziona mezzo…</option>
                     <option value="car">🚗 Auto</option>
                     <option value="motorcycle">🏍️ Moto</option>
                     <option value="plane">✈️ Aereo</option>
@@ -145,9 +148,9 @@
         <div class="laundry-info" id="laundryInfo"></div>
         <div class="template-row">
             <input type="text" id="templateName" placeholder="Nome lista (es. Rio)..." aria-label="Nome lista da salvare">
-            <button type="button" class="btn-sm" id="saveTemplateBtn">💾 Salva</button>
+            <button type="button" class="btn-sm" id="saveTemplateBtn">💾 Salva lista</button>
             <select id="templateSelect">
-                <option value="">📂 Carica template...</option>
+                <option value="">📂 Carica lista...</option>
             </select>
             <button type="button" class="btn-sm danger" id="deleteTemplateBtn">🗑️</button>
         </div>
@@ -172,6 +175,7 @@
             <button type="button" class="act-btn" id="act-bambini" data-activity="bambini" aria-pressed="false"><i aria-hidden="true">👶</i><span>Con Bambini</span></button>
             <button type="button" class="act-btn" id="act-alpinismo" data-activity="alpinismo" aria-pressed="false"><i aria-hidden="true">🏔️</i><span>Alpinismo</span></button>
             <button type="button" class="act-btn" id="act-ferrata" data-activity="ferrata" aria-pressed="false"><i aria-hidden="true">🧗</i><span>Ferrata</span></button>
+            <button type="button" class="act-btn" id="act-speleo" data-activity="speleo" aria-pressed="false"><i aria-hidden="true">⛑️</i><span>Speleo</span></button>
         </div>
         <div class="setup-warning" id="setupWarning" role="status" aria-live="polite"></div>
         <div class="generate-actions"><button type="button" class="btn-main" id="generateBtn">🎒 AGGIORNA PACKLIST</button><button type="button" class="btn-secondary share-quick" id="shareQuickBtn"><span>🔗</span><strong>Condividi</strong><small>con chi viaggia con te</small></button></div>
@@ -191,6 +195,8 @@
         </div>
         <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
         <div class="weight-track" style="margin-top:7px"><div class="weight-fill light" id="weightFill" style="width:0%"></div></div>
+        <div class="stats-baggage-actions"><button type="button" class="btn-secondary" id="statsBarManageBaggages">🧳 Gestisci Bagagli</button></div>
+        <div class="baggage-weight-strips" id="baggageWeightStrips" aria-live="polite"></div>
         <div class="weight-legend">
             <span class="w-tick tl">Leggero &lt;5 kg</span>
             <span class="w-tick tm">Medio 5–10 kg</span>
@@ -209,6 +215,7 @@
     <div id="results" class="list-grid"></div>
     <div id="supportAfterGenerateMount"></div>
     <div id="supportFooterMount"></div>
+    <button type="button" id="shareListBtn" hidden>Condividi lista</button>
 
 </div>
 
@@ -220,17 +227,14 @@
         <button type="button" class="fab-item" id="filter-tech"><span class="fab-item-icon">🔌</span><span>Tech & Lavoro</span></button>
         <button type="button" class="fab-item" id="filter-essentials"><span class="fab-item-icon">🪪</span><span>Essenziali & Igiene</span></button>
         <div style="height:1px; background:var(--border); margin:3px 0;"></div>
-        <button type="button" class="fab-item" id="manageBaggagesBtn"><span class="fab-item-icon">🧳</span><span>Gestisci Bagagli</span></button>
         <button type="button" class="fab-item" id="copyListBtn"><span class="fab-item-icon">📋</span><span>Copia Lista</span></button>
         <button type="button" class="fab-item" id="exportPdfBtn"><span class="fab-item-icon">📄</span><span>Esporta PDF</span></button>
-        <button type="button" class="fab-item" id="exportCsvBtn"><span class="fab-item-icon">📊</span><span>Esporta CSV</span></button>
-        <button type="button" class="fab-item" id="shareListBtn"><span class="fab-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/></svg></span><span>Condividi lista</span></button>
         <button type="button" class="fab-item" id="uncheckAllBtn"><span class="fab-item-icon">🧹</span><span>Azzera Spunte</span></button>
+        <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
         <button type="button" class="fab-item" id="removeCheckedBtn"><span class="fab-item-icon">✅</span><span>Rimuovi presi</span></button>
-        <details class="fab-more"><summary>••• Altri strumenti</summary><div>
+        <details class="fab-more"><summary><span>••• Altri strumenti</span></summary><div>
             <button type="button" class="fab-item" id="showStatsBtn"><span class="fab-item-icon">📈</span><span>Statistiche</span></button>
-            <button type="button" class="fab-item" id="feedbackBtn"><span class="fab-item-icon">💬</span><span>Lascia feedback</span></button>
-            <button type="button" class="fab-item" style="color:var(--rose)" id="resetSessionBtn"><span class="fab-item-icon">♻️</span><span>Reset Sessione</span></button>
+            <button type="button" class="fab-item" id="exportCsvBtn"><span class="fab-item-icon">📊</span><span>Esporta CSV</span></button>
         </div></details>
     </div>
     <button type="button" class="fab-main" id="fabMain" aria-label="Apri menu" aria-expanded="false">⋮</button>
@@ -272,10 +276,10 @@
 <div class="modal-backdrop" id="statsSummaryModal" aria-hidden="true">
     <section class="item-options-card stats-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="statsSummaryTitle">
         <div class="item-options-head"><div><span class="section-label">Riepilogo</span><h2 id="statsSummaryTitle">Statistiche Packlist</h2></div><button type="button" class="modal-close" id="statsSummaryClose" aria-label="Chiudi">×</button></div>
-        <div id="statsSummaryContent"></div>
+        <div id="statsSummaryContent"></div><button type="button" id="manageBaggagesBtn" hidden>Gestisci Bagagli</button>
     </section>
 </div>
 
-    <script type="module" src="./js/app.js?v=1.10.14"></script>
+    <script type="module" src="./js/app.js?v=1.10.22"></script>
 </body>
 </html>

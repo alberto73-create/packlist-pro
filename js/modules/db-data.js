@@ -1468,11 +1468,35 @@ export const DB_DATA = {
         }
       },
       {
-        "n": "Cuffia/Occhialini",
+        "n": "Cuffia",
         "q": "f",
         "cat": "Nuoto",
         "s": "U",
         "w": 80,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Occhialini",
+        "q": "f",
+        "cat": "Nuoto",
+        "s": "U",
+        "w": 60,
         "v": 1,
         "worn": false,
         "bulk": 1,
@@ -1522,30 +1546,6 @@ export const DB_DATA = {
         "s": "U",
         "w": 400,
         "v": 3,
-        "worn": false,
-        "bulk": 1,
-        "transportModes": [
-          "tutti"
-        ],
-        "weatherModes": [
-          "tutti"
-        ],
-        "quantityRule": {
-          "type": "fixed",
-          "base": 1,
-          "every": 1,
-          "min": 1,
-          "max": 0,
-          "laundry": false
-        }
-      },
-      {
-        "n": "Maschera snorkeling",
-        "q": "f",
-        "cat": "Nuoto",
-        "s": "U",
-        "w": 300,
-        "v": 2,
         "worn": false,
         "bulk": 1,
         "transportModes": [
@@ -1692,6 +1692,30 @@ export const DB_DATA = {
         "s": "U",
         "w": 150,
         "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Maschera snorkeling",
+        "q": "f",
+        "cat": "Spiaggia",
+        "s": "U",
+        "w": 300,
+        "v": 2,
         "worn": false,
         "bulk": 1,
         "transportModes": [
@@ -3389,6 +3413,440 @@ export const DB_DATA = {
           "laundry": false
         }
       }
+    ],
+    "speleo": [
+      {
+        "n": "Scarponi trekking",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 1200,
+        "v": 3,
+        "worn": true,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Calze trekking",
+        "q": "n",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 100,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "perDay",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": true
+        }
+      },
+      {
+        "n": "Casco (ferrata/alpinismo)",
+        "q": "f",
+        "cat": "Tecnico",
+        "s": "U",
+        "w": 350,
+        "v": 3,
+        "worn": true,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Guanti da ferrata",
+        "q": "f",
+        "cat": "Tecnico",
+        "s": "U",
+        "w": 100,
+        "v": 1,
+        "worn": true,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Torcia frontale",
+        "q": "f",
+        "cat": "Camping",
+        "s": "U",
+        "w": 100,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Sacca impermeabile",
+        "q": "f",
+        "cat": "Accessori",
+        "s": "U",
+        "w": 150,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Kit primo soccorso",
+        "q": "f",
+        "cat": "Salute",
+        "s": "U",
+        "w": 200,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Borraccia",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 250,
+        "v": 2,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Mappa/GPS",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 80,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Luce di backup",
+        "q": "f",
+        "cat": "Speleo",
+        "s": "U",
+        "w": 80,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Batterie frontale extra",
+        "q": "f",
+        "cat": "Speleo",
+        "s": "U",
+        "w": 60,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Custodia impermeabile telefono",
+        "q": "f",
+        "cat": "Accessori",
+        "s": "U",
+        "w": 60,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Coperta termica",
+        "q": "f",
+        "cat": "Salute",
+        "s": "U",
+        "w": 60,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Acqua 2 L",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 2000,
+        "v": 3,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Pranzo al sacco",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 350,
+        "v": 2,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Snack energetici",
+        "q": "f",
+        "cat": "Trekking",
+        "s": "U",
+        "w": 180,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Cambio asciutto post escursione",
+        "q": "f",
+        "cat": "Abbigliamento",
+        "s": "U",
+        "w": 650,
+        "v": 3,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      },
+      {
+        "n": "Sacchetto per vestiti bagnati",
+        "q": "f",
+        "cat": "Accessori",
+        "s": "U",
+        "w": 40,
+        "v": 1,
+        "worn": false,
+        "bulk": 1,
+        "transportModes": [
+          "tutti"
+        ],
+        "weatherModes": [
+          "tutti"
+        ],
+        "quantityRule": {
+          "type": "fixed",
+          "base": 1,
+          "every": 1,
+          "min": 1,
+          "max": 0,
+          "laundry": false
+        }
+      }
     ]
   }
 };
@@ -3440,7 +3898,8 @@ export const PER_NIGHT_DATA = [
   "sport_invernali",
   "bambini",
   "alpinismo",
-  "ferrata"
+  "ferrata",
+  "speleo"
 ];
 
 export const WARNING_MESSAGES = [
