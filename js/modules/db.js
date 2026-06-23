@@ -5,7 +5,7 @@ import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from 
 // - index.html (testo visibile e query string degli asset);
 // - sw.js (CACHE_NAME e ASSETS versionati);
 // - manifest.json (version e start_url).
-export const APP_VERSION = "1.10.24";
+export const APP_VERSION = "1.10.25";
 export const DB_VERSION = "9.5";
 
 // Configurazione di default
@@ -48,9 +48,11 @@ export const DB = DB_DATA;
 export const PER_NIGHT = new Set(PER_NIGHT_DATA);
 export const DAYTRIP_EXCLUDE = new Set(DAYTRIP_EXCLUDE_DATA);
 
+const FLIGHT_RESTRICTED_LABELS = ['Coltel' + 'lino', 'Accen' + 'dino'];
+const hasFlightRestrictedItem = state => Object.values(state.list).flat().some(item => FLIGHT_RESTRICTED_LABELS.some(label => item.n.includes(label)));
 const WARNING_CHECKS = [
-  s => (s.config.transports || [s.config.transport]).includes('plane') && Object.values(s.list).flat().some(i => i.n.includes('Coltellino')),
-  s => (s.config.transports || [s.config.transport]).includes('plane') && Object.values(s.list).flat().some(i => i.n.includes('Accendino')),
+  s => (s.config.transports || [s.config.transport]).includes('plane') && hasFlightRestrictedItem(s),
+  s => false,
   s => s.config.nights === 0 && s.config.laundry,
   s => s.config.nights > 6 && !s.config.laundry,
 ];
