@@ -1686,3 +1686,53 @@ button:disabled,
 }
 .cat-header.cat-toggle:hover i,
 .cat-header.cat-toggle:focus-visible i { color: var(--violet-h); }
+
+/* v1.10.24: chevron coerenti per feedback e chiusura bagagli */
+.select-chevron::after {
+    content: '';
+    right: 16px;
+    width: 11px;
+    height: 11px;
+    border-right: 2px solid #e8edf5;
+    border-bottom: 2px solid #e8edf5;
+    opacity: .9;
+    transform: translateY(-4px) rotate(45deg);
+}
+.select-chevron:focus-within::after { transform: translateY(0) rotate(225deg); }
+.baggage-header.baggage-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+}
+.baggage-heading { display: grid; min-width: 0; gap: 4px; }
+.baggage-title { color: var(--text); font-size: 1rem; font-weight: 900; }
+.baggage-header-actions { display: grid; grid-template-columns: auto 28px; align-items: center; gap: 12px; }
+.baggage-header i {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    color: #e8edf5;
+    font-size: 0;
+}
+.baggage-header i::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: .95;
+    transform: translateY(-2px) rotate(45deg);
+}
+.baggage-section.collapsed .baggage-header i { transform: rotate(-90deg); }
+.baggage-section.collapsed .cat-box { display: none; }
+.baggage-header.baggage-toggle:hover i,
+.baggage-header.baggage-toggle:focus-visible i { color: var(--violet-h); }
+@media (max-width: 520px) {
+    .baggage-header-actions { grid-template-columns: auto 24px; gap: 8px; }
+    .baggage-header i { width: 24px; height: 24px; }
+}

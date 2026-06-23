@@ -22,7 +22,7 @@ export function list(state, U) {
         const section = document.createElement('section');
         section.className = `baggage-section${overLimit ? ' over-limit' : ''}`;
         section.dataset.baggageId = bag.id;
-        section.innerHTML = `<div class="baggage-header"><div><span class="baggage-kicker">🎒 Bagaglio</span><h2>${U.esc(bag.name)}</h2></div><div class="baggage-weight${overLimit ? ' over-limit' : ''}">${U.weight(weight)}${bag.limit ? `<small> / ${bag.limit} kg</small>` : ''}</div></div>`;
+        section.innerHTML = `<button type="button" class="baggage-header baggage-toggle" aria-expanded="true"><span class="baggage-heading"><span class="baggage-kicker">🎒 Bagaglio</span><span class="baggage-title">${U.esc(bag.name)}</span></span><span class="baggage-header-actions"><span class="baggage-weight${overLimit ? ' over-limit' : ''}">${U.weight(weight)}${bag.limit ? `<small> / ${bag.limit} kg</small>` : ''}</span><i aria-hidden="true"></i></span></button>`;
 
         for (const cat in state.list) {
             if (allowedCats && !allowedCats.includes(cat)) continue;
