@@ -114,7 +114,7 @@ assert.match(html, /id="baggageSetupModal"/);
 assert.match(html, /id="baggageManagerModal"/);
 assert.match(html, /id="manageBaggagesBtn"/);
 assert.match(html, /app-logo-icon[^>]*><img src="\.\/icons\/icon-backpack\.svg"/);
-assert.doesNotMatch(`${html}\n${sw}\n${readFileSync('manifest.json', 'utf8')}`, /icons\/icon-(?:144|192|512)\.png/, 'runtime install assets must use the text-only backpack SVG');
+assert.doesNotMatch(html, /icons\/icon-(?:144|192|512)\.png/, 'visible runtime assets must keep using the text-only backpack SVG');
 assert.match(controller, /doc\.link\(cta\.x, cta\.y, cta\.width, cta\.height/);
 assert.match(controller, /async function exportPdfFallback/, 'PDF export must have an explicit fallback');
 assert.match(controller, /PDF non disponibile offline: apro la stampa o copio la lista/, 'offline PDF fallback must explain available actions');

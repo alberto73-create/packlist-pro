@@ -20,7 +20,9 @@ const ASSETS = [
     '/js/modules/utils.js',
     '/css/style.css?v=1.10.25',
     '/manifest.json',
-    '/icons/icon-backpack.svg'
+    '/icons/icon-backpack.svg',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png'
 ];
 const PRECACHE_URLS = new Set(ASSETS);
 
