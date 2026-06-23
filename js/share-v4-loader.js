@@ -36,7 +36,6 @@
     })[mode] || mode;
 
     const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
-    const weight = grams => grams >= 1000 ? `${(grams / 1000).toFixed(1)} kg` : `${grams} g`;
     const toast = message => window.App?.U?.toast ? window.App.U.toast(message) : console.info(`[Packlist Pro] ${message}`);
     const getState = () => window.App?.STATE || readStoredState();
     const getAllItems = state => Object.values(state?.list || {}).flat();
@@ -228,78 +227,19 @@
         return true;
     }
 
-    async function copyFallback() {
-        if (window.App?.Ctrl?.copyList) return window.App.Ctrl.copyList();
-        return false;
-    }
-
     async function exportPDF() {
-        const state = getState();
-        const all = getAllItems(state);
-        if (!all.length) {
-            toast('Nessuna lista da esportare');
-            return false;
-        }
-        const jsPDF = window.jspdf?.jsPDF;
-        if (!jsPDF) return copyFallback();
-        let doc;
-        try {
-            doc = new jsPDF();
-        } catch {
-            return copyFallback();
-        }
-        const listName = String(state.listName || '').trim();
-        const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
-        const transports = (state.config?.transports || [state.config?.transport]).filter(Boolean).join(', ');
-        doc.setFontSize(18);
-        doc.text(documentTitle, 14, 18);
-        doc.setFontSize(10);
-        doc.text(`${state.config?.nights || 0} notti · ${transports || 'mezzo non indicato'}`, 14, 26);
-        let nextY = 34;
-        for (const bag of state.baggages || []) {
-            const rows = [];
-            Object.entries(state.list || {}).forEach(([cat, items]) => {
-                items.filter(item => item.baggageId === bag.id).forEach(item => rows.push([
-                    cat, item.n, `${item.q}`, weight((item.w || 100) * item.q), item.checked ? 'Sì' : 'No', item.worn ? 'Sì' : 'No'
-                ]));
-            });
-            if (!rows.length) continue;
-            const bagWeight = all.filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
-            if (nextY > 248) { doc.addPage(); nextY = 20; }
-            doc.setFontSize(12);
-            doc.text(`${bag.name} · ${weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
-            if (typeof doc.autoTable === 'function') {
-                doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
-                nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
-            } else {
-                nextY += 7;
-                rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 20; } doc.text(row.join(' · '), 14, nextY); nextY += 6; });
-                nextY += 6;
-            }
-        }
-        const shareUrl = await createShareUrl();
-        const pageCount = doc.getNumberOfPages?.() || 1;
-        const cta = { x: 14, y: 278, width: 182, height: 12 };
-        for (let page = 1; page <= pageCount; page += 1) {
-            doc.setPage?.(page);
-            doc.setFontSize(9);
-            doc.text('Clicca qui per modificare gratuitamente la tua lista', cta.x + 15, cta.y + 7.5);
-            if (typeof doc.link === 'function') doc.link(cta.x, cta.y, cta.width, cta.height, { url: shareUrl });
-        }
-        const safeName = listName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
-        doc.save(`packlist${safeName ? `_${safeName}` : ''}_${new Date().toISOString().slice(0, 10)}.pdf`);
-        toast('PDF esportato');
-        return true;
+        if (window.App?.Ctrl?.exportPDF) return window.App.Ctrl.exportPDF();
+        toast('Genera prima la packlist, poi esporta il PDF');
+        return false;
     }
 
     function bindCaptureActions() {
         document.addEventListener('click', event => {
-            const button = event.target.closest?.('#shareQuickBtn,#shareListBtn,#exportPdfBtn');
+            const button = event.target.closest?.('#shareQuickBtn,#shareListBtn');
             if (!button) return;
             event.preventDefault();
             event.stopImmediatePropagation();
-            if (button.id === 'exportPdfBtn') exportPDF().catch(error => { console.warn('[Share v4] Export PDF fallito:', error); copyFallback(); });
-            else shareList().catch(error => { console.warn('[Share v4] Condivisione fallita:', error); toast('Impossibile condividere la lista'); });
+            shareList().catch(error => { console.warn('[Share v4] Condivisione fallita:', error); toast('Impossibile condividere la lista'); });
         }, true);
     }
 
