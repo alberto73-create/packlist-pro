@@ -1642,3 +1642,97 @@ button:disabled,
 
 /* v1.10.21: feedback obbligatorio più chiaro e categorie lista richiudibili */
 .feedback-rating legend small,.feedback-comment strong small{color:var(--amber);font-size:.62rem;font-weight:800}.select-chevron{position:relative}.select-chevron select{appearance:none;padding-right:36px}.select-chevron::after{content:'⌄';position:absolute;right:13px;top:50%;display:grid;place-items:center;width:22px;height:22px;color:var(--muted);font-size:1rem;pointer-events:none;transform:translateY(-2px);transition:transform .18s ease,color .18s ease}.select-chevron:focus-within::after{color:var(--violet-h);transform:translateY(-2px) rotate(180deg)}.cat-header.cat-toggle{width:100%;border:0;background:transparent;color:inherit;cursor:pointer}.cat-header i{display:inline-grid;place-items:center;width:24px;height:24px;color:var(--muted);font-style:normal;transition:transform .18s ease,color .18s ease}.cat-box.collapsed .cat-header i{transform:rotate(-90deg);color:var(--violet-h)}.cat-box.collapsed .cat-items{display:none}.cat-items{display:grid;gap:0}
+
+/* v1.10.23: intestazioni categorie packlist allineate allo stile chevron admin */
+.cat-header.cat-toggle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 28px;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    margin-bottom: 10px;
+    padding: 0 14px 10px;
+    text-align: left;
+}
+.cat-header .cat-name { min-width: 0; }
+.cat-header .cat-count {
+    justify-self: end;
+    min-width: 44px;
+    text-align: center;
+}
+.cat-header i {
+    position: relative;
+    justify-self: center;
+    width: 28px;
+    height: 28px;
+    color: #e8edf5;
+    font-size: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.cat-header i::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: .95;
+    transform: translateY(-2px) rotate(45deg);
+}
+.cat-box.collapsed .cat-header i {
+    color: #e8edf5;
+    transform: rotate(-90deg);
+}
+.cat-header.cat-toggle:hover i,
+.cat-header.cat-toggle:focus-visible i { color: var(--violet-h); }
+
+/* v1.10.24: chevron coerenti per feedback e chiusura bagagli */
+.select-chevron::after {
+    content: '';
+    right: 16px;
+    width: 11px;
+    height: 11px;
+    border-right: 2px solid #e8edf5;
+    border-bottom: 2px solid #e8edf5;
+    opacity: .9;
+    transform: translateY(-4px) rotate(45deg);
+}
+.select-chevron:focus-within::after { transform: translateY(0) rotate(225deg); }
+.baggage-header.baggage-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+}
+.baggage-heading { display: grid; min-width: 0; gap: 4px; }
+.baggage-title { color: var(--text); font-size: 1rem; font-weight: 900; }
+.baggage-header-actions { display: grid; grid-template-columns: auto 28px; align-items: center; gap: 12px; }
+.baggage-header i {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    color: #e8edf5;
+    font-size: 0;
+}
+.baggage-header i::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: .95;
+    transform: translateY(-2px) rotate(45deg);
+}
+.baggage-section.collapsed .baggage-header i { transform: rotate(-90deg); }
+.baggage-section.collapsed .cat-box { display: none; }
+.baggage-header.baggage-toggle:hover i,
+.baggage-header.baggage-toggle:focus-visible i { color: var(--violet-h); }
+@media (max-width: 520px) {
+    .baggage-header-actions { grid-template-columns: auto 24px; gap: 8px; }
+    .baggage-header i { width: 24px; height: 24px; }
+}

@@ -1018,6 +1018,14 @@ export function setupEventDelegation() {
     results.addEventListener('click', (e) => {
         const target = e.target;
 
+        const baggageToggle = target.closest('.baggage-toggle');
+        if (baggageToggle) {
+            const section = baggageToggle.closest('.baggage-section');
+            const collapsed = section.classList.toggle('collapsed');
+            baggageToggle.setAttribute('aria-expanded', String(!collapsed));
+            return;
+        }
+
         const categoryToggle = target.closest('.cat-toggle');
         if (categoryToggle) {
             const box = categoryToggle.closest('.cat-box');
