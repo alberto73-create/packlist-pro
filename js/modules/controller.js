@@ -790,13 +790,14 @@ export async function exportPDF() {
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
     const packedCount = all.filter(item => item.checked).length;
     const totalWeight = all.reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
-    doc.setFillColor?.(11, 15, 26);
-    doc.rect?.(0, 0, 210, 30, 'F');
+    doc.setFillColor?.(245, 243, 255);
+    doc.roundedRect?.(14, 8, 182, 24, 5, 5, 'F');
     doc.setFillColor?.(139, 92, 246);
-    doc.rect?.(0, 0, 5, 30, 'F');
-    doc.setTextColor?.(255, 255, 255);
+    doc.roundedRect?.(176, 12, 12, 12, 4, 4, 'F');
+    doc.setTextColor?.(17, 24, 39);
     doc.setFontSize(18);
     doc.text(documentTitle, 14, 18);
+    doc.setTextColor?.(71, 85, 105);
     doc.setFontSize(10);
     doc.text(`${STATE.config.nights} notti - ${STATE.config.transport}`, 14, 25);
     doc.setTextColor?.(17, 24, 39);
@@ -809,7 +810,9 @@ export async function exportPDF() {
     summaryCards.forEach(([label, value], index) => {
         const x = 14 + index * 62;
         doc.setFillColor?.(248, 250, 252);
-        doc.roundedRect?.(x, 34, 56, 14, 3, 3, 'F');
+        doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'F');
+        doc.setDrawColor?.(226, 232, 240);
+        doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'S');
         doc.setTextColor?.(100, 116, 139);
         doc.setFontSize(7);
         doc.text(label.toUpperCase(), x + 4, 39);
@@ -851,11 +854,13 @@ export async function exportPDF() {
     for (let page = 1; page <= pageCount; page += 1) {
         doc.setPage?.(page);
         doc.setFillColor?.(90, 103, 242);
-        doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 3, 3, 'F');
+        doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 5, 5, 'F');
         doc.setFillColor?.(255, 255, 255);
-        doc.roundedRect?.(cta.x + 4, cta.y + 2.5, 7, 6.5, 1.4, 1.4, 'F');
+        doc.roundedRect?.(cta.x + 4, cta.y + 2, 8, 8, 2, 2, 'F');
+        doc.setDrawColor?.(139, 92, 246);
+        doc.line?.(cta.x + 6, cta.y + 4.1, cta.x + 10, cta.y + 4.1);
         doc.setFillColor?.(139, 92, 246);
-        doc.roundedRect?.(cta.x + 5.2, cta.y + 4.1, 4.6, 4.1, 1, 1, 'F');
+        doc.roundedRect?.(cta.x + 5.3, cta.y + 5, 5.4, 3.8, 1, 1, 'F');
         doc.setFontSize(9);
         doc.setTextColor?.(255, 255, 255);
         doc.text('Apri e modifica gratuitamente la tua lista Packlist Pro', cta.x + 15, cta.y + 7.5);

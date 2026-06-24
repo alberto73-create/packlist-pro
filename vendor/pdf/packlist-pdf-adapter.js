@@ -71,7 +71,32 @@
       return this;
     }
 
-    roundedRect(x, y, width, height, rx, ry, style) { return this.rect(x, y, width, height, style); }
+    roundedRect(x, y, width, height, rx = 2, ry = rx, style = 'S') {
+      const op = String(style).includes('F') ? 'f' : 'S';
+      const color = String(style).includes('F') ? this.fillColor : this.drawColor;
+      const left = this._x(x);
+      const right = this._x(Number(x || 0) + Number(width || 0));
+      const top = this._y(y);
+      const bottom = this._y(Number(y || 0) + Number(height || 0));
+      const radiusX = Math.min(this._u(rx), Math.abs(right - left) / 2);
+      const radiusY = Math.min(this._u(ry), Math.abs(top - bottom) / 2);
+      const k = 0.5522847498;
+      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${
+        [
+          `${(left + radiusX).toFixed(2)} ${top.toFixed(2)} m`,
+          `${(right - radiusX).toFixed(2)} ${top.toFixed(2)} l`,
+          `${(right - radiusX + radiusX * k).toFixed(2)} ${top.toFixed(2)} ${(right).toFixed(2)} ${(top - radiusY + radiusY * k).toFixed(2)} ${(right).toFixed(2)} ${(top - radiusY).toFixed(2)} c`,
+          `${right.toFixed(2)} ${(bottom + radiusY).toFixed(2)} l`,
+          `${right.toFixed(2)} ${(bottom + radiusY - radiusY * k).toFixed(2)} ${(right - radiusX + radiusX * k).toFixed(2)} ${bottom.toFixed(2)} ${(right - radiusX).toFixed(2)} ${bottom.toFixed(2)} c`,
+          `${(left + radiusX).toFixed(2)} ${bottom.toFixed(2)} l`,
+          `${(left + radiusX - radiusX * k).toFixed(2)} ${bottom.toFixed(2)} ${left.toFixed(2)} ${(bottom + radiusY - radiusY * k).toFixed(2)} ${left.toFixed(2)} ${(bottom + radiusY).toFixed(2)} c`,
+          `${left.toFixed(2)} ${(top - radiusY).toFixed(2)} l`,
+          `${left.toFixed(2)} ${(top - radiusY + radiusY * k).toFixed(2)} ${(left + radiusX - radiusX * k).toFixed(2)} ${top.toFixed(2)} ${(left + radiusX).toFixed(2)} ${top.toFixed(2)} c`,
+          op
+        ].join(' ')
+      }`);
+      return this;
+    }
 
     rect(x, y, width, height, style = 'S') {
       const op = String(style).includes('F') ? 'f' : 'S';

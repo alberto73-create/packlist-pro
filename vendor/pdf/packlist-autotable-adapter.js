@@ -29,7 +29,7 @@
     const drawTextCell = (text, x, yPos, width, isHead = false) => {
       const maxChars = Math.max(4, Math.floor(width / 2.15));
       this.setFontSize(isHead ? fontSize + 0.5 : fontSize);
-      if (isHead) this.setTextColor?.(255, 255, 255);
+      if (isHead) this.setTextColor?.(67, 56, 202);
       else if (x === startX) this.setTextColor?.(79, 70, 229);
       else this.setTextColor?.(15, 23, 42);
       this.text(clampText(text, maxChars), x + 1.8, yPos);
@@ -52,10 +52,10 @@
 
     const drawHeader = () => {
       ensureSpace(headHeight, false);
-      this.setFillColor?.(17, 24, 39);
-      this.rect(startX, y - 4.5, widths.reduce((sum, width) => sum + width, 0), headHeight, 'F');
+      this.setFillColor?.(245, 243, 255);
+      this.roundedRect?.(startX, y - 4.5, widths.reduce((sum, width) => sum + width, 0), headHeight, 3, 3, 'F');
       this.setFillColor?.(139, 92, 246);
-      this.rect(startX, y + headHeight - 5.6, widths.reduce((sum, width) => sum + width, 0), 1.1, 'F');
+      this.roundedRect?.(startX, y + headHeight - 5.6, widths.reduce((sum, width) => sum + width, 0), 1.1, 0.6, 0.6, 'F');
       let x = startX;
       columns.forEach((cell, index) => {
         drawTextCell(cell, x, y, widths[index] || 24, true);
@@ -69,7 +69,7 @@
       ensureSpace(rowHeight);
       if (rowIndex % 2 === 0) {
         this.setFillColor?.(250, 250, 255);
-        this.rect(startX, y - 4.6, widths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
+        this.roundedRect?.(startX, y - 4.6, widths.reduce((sum, width) => sum + width, 0), rowHeight, 2, 2, 'F');
       }
       let x = startX;
       row.forEach((cell, index) => {
