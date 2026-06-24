@@ -790,10 +790,36 @@ export async function exportPDF() {
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
     const packedCount = all.filter(item => item.checked).length;
     const totalWeight = all.reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+    const drawBackpackMark = (x, y, size, color = [139, 92, 246]) => {
+        doc.setFillColor?.(...color);
+        doc.roundedRect?.(x + size * 0.22, y + size * 0.36, size * 0.56, size * 0.42, size * 0.12, size * 0.12, 'F');
+        doc.setDrawColor?.(...color);
+        doc.line?.(x + size * 0.32, y + size * 0.27, x + size * 0.68, y + size * 0.27);
+        doc.line?.(x + size * 0.32, y + size * 0.27, x + size * 0.28, y + size * 0.39);
+        doc.line?.(x + size * 0.68, y + size * 0.27, x + size * 0.72, y + size * 0.39);
+    };
+    const drawSummaryIcon = (kind, x, y) => {
+        doc.setFillColor?.(139, 92, 246);
+        doc.roundedRect?.(x, y, 7, 7, 2, 2, 'F');
+        doc.setDrawColor?.(255, 255, 255);
+        if (kind === 'weight') {
+            doc.line?.(x + 2, y + 2.5, x + 5, y + 2.5);
+            doc.line?.(x + 1.7, y + 3.5, x + 5.3, y + 3.5);
+            doc.line?.(x + 1.4, y + 4.5, x + 5.6, y + 4.5);
+        } else if (kind === 'packed') {
+            doc.line?.(x + 1.6, y + 3.8, x + 3, y + 5.1);
+            doc.line?.(x + 3, y + 5.1, x + 5.5, y + 2);
+        } else {
+            doc.line?.(x + 2, y + 2, x + 5, y + 2);
+            doc.line?.(x + 2, y + 3.5, x + 5, y + 3.5);
+            doc.line?.(x + 2, y + 5, x + 5, y + 5);
+        }
+    };
     doc.setFillColor?.(245, 243, 255);
     doc.roundedRect?.(14, 8, 182, 24, 5, 5, 'F');
     doc.setFillColor?.(139, 92, 246);
     doc.roundedRect?.(176, 12, 12, 12, 4, 4, 'F');
+    drawBackpackMark(178, 14, 8, [255, 255, 255]);
     doc.setTextColor?.(17, 24, 39);
     doc.setFontSize(18);
     doc.text(documentTitle, 14, 18);
@@ -803,22 +829,23 @@ export async function exportPDF() {
     doc.setTextColor?.(17, 24, 39);
 
     const summaryCards = [
-        ['Item', String(all.length)],
-        ['Peso', U.weight(totalWeight)],
-        ['Presi', `${packedCount}/${all.length}`]
+        ['Item', String(all.length), 'items'],
+        ['Peso', U.weight(totalWeight), 'weight'],
+        ['Presi', `${packedCount}/${all.length}`, 'packed']
     ];
-    summaryCards.forEach(([label, value], index) => {
+    summaryCards.forEach(([label, value, icon], index) => {
         const x = 14 + index * 62;
         doc.setFillColor?.(248, 250, 252);
         doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'F');
         doc.setDrawColor?.(226, 232, 240);
         doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'S');
+        drawSummaryIcon(icon, x + 4, 37);
         doc.setTextColor?.(100, 116, 139);
         doc.setFontSize(7);
-        doc.text(label.toUpperCase(), x + 4, 39);
+        doc.text(label.toUpperCase(), x + 14, 39);
         doc.setTextColor?.(17, 24, 39);
         doc.setFontSize(10);
-        doc.text(value, x + 4, 45);
+        doc.text(value, x + 14, 45);
     });
 
     let nextY = 58;
@@ -857,10 +884,7 @@ export async function exportPDF() {
         doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 5, 5, 'F');
         doc.setFillColor?.(255, 255, 255);
         doc.roundedRect?.(cta.x + 4, cta.y + 2, 8, 8, 2, 2, 'F');
-        doc.setDrawColor?.(139, 92, 246);
-        doc.line?.(cta.x + 6, cta.y + 4.1, cta.x + 10, cta.y + 4.1);
-        doc.setFillColor?.(139, 92, 246);
-        doc.roundedRect?.(cta.x + 5.3, cta.y + 5, 5.4, 3.8, 1, 1, 'F');
+        drawBackpackMark(cta.x + 4.8, cta.y + 2.8, 6.4, [139, 92, 246]);
         doc.setFontSize(9);
         doc.setTextColor?.(255, 255, 255);
         doc.text('Apri e modifica gratuitamente la tua lista Packlist Pro', cta.x + 15, cta.y + 7.5);
