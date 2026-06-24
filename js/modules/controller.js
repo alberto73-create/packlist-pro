@@ -788,8 +788,12 @@ export async function exportPDF() {
     }
     const listName = String(STATE.listName || '').trim();
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
-    doc.setFillColor?.(99, 102, 241);
-    doc.rect?.(0, 0, 210, 28, 'F');
+    const packedCount = all.filter(item => item.checked).length;
+    const totalWeight = all.reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+    doc.setFillColor?.(11, 15, 26);
+    doc.rect?.(0, 0, 210, 30, 'F');
+    doc.setFillColor?.(139, 92, 246);
+    doc.rect?.(0, 0, 5, 30, 'F');
     doc.setTextColor?.(255, 255, 255);
     doc.setFontSize(18);
     doc.text(documentTitle, 14, 18);
@@ -797,7 +801,24 @@ export async function exportPDF() {
     doc.text(`${STATE.config.nights} notti - ${STATE.config.transport}`, 14, 25);
     doc.setTextColor?.(17, 24, 39);
 
-    let nextY = 38;
+    const summaryCards = [
+        ['Item', String(all.length)],
+        ['Peso', U.weight(totalWeight)],
+        ['Presi', `${packedCount}/${all.length}`]
+    ];
+    summaryCards.forEach(([label, value], index) => {
+        const x = 14 + index * 62;
+        doc.setFillColor?.(248, 250, 252);
+        doc.roundedRect?.(x, 34, 56, 14, 3, 3, 'F');
+        doc.setTextColor?.(100, 116, 139);
+        doc.setFontSize(7);
+        doc.text(label.toUpperCase(), x + 4, 39);
+        doc.setTextColor?.(17, 24, 39);
+        doc.setFontSize(10);
+        doc.text(value, x + 4, 45);
+    });
+
+    let nextY = 58;
     for (const bag of STATE.baggages) {
         const rows = [];
         Object.entries(STATE.list).forEach(([cat, items]) => {

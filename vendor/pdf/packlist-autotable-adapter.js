@@ -29,7 +29,9 @@
     const drawTextCell = (text, x, yPos, width, isHead = false) => {
       const maxChars = Math.max(4, Math.floor(width / 2.15));
       this.setFontSize(isHead ? fontSize + 0.5 : fontSize);
-      this.setTextColor?.(isHead ? 51 : 15, isHead ? 65 : 23, isHead ? 85 : 42);
+      if (isHead) this.setTextColor?.(255, 255, 255);
+      else if (x === startX) this.setTextColor?.(79, 70, 229);
+      else this.setTextColor?.(15, 23, 42);
       this.text(clampText(text, maxChars), x + 1.8, yPos);
     };
 
@@ -50,9 +52,10 @@
 
     const drawHeader = () => {
       ensureSpace(headHeight, false);
-      this.setFillColor?.(238, 242, 255);
-      this.setDrawColor?.(199, 210, 254);
+      this.setFillColor?.(17, 24, 39);
       this.rect(startX, y - 4.5, widths.reduce((sum, width) => sum + width, 0), headHeight, 'F');
+      this.setFillColor?.(139, 92, 246);
+      this.rect(startX, y + headHeight - 5.6, widths.reduce((sum, width) => sum + width, 0), 1.1, 'F');
       let x = startX;
       columns.forEach((cell, index) => {
         drawTextCell(cell, x, y, widths[index] || 24, true);
@@ -65,7 +68,7 @@
     body.forEach((row, rowIndex) => {
       ensureSpace(rowHeight);
       if (rowIndex % 2 === 0) {
-        this.setFillColor?.(248, 250, 252);
+        this.setFillColor?.(250, 250, 255);
         this.rect(startX, y - 4.6, widths.reduce((sum, width) => sum + width, 0), rowHeight, 'F');
       }
       let x = startX;
@@ -74,7 +77,7 @@
         else drawTextCell(cell, x, y, widths[index] || 24);
         x += widths[index] || 24;
       });
-      this.setDrawColor?.(226, 232, 240);
+      this.setDrawColor?.(229, 231, 235);
       if (typeof this.line === 'function') this.line(startX, y + 2.6, startX + widths.reduce((sum, width) => sum + width, 0), y + 2.6);
       y += rowHeight;
     });
