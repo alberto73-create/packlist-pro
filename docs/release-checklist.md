@@ -21,6 +21,15 @@ Questa procedura evita disallineamenti tra versione applicazione, cache PWA, ass
 5. Dopo il deploy, fai hard refresh nel browser e testa la PWA installata per verificare che service worker e cache carichino la nuova versione.
 6. Testa anche l’export PDF offline dopo installazione/cache della PWA.
 
+## Quota deploy Vercel
+
+Se Vercel risponde con `Resource is limited - try again in 24 hours (more than 100, code: "api-deployments-free-per-day")`, il deploy non è fallito per un errore del codice: è stata raggiunta la quota giornaliera del piano/progetto. In quel caso:
+
+1. non continuare a rilanciare deploy manuali, perché consumeresti solo altri tentativi quando la quota torna disponibile;
+2. conserva il commit già pronto e verifica localmente con `npm test`;
+3. attendi il reset indicato da Vercel, normalmente entro 24 ore, oppure usa un piano/progetto con quota più alta;
+4. quando la quota è di nuovo disponibile, ridistribuisci l’ultimo commit invece di creare commit vuoti solo per forzare il deploy.
+
 ## File che devono restare allineati
 
 `npm run bump:version -- X.Y.Z` aggiorna e i test verificano questi punti:

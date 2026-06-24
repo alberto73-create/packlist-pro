@@ -2,8 +2,11 @@
 (function (global) {
   'use strict';
 
+  const mmToPt = 72 / 25.4;
   const pageWidth = 210;
   const pageHeight = 297;
+  const pageWidthPt = pageWidth * mmToPt;
+  const pageHeightPt = pageHeight * mmToPt;
 
   function esc(value) {
     return String(value ?? '')
@@ -14,10 +17,16 @@
   }
 
   function pdfText(value) {
-    return Array.from(String(value ?? '')).map(ch => {
+    return Array.from(String(value ?? '').normalize('NFKD')).map(ch => {
       const code = ch.charCodeAt(0);
-      return code >= 32 && code <= 126 ? ch : '?';
-    }).join('');
+      if (code >= 32 && code <= 126) return ch;
+      if (/[\u0300-\u036f]/.test(ch)) return '';
+      if (ch === '·' || ch === '•' || ch === '–' || ch === '—') return '-';
+      if (ch === '×') return 'x';
+      if (ch === '€') return 'EUR';
+      if (ch === '…') return '...';
+      return '';
+    }).join('').replace(/\s+-\s+/g, ' - ').replace(/\s{2,}/g, ' ').trim();
   }
 
   function download(blob, filename) {
@@ -39,31 +48,65 @@
       this.fontSize = 12;
       this.textColor = [0, 0, 0];
       this.fillColor = [255, 255, 255];
+      this.drawColor = [0, 0, 0];
       this.links = [];
     }
 
     _ops() { return this.pages[this.currentPage]; }
-    _y(y) { return pageHeight - Number(y || 0); }
+    _x(x) { return Number(x || 0) * mmToPt; }
+    _y(y) { return pageHeightPt - (Number(y || 0) * mmToPt); }
+    _u(value) { return Number(value || 0) * mmToPt; }
 
     setFontSize(size) { this.fontSize = Number(size) || this.fontSize; return this; }
     setTextColor(r = 0, g = r, b = r) { this.textColor = [r, g, b]; return this; }
     setFillColor(r = 0, g = r, b = r) { this.fillColor = [r, g, b]; return this; }
+    setDrawColor(r = 0, g = r, b = r) { this.drawColor = [r, g, b]; return this; }
 
     text(value, x, y) {
       const lines = Array.isArray(value) ? value : String(value ?? '').split('\n');
       lines.forEach((line, index) => {
         const yy = Number(y || 0) + index * (this.fontSize * 0.45);
-        this._ops().push(`${this.textColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} rg BT /F1 ${this.fontSize} Tf ${Number(x || 0).toFixed(2)} ${this._y(yy).toFixed(2)} Td (${esc(pdfText(line))}) Tj ET`);
+        this._ops().push(`${this.textColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} rg BT /F1 ${this.fontSize} Tf ${this._x(x).toFixed(2)} ${this._y(yy).toFixed(2)} Td (${esc(pdfText(line))}) Tj ET`);
       });
       return this;
     }
 
-    roundedRect(x, y, width, height, rx, ry, style) { return this.rect(x, y, width, height, style); }
+    roundedRect(x, y, width, height, rx = 2, ry = rx, style = 'S') {
+      const op = String(style).includes('F') ? 'f' : 'S';
+      const color = String(style).includes('F') ? this.fillColor : this.drawColor;
+      const left = this._x(x);
+      const right = this._x(Number(x || 0) + Number(width || 0));
+      const top = this._y(y);
+      const bottom = this._y(Number(y || 0) + Number(height || 0));
+      const radiusX = Math.min(this._u(rx), Math.abs(right - left) / 2);
+      const radiusY = Math.min(this._u(ry), Math.abs(top - bottom) / 2);
+      const k = 0.5522847498;
+      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${
+        [
+          `${(left + radiusX).toFixed(2)} ${top.toFixed(2)} m`,
+          `${(right - radiusX).toFixed(2)} ${top.toFixed(2)} l`,
+          `${(right - radiusX + radiusX * k).toFixed(2)} ${top.toFixed(2)} ${(right).toFixed(2)} ${(top - radiusY + radiusY * k).toFixed(2)} ${(right).toFixed(2)} ${(top - radiusY).toFixed(2)} c`,
+          `${right.toFixed(2)} ${(bottom + radiusY).toFixed(2)} l`,
+          `${right.toFixed(2)} ${(bottom + radiusY - radiusY * k).toFixed(2)} ${(right - radiusX + radiusX * k).toFixed(2)} ${bottom.toFixed(2)} ${(right - radiusX).toFixed(2)} ${bottom.toFixed(2)} c`,
+          `${(left + radiusX).toFixed(2)} ${bottom.toFixed(2)} l`,
+          `${(left + radiusX - radiusX * k).toFixed(2)} ${bottom.toFixed(2)} ${left.toFixed(2)} ${(bottom + radiusY - radiusY * k).toFixed(2)} ${left.toFixed(2)} ${(bottom + radiusY).toFixed(2)} c`,
+          `${left.toFixed(2)} ${(top - radiusY).toFixed(2)} l`,
+          `${left.toFixed(2)} ${(top - radiusY + radiusY * k).toFixed(2)} ${(left + radiusX - radiusX * k).toFixed(2)} ${top.toFixed(2)} ${(left + radiusX).toFixed(2)} ${top.toFixed(2)} c`,
+          op
+        ].join(' ')
+      }`);
+      return this;
+    }
 
     rect(x, y, width, height, style = 'S') {
       const op = String(style).includes('F') ? 'f' : 'S';
-      const color = String(style).includes('F') ? this.fillColor : this.textColor;
-      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${Number(x || 0).toFixed(2)} ${this._y(Number(y || 0) + Number(height || 0)).toFixed(2)} ${Number(width || 0).toFixed(2)} ${Number(height || 0).toFixed(2)} re ${op}`);
+      const color = String(style).includes('F') ? this.fillColor : this.drawColor;
+      this._ops().push(`${color.map(v => (Number(v) / 255).toFixed(3)).join(' ')} ${op === 'f' ? 'rg' : 'RG'} ${this._x(x).toFixed(2)} ${this._y(Number(y || 0) + Number(height || 0)).toFixed(2)} ${this._u(width).toFixed(2)} ${this._u(height).toFixed(2)} re ${op}`);
+      return this;
+    }
+
+    line(x1, y1, x2, y2) {
+      this._ops().push(`${this.drawColor.map(v => (Number(v) / 255).toFixed(3)).join(' ')} RG ${this._x(x1).toFixed(2)} ${this._y(y1).toFixed(2)} m ${this._x(x2).toFixed(2)} ${this._y(y2).toFixed(2)} l S`);
       return this;
     }
 
@@ -86,10 +129,10 @@
       const pagesId = this.pages.length + contentIds.length + 2;
       this.pages.forEach((ops, index) => {
         const annotations = this.links.filter(link => link.page === index && link.url).map(link => {
-          const rect = [link.x, this._y(link.y + link.height), link.x + link.width, this._y(link.y)].map(v => Number(v || 0).toFixed(2)).join(' ');
+          const rect = [this._x(link.x), this._y(link.y + link.height), this._x(link.x + link.width), this._y(link.y)].map(v => Number(v || 0).toFixed(2)).join(' ');
           return `<< /Type /Annot /Subtype /Link /Rect [${rect}] /Border [0 0 0] /A << /S /URI /URI (${esc(link.url)}) >> >>`;
         });
-        pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentIds[index]} 0 R${annotations.length ? ` /Annots [${annotations.join(' ')}]` : ''} >>`));
+        pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidthPt.toFixed(2)} ${pageHeightPt.toFixed(2)}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentIds[index]} 0 R${annotations.length ? ` /Annots [${annotations.join(' ')}]` : ''} >>`));
       });
       add(`<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`);
       add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
