@@ -892,14 +892,21 @@ export async function exportPDF() {
     const cta = { x: 14, y: 278, width: 182, height: 12 };
     for (let page = 1; page <= pageCount; page += 1) {
         doc.setPage?.(page);
+        doc.setFillColor?.(245, 243, 255);
+        doc.roundedRect?.(cta.x, cta.y - 3, cta.width, cta.height + 6, 6, 6, 'F');
         doc.setFillColor?.(90, 103, 242);
-        doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 5, 5, 'F');
+        doc.roundedRect?.(cta.x + 3, cta.y, cta.width - 6, cta.height, 5, 5, 'F');
         doc.setFillColor?.(255, 255, 255);
-        doc.roundedRect?.(cta.x + 4, cta.y + 2, 8, 8, 2, 2, 'F');
-        drawAppIcon(cta.x + 4.6, cta.y + 2.6, 6.8);
+        doc.roundedRect?.(cta.x + 7, cta.y + 1.5, 9, 9, 2.5, 2.5, 'F');
+        drawAppIcon(cta.x + 7.7, cta.y + 2.2, 7.6);
         doc.setFontSize(9);
         doc.setTextColor?.(255, 255, 255);
-        doc.text('Apri e modifica gratuitamente la tua lista Packlist Pro', cta.x + 15, cta.y + 7.5);
+        doc.text('Apri la lista condivisa Packlist Pro', cta.x + 20, cta.y + 7.3);
+        doc.setFillColor?.(255, 255, 255);
+        doc.roundedRect?.(cta.x + 146, cta.y + 2.7, 26, 6.6, 3, 3, 'F');
+        doc.setFontSize(6);
+        doc.setTextColor?.(90, 103, 242);
+        doc.text('MODIFICA', cta.x + 150, cta.y + 7.4);
         if (typeof doc.link === 'function') doc.link(cta.x, cta.y, cta.width, cta.height, { url: shareUrl });
         else if (typeof doc.textWithLink === 'function') doc.textWithLink('Apri la lista', cta.x + 15, cta.y + 7.5, { url: shareUrl });
     }
