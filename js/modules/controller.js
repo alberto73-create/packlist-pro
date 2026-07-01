@@ -788,12 +788,79 @@ export async function exportPDF() {
     }
     const listName = String(STATE.listName || '').trim();
     const documentTitle = listName ? `Packlist Pro · ${listName}` : 'Packlist Pro';
+    const packedCount = all.filter(item => item.checked).length;
+    const totalWeight = all.reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
+    const drawAppIcon = (x, y, size) => {
+        // Vector approximation of icons/icon-backpack.svg for offline PDFs.
+        doc.setFillColor?.(90, 103, 242);
+        doc.roundedRect?.(x, y, size, size, size * 0.22, size * 0.22, 'F');
+        doc.setDrawColor?.(17, 24, 39);
+        doc.line?.(x + size * 0.36, y + size * 0.34, x + size * 0.36, y + size * 0.26);
+        doc.line?.(x + size * 0.36, y + size * 0.26, x + size * 0.64, y + size * 0.26);
+        doc.line?.(x + size * 0.64, y + size * 0.26, x + size * 0.64, y + size * 0.34);
+        doc.setFillColor?.(245, 158, 11);
+        doc.roundedRect?.(x + size * 0.25, y + size * 0.31, size * 0.5, size * 0.55, size * 0.15, size * 0.15, 'F');
+        doc.setDrawColor?.(17, 24, 39);
+        doc.line?.(x + size * 0.25, y + size * 0.50, x + size * 0.75, y + size * 0.50);
+        doc.line?.(x + size * 0.35, y + size * 0.45, x + size * 0.35, y + size * 0.33);
+        doc.line?.(x + size * 0.65, y + size * 0.45, x + size * 0.65, y + size * 0.33);
+        doc.setFillColor?.(251, 113, 133);
+        doc.roundedRect?.(x + size * 0.34, y + size * 0.62, size * 0.32, size * 0.2, size * 0.07, size * 0.07, 'F');
+        doc.setDrawColor?.(17, 24, 39);
+        doc.line?.(x + size * 0.20, y + size * 0.49, x + size * 0.20, y + size * 0.72);
+        doc.line?.(x + size * 0.80, y + size * 0.49, x + size * 0.80, y + size * 0.72);
+    };
+    const drawSummaryIcon = (kind, x, y) => {
+        doc.setFillColor?.(139, 92, 246);
+        doc.roundedRect?.(x, y, 7, 7, 2, 2, 'F');
+        doc.setDrawColor?.(255, 255, 255);
+        if (kind === 'weight') {
+            doc.line?.(x + 2, y + 2.5, x + 5, y + 2.5);
+            doc.line?.(x + 1.7, y + 3.5, x + 5.3, y + 3.5);
+            doc.line?.(x + 1.4, y + 4.5, x + 5.6, y + 4.5);
+        } else if (kind === 'packed') {
+            doc.line?.(x + 1.6, y + 3.8, x + 3, y + 5.1);
+            doc.line?.(x + 3, y + 5.1, x + 5.5, y + 2);
+        } else {
+            doc.line?.(x + 2, y + 2, x + 5, y + 2);
+            doc.line?.(x + 2, y + 3.5, x + 5, y + 3.5);
+            doc.line?.(x + 2, y + 5, x + 5, y + 5);
+        }
+    };
+    doc.setFillColor?.(245, 243, 255);
+    doc.roundedRect?.(14, 8, 182, 24, 5, 5, 'F');
+    doc.setFillColor?.(139, 92, 246);
+    doc.roundedRect?.(176, 12, 12, 12, 4, 4, 'F');
+    drawAppIcon(176, 12, 12);
+    doc.setTextColor?.(17, 24, 39);
     doc.setFontSize(18);
     doc.text(documentTitle, 14, 18);
+    doc.setTextColor?.(71, 85, 105);
     doc.setFontSize(10);
-    doc.text(`${STATE.config.nights} notti · ${STATE.config.transport}`, 14, 26);
+    doc.text(`${STATE.config.nights} notti - ${STATE.config.transport}`, 14, 25);
+    doc.setTextColor?.(17, 24, 39);
 
-    let nextY = 34;
+    const summaryCards = [
+        ['Item', String(all.length), 'items'],
+        ['Peso', U.weight(totalWeight), 'weight'],
+        ['Presi', `${packedCount}/${all.length}`, 'packed']
+    ];
+    summaryCards.forEach(([label, value, icon], index) => {
+        const x = 14 + index * 62;
+        doc.setFillColor?.(248, 250, 252);
+        doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'F');
+        doc.setDrawColor?.(226, 232, 240);
+        doc.roundedRect?.(x, 34, 56, 14, 4, 4, 'S');
+        drawSummaryIcon(icon, x + 4, 37);
+        doc.setTextColor?.(100, 116, 139);
+        doc.setFontSize(7);
+        doc.text(label.toUpperCase(), x + 14, 39);
+        doc.setTextColor?.(17, 24, 39);
+        doc.setFontSize(10);
+        doc.text(value, x + 14, 45);
+    });
+
+    let nextY = 58;
     for (const bag of STATE.baggages) {
         const rows = [];
         Object.entries(STATE.list).forEach(([cat, items]) => {
@@ -805,17 +872,17 @@ export async function exportPDF() {
         const bagWeight = getAllItems().filter(item => item.baggageId === bag.id && !item.worn).reduce((sum, item) => sum + (item.w || 100) * item.q, 0);
         if (nextY > 248) { doc.addPage(); nextY = 20; }
         doc.setFontSize(12); doc.setTextColor?.(17, 24, 39);
-        doc.text(`${bag.name} · ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
+        doc.text(`${bag.name} - ${U.weight(bagWeight)}${bag.limit ? ` / limite ${bag.limit} kg` : ''}`, 14, nextY);
         if (typeof doc.autoTable === 'function') {
             try {
-                doc.autoTable({ head: [['Categoria', 'Item', 'Qtà', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 4, margin: { bottom: 24 }, styles: { fontSize: 8 } });
+                doc.autoTable({ head: [['Categoria', 'Item', 'Qt', 'Peso', 'Preso', 'Indossato']], body: rows, startY: nextY + 5, margin: { top: 24, bottom: 24, left: 14 }, styles: { fontSize: 8 } });
                 nextY = (doc.lastAutoTable?.finalY || nextY + rows.length * 6 + 12) + 10;
             } catch (error) {
                 return exportPdfFallback(error);
             }
         } else {
             nextY += 7;
-            rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 20; } doc.text(row.join(' · '), 14, nextY); nextY += 6; });
+            rows.forEach(row => { if (nextY > 268) { doc.addPage(); nextY = 24; } doc.text(row.join(' - '), 14, nextY); nextY += 7; });
             nextY += 6;
         }
     }
@@ -825,15 +892,21 @@ export async function exportPDF() {
     const cta = { x: 14, y: 278, width: 182, height: 12 };
     for (let page = 1; page <= pageCount; page += 1) {
         doc.setPage?.(page);
+        doc.setFillColor?.(245, 243, 255);
+        doc.roundedRect?.(cta.x, cta.y - 3, cta.width, cta.height + 6, 6, 6, 'F');
         doc.setFillColor?.(90, 103, 242);
-        doc.roundedRect?.(cta.x, cta.y, cta.width, cta.height, 3, 3, 'F');
+        doc.roundedRect?.(cta.x + 3, cta.y, cta.width - 6, cta.height, 5, 5, 'F');
         doc.setFillColor?.(255, 255, 255);
-        doc.roundedRect?.(cta.x + 4, cta.y + 2.5, 7, 6.5, 1.4, 1.4, 'F');
-        doc.setFillColor?.(139, 92, 246);
-        doc.roundedRect?.(cta.x + 5.2, cta.y + 4.1, 4.6, 4.1, 1, 1, 'F');
+        doc.roundedRect?.(cta.x + 7, cta.y + 1.5, 9, 9, 2.5, 2.5, 'F');
+        drawAppIcon(cta.x + 7.7, cta.y + 2.2, 7.6);
         doc.setFontSize(9);
         doc.setTextColor?.(255, 255, 255);
-        doc.text('Clicca qui per modificare gratuitamente la tua lista', cta.x + 15, cta.y + 7.5);
+        doc.text('Apri la lista condivisa Packlist Pro', cta.x + 20, cta.y + 7.3);
+        doc.setFillColor?.(255, 255, 255);
+        doc.roundedRect?.(cta.x + 146, cta.y + 2.7, 26, 6.6, 3, 3, 'F');
+        doc.setFontSize(6);
+        doc.setTextColor?.(90, 103, 242);
+        doc.text('MODIFICA', cta.x + 150, cta.y + 7.4);
         if (typeof doc.link === 'function') doc.link(cta.x, cta.y, cta.width, cta.height, { url: shareUrl });
         else if (typeof doc.textWithLink === 'function') doc.textWithLink('Apri la lista', cta.x + 15, cta.y + 7.5, { url: shareUrl });
     }

@@ -1741,3 +1741,16 @@ button:disabled,
     .baggage-header-actions { grid-template-columns: auto 24px; gap: 8px; }
     .baggage-header i { width: 24px; height: 24px; }
 }
+
+
+/* Reset sessione spostato fuori dal FAB: vicino ai controlli bagagli, ma discreto. */
+.reset-inline {
+    border-color: rgba(244, 63, 94, .28) !important;
+    color: var(--rose) !important;
+    background: rgba(244, 63, 94, .08) !important;
+}
+.reset-inline:hover,
+.reset-inline:focus-visible {
+    border-color: rgba(244, 63, 94, .55) !important;
+    background: rgba(244, 63, 94, .14) !important;
+}

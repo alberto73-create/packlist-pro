@@ -4,27 +4,83 @@
   const jsPDF = global.jspdf && global.jspdf.jsPDF;
   if (!jsPDF || jsPDF.prototype.autoTable) return;
 
+  function clampText(value, maxChars) {
+    const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+    return text.length > maxChars ? `${text.slice(0, Math.max(1, maxChars - 1))}…` : text;
+  }
+
   jsPDF.prototype.autoTable = function ({ head = [], body = [], startY = 20, styles = {}, margin = {} } = {}) {
     const fontSize = Number(styles.fontSize || 8);
-    const lineHeight = Math.max(5, fontSize * 0.8);
-    const columns = head[0] || [];
-    const widths = [34, 62, 14, 22, 22, 28];
-    let y = startY;
+    const rowHeight = Math.max(7, fontSize * 0.9);
+    const headHeight = rowHeight + 1.5;
+    const startX = Number(margin.left || 14);
     const bottom = 297 - Number(margin.bottom || 20);
-    const drawRow = (row, isHead = false) => {
-      if (y > bottom) { this.addPage(); y = 20; }
-      this.setFontSize(fontSize);
-      let x = 14;
-      row.forEach((cell, index) => {
-        const text = String(cell ?? '');
-        const maxChars = Math.max(4, Math.floor((widths[index] || 24) / 2.2));
-        this.text(text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text, x, y);
+    const widths = [34, 70, 14, 22, 20, 22];
+    const columns = head[0] || [];
+    let y = startY;
+
+    const ensureSpace = (height, repeatHeader = true) => {
+      if (y + height <= bottom) return;
+      this.addPage();
+      y = Number(margin.top || 20);
+      if (repeatHeader && columns.length) drawHeader();
+    };
+
+    const drawTextCell = (text, x, yPos, width, isHead = false) => {
+      const maxChars = Math.max(4, Math.floor(width / 2.15));
+      this.setFontSize(isHead ? fontSize + 0.5 : fontSize);
+      if (isHead) this.setTextColor?.(67, 56, 202);
+      else if (x === startX) this.setTextColor?.(79, 70, 229);
+      else this.setTextColor?.(15, 23, 42);
+      this.text(clampText(text, maxChars), x + 1.8, yPos);
+    };
+
+    const drawCheckCell = (value, x, yPos, width) => {
+      const checked = /^(s[iì]|yes|true|1)$/i.test(String(value ?? '').trim());
+      const size = 4.2;
+      const boxX = x + (width - size) / 2;
+      const boxY = yPos - 3.7;
+      this.setDrawColor?.(99, 102, 241);
+      this.setFillColor?.(checked ? 99 : 255, checked ? 102 : 255, checked ? 241 : 255);
+      this.rect(boxX, boxY, size, size, checked ? 'F' : 'S');
+      if (checked && typeof this.line === 'function') {
+        this.setDrawColor?.(255, 255, 255);
+        this.line(boxX + 0.9, boxY + 2.2, boxX + 1.8, boxY + 3.1);
+        this.line(boxX + 1.8, boxY + 3.1, boxX + 3.4, boxY + 1.1);
+      }
+    };
+
+    const drawHeader = () => {
+      ensureSpace(headHeight, false);
+      this.setFillColor?.(245, 243, 255);
+      this.roundedRect?.(startX, y - 4.5, widths.reduce((sum, width) => sum + width, 0), headHeight, 3, 3, 'F');
+      this.setFillColor?.(139, 92, 246);
+      this.roundedRect?.(startX, y + headHeight - 5.6, widths.reduce((sum, width) => sum + width, 0), 1.1, 0.6, 0.6, 'F');
+      let x = startX;
+      columns.forEach((cell, index) => {
+        drawTextCell(cell, x, y, widths[index] || 24, true);
         x += widths[index] || 24;
       });
-      y += isHead ? lineHeight + 1 : lineHeight;
+      y += headHeight;
     };
-    if (columns.length) drawRow(columns, true);
-    body.forEach(row => drawRow(row));
+
+    if (columns.length) drawHeader();
+    body.forEach((row, rowIndex) => {
+      ensureSpace(rowHeight);
+      if (rowIndex % 2 === 0) {
+        this.setFillColor?.(250, 250, 255);
+        this.roundedRect?.(startX, y - 4.6, widths.reduce((sum, width) => sum + width, 0), rowHeight, 2, 2, 'F');
+      }
+      let x = startX;
+      row.forEach((cell, index) => {
+        if (index === 4 || index === 5) drawCheckCell(cell, x, y, widths[index] || 22);
+        else drawTextCell(cell, x, y, widths[index] || 24);
+        x += widths[index] || 24;
+      });
+      this.setDrawColor?.(229, 231, 235);
+      if (typeof this.line === 'function') this.line(startX, y + 2.6, startX + widths.reduce((sum, width) => sum + width, 0), y + 2.6);
+      y += rowHeight;
+    });
     this.lastAutoTable = { finalY: y };
     return this;
   };
