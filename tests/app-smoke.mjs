@@ -20,7 +20,7 @@ function element(id = '') {
         id, value: '', dataset: {}, style: {}, children: [], className: '', textContent: '', innerHTML: '',
         classList: classList(),
         setAttribute(key, value) { this[key] = String(value); },
-        appendChild(child) { this.children.push(child); },
+        appendChild(child) { this.children.push(child); }, select() {},
         remove() {}, focus() {},
         addEventListener(type, listener) { this.listeners ??= {}; this.listeners[type] = listener; },
         querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; }, matches() { return false; }
@@ -208,6 +208,18 @@ const encodedShareState = shareUrl.split('#b.')[1];
 const sharedPayload = JSON.parse(Buffer.from(encodedShareState, 'base64url').toString());
 assert.equal(sharedPayload[0], 4, 'new links must use the unified multi-transport schema');
 assert.deepEqual(sharedPayload[1][3], ['car', 'train'], 'shared links must include every selected transport');
+let execCopyCalls = 0;
+document.execCommand = command => { execCopyCalls += 1; return command === 'copy'; };
+Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => { throw new Error('Clipboard permission denied'); } } }, configurable: true });
+assert.equal(await Ctrl.shareList(), true, 'sharing must fall back when the Clipboard API rejects the write');
+assert.equal(execCopyCalls, 1, 'sharing must use the legacy copy fallback after a Clipboard API failure');
+let promptedShareUrl = '';
+document.execCommand = () => false;
+window.prompt = (_message, value) => { promptedShareUrl = value; };
+Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true });
+assert.equal(await Ctrl.shareList(), true, 'sharing must still provide the link when no copy API is available');
+assert.equal(promptedShareUrl, shareUrl, 'manual fallback must expose the exact share URL');
+Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async value => { clipboardText = value; } } }, configurable: true });
 let pdfLink = '';
 let pdfLinkRegion = null;
 let pdfFilename = '';

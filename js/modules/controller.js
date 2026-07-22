@@ -1038,8 +1038,14 @@ export async function createShareUrl() {
 
 async function copyShareUrl(url) {
     if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        return true;
+        try {
+            await navigator.clipboard.writeText(url);
+            return true;
+        } catch (error) {
+            // The API can exist but be denied in an embedded or non-secure
+            // context. Continue with the legacy fallback in that case.
+            console.warn('[Controller] Clipboard API non disponibile:', error);
+        }
     }
 
     const field = document.createElement('textarea');
