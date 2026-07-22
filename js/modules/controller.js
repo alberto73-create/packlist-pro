@@ -5,54 +5,7 @@ import { STATE, setState, DEFAULT_CONFIG, DB, DAYTRIP_EXCLUDE, WARNINGS, FILTER_
 import { U } from './utils.js';
 import * as View from './ui.js';
 import { logAnonymousEvent } from './anonymous-logs.js';
-
-/**
- * Calcola le quantità degli item in base alla configurazione
- */
-function calculateQty(item, config) {
-    const nights = Math.max(0, Number(config.nights) || 0);
-    const totalDays = nights + 1;
-    const legacyRule = item.q === 'n'
-        ? { type: 'perDay', base: 1, every: 1, min: 1, max: 0, laundry: true }
-        : { type: 'fixed', base: 1, every: 1, min: 1, max: 0, laundry: false };
-    const rule = { ...legacyRule, ...(item.quantityRule || {}) };
-
-    if (nights === 0) {
-        if (DAYTRIP_EXCLUDE.has(item.n)) return 0;
-        return Math.max(1, Number(rule.min) || 1);
-    }
-
-    let coveredDays = totalDays;
-    if (config.laundry && rule.laundry) {
-        coveredDays = Math.min(totalDays, Math.max(1, Number(config.laundryFreq) || 3) + Math.max(0, Number(config.laundryBuffer) || 0));
-    }
-    if (rule.type === 'perDay' && isDepartureWornDailyItem(item)) coveredDays = Math.max(1, coveredDays - 1);
-    let qty = rule.type === 'fixed'
-        ? Math.max(1, Number(rule.base) || 1)
-        : Math.ceil(coveredDays / Math.max(1, Number(rule.every) || 1)) * Math.max(1, Number(rule.base) || 1);
-    qty = Math.max(Math.max(0, Number(rule.min) || 0), qty);
-    if (Number(rule.max) > 0) qty = Math.min(qty, Number(rule.max));
-    return qty;
-}
-
-function normalizeTransportMode(mode) {
-    return ({ auto:'car', macchina:'car', auto_macchina:'car', moto:'motorcycle', aereo:'plane', treno:'train', treno_regionale:'train', backpack:'walking', zaino:'walking', viaggio_zaino:'walking', trekking:'walking', a_piedi_trekking:'walking' })[mode] || mode;
-}
-
-function isTransportCompatible(item, transports) {
-    const selected = (Array.isArray(transports) ? transports : [transports]).map(normalizeTransportMode);
-    const modes = Array.isArray(item.transportModes) && item.transportModes.length ? item.transportModes.map(normalizeTransportMode) : ['tutti'];
-    return modes.includes('tutti') || selected.some(transport => modes.includes(transport));
-}
-
-function isWeatherCompatible(item, selectedWeather) {
-    const modes = Array.isArray(item.weatherModes) && item.weatherModes.length ? item.weatherModes : ['tutti'];
-    return modes.includes('tutti') || selectedWeather.some(weather => modes.includes(weather));
-}
-
-function isDepartureWornDailyItem(item) {
-    return item.cat === 'Abbigliamento Base' && /^(Mutande|Calze|Canottiere\/Sottogiacca|T-shirt)$/i.test(item.n || '');
-}
+import { generatePacklist, normalizeTransportMode } from './packlist-generator.js';
 
 function showSetupWarning(missing = []) {
     const message = missing.length ? `Completa prima la configurazione viaggio: ${missing.join(', ')}.` : '';
@@ -85,70 +38,7 @@ export function validateSetupForGenerate() {
 export function generateList() {
     const config = STATE.config;
     showSetupWarning();
-    const previousItems = new Map(
-        Object.values(STATE.list).flat().filter(item => !item.custom).map(item => [itemKey(item.cat, item.n), item])
-    );
-    const customItems = Object.values(STATE.list).flat().filter(item => item.custom);
-    const newList = {};
-    
-    // 1. Item base (sempre inclusi)
-    for (const item of DB.base) {
-        if (!isTransportCompatible(item, config.transports)) continue;
-        if (!isWeatherCompatible(item, config.weather)) continue;
-        const qty = calculateQty(item, config);
-        if (qty <= 0) continue;
-        
-        // Filtro gender
-        if (item.s !== 'U' && item.s !== config.gender) continue;
-        
-        addGeneratedItem(newList, item, qty, previousItems);
-    }
-    
-    // 2. Item lavanderia (se attiva)
-    if (config.laundry && config.nights > 0) {
-        for (const item of DB.laundry) {
-            if (!isTransportCompatible(item, config.transports)) continue;
-            if (!isWeatherCompatible(item, config.weather)) continue;
-            addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
-        }
-    }
-    
-    // 3. Item meteo
-    for (const weatherType of config.weather) {
-        const items = DB.weather[weatherType] || [];
-        for (const item of items) {
-            if (!isTransportCompatible(item, config.transports)) continue;
-            if (!isWeatherCompatible(item, config.weather)) continue;
-            addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
-        }
-    }
-    
-    // 4. Item trasporto
-    const legacyTransportKeys = { car:'auto', motorcycle:'moto', plane:'aereo', walking:'backpack' };
-    const transportItems = config.transports.flatMap(transport => DB.transport[legacyTransportKeys[transport] || transport] || []);
-    for (const item of transportItems) {
-        if (!isTransportCompatible(item, config.transports)) continue;
-        if (!isWeatherCompatible(item, config.weather)) continue;
-        addGeneratedItem(newList, item, calculateQty(item, config), previousItems);
-    }
-    
-    // 5. Item attività extra
-    for (const actId of config.activities) {
-        const items = DB.extra[actId] || [];
-        for (const item of items) {
-            if (!isTransportCompatible(item, config.transports)) continue;
-            if (!isWeatherCompatible(item, config.weather)) continue;
-            const qty = calculateQty(item, config);
-            if (qty <= 0) continue;
-            addGeneratedItem(newList, item, qty, previousItems);
-        }
-    }
-    
-    // Gli item personali e lo stato di packing non devono andare persi quando cambia la configurazione.
-    for (const item of customItems) {
-        if (!newList[item.cat]) newList[item.cat] = [];
-        newList[item.cat].push(item);
-    }
+    const newList = generatePacklist(DB, config, STATE.list, STATE.baggages, DAYTRIP_EXCLUDE, U.uid);
 
     // Aggiorna stato e UI
     setState({ list: newList });
@@ -159,37 +49,6 @@ export function generateList() {
     logAnonymousEvent({ eventType:'packlist_generated', context: config });
     
     return newList;
-}
-
-/**
- * Aggiunge un item a una categoria
- */
-function itemKey(cat, name) {
-    return `${cat}\u0000${name}`;
-}
-
-function addGeneratedItem(list, item, qty, previousItems) {
-    const previous = previousItems.get(itemKey(item.cat, item.n));
-    addToCategory(list, item.cat, {
-        ...item,
-        q: qty,
-        uid: previous?.uid || U.uid(),
-        w: previous?.w ?? item.w,
-        checked: previous?.checked || false,
-        worn: previous?.worn ?? false,
-        bulky: previous?.bulky ?? false,
-        baggageId: previous?.baggageId || STATE.baggages[0]?.id || 'b1',
-        custom: false
-    });
-}
-
-function addToCategory(list, cat, item) {
-    if (!list[cat]) list[cat] = [];
-    // Evita duplicati basati sul nome
-    const exists = list[cat].some(i => i.n === item.n);
-    if (!exists) {
-        list[cat].push(item);
-    }
 }
 
 /**
@@ -337,6 +196,7 @@ export function editItemWeight(uid, newWeight) {
 
 const STATE_STORAGE_KEY = 'packlist_state';
 const STATE_BACKUP_KEY = 'packlist_state_backup';
+const PUBLIC_APP_URL = 'https://packlist-pro.vercel.app/';
 
 /**
  * Salva lo stato mantenendo anche l'ultima copia valida per gli aggiornamenti PWA.
@@ -887,7 +747,10 @@ export async function exportPDF() {
         }
     }
 
-    const shareUrl = await createShareUrl();
+    // Nel PDF usiamo sempre l'URL pubblico canonico: il fragment #b. include
+    // l'intera lista e la apre quindi come copia modificabile, anche se il PDF
+    // è stato creato da una preview Vercel o da un dominio personalizzato.
+    const shareUrl = await createPdfShareUrl();
     const pageCount = doc.getNumberOfPages?.() || 1;
     const cta = { x: 14, y: 278, width: 182, height: 12 };
     for (let page = 1; page <= pageCount; page += 1) {
@@ -1030,6 +893,18 @@ function expandSharedState(shared) {
 
 export async function createShareUrl() {
     const url = new URL(window.location.href);
+    return createEditableListUrl(url);
+}
+
+/**
+ * Crea il link pubblico inserito nel PDF. Il payload nel fragment conserva
+ * configurazione, bagagli e articoli così il destinatario può modificarli.
+ */
+export async function createPdfShareUrl() {
+    return createEditableListUrl(new URL(PUBLIC_APP_URL));
+}
+
+async function createEditableListUrl(url) {
     url.search = '';
     if (url.pathname.endsWith('/index.html')) url.pathname = url.pathname.slice(0, -'index.html'.length);
     url.hash = await encodeSharedState(compactSharedState());

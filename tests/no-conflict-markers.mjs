@@ -6,9 +6,12 @@ const files = [
     'index.html',
     'js/app.js',
     'js/modules/controller.js',
+    'js/modules/packlist-generator.js',
     'js/modules/db.js',
     'js/modules/pwa.js',
     'js/modules/ui.js',
+    'css/modules/tokens.css',
+    'css/modules/base.css',
     'sw.js'
 ];
 const marker = /^(<<<<<<<|=======|>>>>>>>)(?: .*)?$/m;

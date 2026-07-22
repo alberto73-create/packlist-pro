@@ -208,6 +208,10 @@ const encodedShareState = shareUrl.split('#b.')[1];
 const sharedPayload = JSON.parse(Buffer.from(encodedShareState, 'base64url').toString());
 assert.equal(sharedPayload[0], 4, 'new links must use the unified multi-transport schema');
 assert.deepEqual(sharedPayload[1][3], ['car', 'train'], 'shared links must include every selected transport');
+const pdfShareUrl = await Ctrl.createPdfShareUrl();
+assert.match(pdfShareUrl, /^https:\/\/packlist-pro\.vercel\.app\/#b\./, 'PDF links must use the public editable Packlist Pro URL');
+const pdfSharedPayload = JSON.parse(Buffer.from(pdfShareUrl.split('#b.')[1], 'base64url').toString());
+assert.deepEqual(pdfSharedPayload, sharedPayload, 'the PDF link must preserve the complete editable shared-list payload');
 let execCopyCalls = 0;
 document.execCommand = command => { execCopyCalls += 1; return command === 'copy'; };
 Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => { throw new Error('Clipboard permission denied'); } } }, configurable: true });
@@ -232,7 +236,7 @@ class FakePdf {
 }
 window.jspdf = { jsPDF: FakePdf };
 assert.equal(await Ctrl.exportPDF(), true);
-assert.equal(pdfLink, shareUrl, 'the entire PDF call-to-action must link to the editable shared list');
+assert.equal(pdfLink, pdfShareUrl, 'the entire PDF call-to-action must link to the public editable shared list');
 assert.deepEqual(pdfLinkRegion, { x: 14, y: 278, width: 182, height: 12 }, 'the PDF link must cover the whole call-to-action row');
 assert.equal(pdfTitle, 'Packlist Pro · Rio', 'the saved list name must appear in the PDF');
 assert.match(pdfFilename, /^packlist_Rio_\d{4}-\d{2}-\d{2}\.pdf$/, 'the saved list name must appear in the PDF filename');
