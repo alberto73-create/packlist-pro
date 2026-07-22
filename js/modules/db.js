@@ -30,7 +30,6 @@ export let STATE = {
   lastRemoved: null,
   filter: 'all'
 };
-
 export function setState(newState) {
   STATE = { ...STATE, ...newState };
 }

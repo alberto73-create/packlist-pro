@@ -1,0 +1,11 @@
+/* Reset, accessibility defaults, and document-level layout. */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+*:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 14px; padding-top: calc(var(--safe-top) + 14px); padding-bottom: calc(var(--safe-bottom) + 110px);
+    padding-left: calc(var(--safe-left) + 14px); padding-right: calc(var(--safe-right) + 14px); min-height: 100vh; line-height: 1.5;
+    background-image: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(90, 103, 242, 0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 110%, rgba(139, 92, 246, 0.08) 0%, transparent 55%);
+    overscroll-behavior-y: none;
+}
