@@ -11,6 +11,8 @@ const files = [
     'js/modules/db.js',
     'js/modules/pwa.js',
     'js/modules/ui.js',
+    'css/modules/tokens.css',
+    'css/modules/base.css',
     'sw.js'
 ];
 const marker = /^(<<<<<<<|=======|>>>>>>>)(?: .*)?$/m;

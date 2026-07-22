@@ -21,6 +21,8 @@ const ASSETS = [
     '/js/modules/ui.js',
     '/js/modules/utils.js',
     '/css/style.css?v=1.10.27',
+    '/css/modules/tokens.css',
+    '/css/modules/base.css',
     '/manifest.json',
     '/icons/icon-backpack.svg',
     '/icons/icon-192.png',

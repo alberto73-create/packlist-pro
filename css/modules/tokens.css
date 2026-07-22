@@ -1,0 +1,30 @@
+/* Design tokens shared by every Packlist Pro stylesheet. */
+:root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1f2d45;
+    --border2: #2a3f5f;
+    --text: #e8edf5;
+    --muted: #4a5a72;
+    --subtle: #7b8fa8;
+    --indigo: #5a67f2;
+    --indigo-h: #6f7cf5;
+    --violet: #8b5cf6;
+    --violet-h: #a07bf8;
+    --cyan: #22d3ee;
+    --emerald: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+    --wl: #10b981;
+    --wm: #f59e0b;
+    --wh: #f43f5e;
+    --r-sm: 12px;
+    --r-md: 18px;
+    --r-lg: 24px;
+    --r-xl: 30px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+}
