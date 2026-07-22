@@ -11,9 +11,7 @@ const defaultQuantityRule = item => item.q === 'n' ? {type:'perDay',base:1,every
 const payload = () => ({ db: draft.db, daytripExclude: draft.daytripExclude, perNight: draft.perNight, warningMessages: draft.warningMessages });
 const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-export function initAdmin() {
-  document.getElementById('adminOpen')?.addEventListener('click', openLogin);
-}
+export function openAdmin() { openLogin(); }
 function shell(title, body) {
   document.getElementById('adminModal')?.remove();
   document.body.insertAdjacentHTML('beforeend', `<div class="admin-modal" id="adminModal"><section class="admin-panel" role="dialog" aria-modal="true"><header><div><small>PACKLIST PRO</small><h2>${title}</h2></div><button class="admin-close" aria-label="Chiudi">×</button></header>${body}</section></div>`);

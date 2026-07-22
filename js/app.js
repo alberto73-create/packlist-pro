@@ -5,13 +5,13 @@ import { STATE, APP_VERSION } from './modules/db.js';
 import { U } from './modules/utils.js';
 import * as Ctrl from './modules/controller.js';
 import * as View from './modules/ui.js';
-import { initAdmin } from './modules/admin.js';
 import { initCommunications, openFeedbackModal, renderSupportBanner, maybeShowAutomaticFeedback } from './modules/communications.js';
 import { logAnonymousEvent } from './modules/anonymous-logs.js';
 import { registerServiceWorker, setupInstallPrompt, setupOnlineOfflineHandlers, triggerInstall, dismissInstallBanner } from './modules/pwa.js';
 
 // Shared by native input listeners and the delegated visual controls.
 const scheduleConfigSync = U.debounce(syncConfig, 180);
+let adminModule;
 
 // --- INIZIALIZZAZIONE ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.dataset.appVersion = APP_VERSION;
     globalThis.APP_VERSION = APP_VERSION;
     setupEventListeners();
-    initAdmin();
     initCommunications({ state: STATE, version: APP_VERSION });
     Ctrl.updateConfigUI();
 
@@ -49,6 +48,7 @@ function setupEventListeners() {
     document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); maybeShowAutomaticFeedback('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
     document.getElementById('feedbackBtn')?.addEventListener('click', openFeedbackModal);
+    document.getElementById('adminOpen')?.addEventListener('click', openAdminPanel);
 
     ['nights', 'gender', 'transport', 'laundryFreq', 'laundryBuffer'].forEach(id => {
         const input = document.getElementById(id);
@@ -88,6 +88,11 @@ function setupEventListeners() {
     setupFabActions();
     setupItemOptions();
     setupBaggageModals();
+}
+
+async function openAdminPanel() {
+    const { openAdmin } = await (adminModule ||= import('./modules/admin.js'));
+    openAdmin();
 }
 
 function setupItemOptions() {

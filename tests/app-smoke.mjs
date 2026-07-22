@@ -20,7 +20,7 @@ function element(id = '') {
         id, value: '', dataset: {}, style: {}, children: [], className: '', textContent: '', innerHTML: '',
         classList: classList(),
         setAttribute(key, value) { this[key] = String(value); },
-        appendChild(child) { this.children.push(child); },
+        appendChild(child) { this.children.push(child); }, select() {},
         remove() {}, focus() {},
         addEventListener(type, listener) { this.listeners ??= {}; this.listeners[type] = listener; },
         querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; }, matches() { return false; }
@@ -199,10 +199,27 @@ window.jspdf = null;
 assert.equal(Ctrl.saveTemplate('Rio'), true);
 assert.equal(db.STATE.listName, 'Rio', 'saved template name must become the list name');
 assert.equal(JSON.parse(localStorage.getItem('packlist_state')).listName, 'Rio', 'list name must be persisted');
+Ctrl.setConfig({ transport: 'car', transports: ['car', 'train'] });
 const shareUrl = await Ctrl.createShareUrl();
-assert.match(shareUrl, /^https:\/\/packlist\.example\/[#][gb]\./);
+assert.match(shareUrl, /^https:\/\/packlist\.example\/[#]b\./, 'new links must use the universally readable base64 format');
 assert.doesNotMatch(shareUrl, /[?&]list=/, 'compact links must use the shorter hash format');
-assert.match(shareUrl, /[#][gb]\./, 'multi-baggage shared state must remain compact');
+assert.match(shareUrl, /[#]b\./, 'multi-baggage shared state must remain compact');
+const encodedShareState = shareUrl.split('#b.')[1];
+const sharedPayload = JSON.parse(Buffer.from(encodedShareState, 'base64url').toString());
+assert.equal(sharedPayload[0], 4, 'new links must use the unified multi-transport schema');
+assert.deepEqual(sharedPayload[1][3], ['car', 'train'], 'shared links must include every selected transport');
+let execCopyCalls = 0;
+document.execCommand = command => { execCopyCalls += 1; return command === 'copy'; };
+Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => { throw new Error('Clipboard permission denied'); } } }, configurable: true });
+assert.equal(await Ctrl.shareList(), true, 'sharing must fall back when the Clipboard API rejects the write');
+assert.equal(execCopyCalls, 1, 'sharing must use the legacy copy fallback after a Clipboard API failure');
+let promptedShareUrl = '';
+document.execCommand = () => false;
+window.prompt = (_message, value) => { promptedShareUrl = value; };
+Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true });
+assert.equal(await Ctrl.shareList(), true, 'sharing must still provide the link when no copy API is available');
+assert.equal(promptedShareUrl, shareUrl, 'manual fallback must expose the exact share URL');
+Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async value => { clipboardText = value; } } }, configurable: true });
 let pdfLink = '';
 let pdfLinkRegion = null;
 let pdfFilename = '';
@@ -225,6 +242,7 @@ window.location = new URL(shareUrl);
 assert.equal(await Ctrl.loadSharedListFromUrl(), true, 'shared multi-baggage list must load');
 assert.deepEqual(db.STATE.baggages.map(bag => [bag.name, bag.limit]), [['Zaino 40L', 0], ['Trolley cabina', 10]], 'shared URL must preserve baggage names and limits');
 assert.equal(Object.values(db.STATE.list).flat().some(item => item.baggageId === db.STATE.baggages[1].id), true, 'shared URL must preserve item baggage assignments');
+assert.deepEqual(db.STATE.config.transports, ['car', 'train'], 'shared URL must preserve every selected transport');
 const temporaryBag = Ctrl.addBaggage('Temporaneo');
 assert.equal(Ctrl.deleteBaggage(temporaryBag.id, db.STATE.baggages[0].id), true, 'empty baggage can be deleted');
 
@@ -309,7 +327,7 @@ assert.match(app, /Ctrl\.toggleWeather\(weatherButton\.dataset\.weather\)/);
 assert.match(app, /Ctrl\.toggleActivity\(activityButton\.dataset\.activity\)/);
 assert.match(app, /const fabItem = event\.target\.closest/);
 assert.match(app, /Ctrl\.updateItemOptions/);
-assert.match(controller, /CompressionStream/);
+assert.doesNotMatch(controller, /new CompressionStream/, 'new shared links must not require a compression API on the receiving browser');
 assert.match(controller, /navigator\.share/);
 assert.match(html, /data-weather="sun"/);
 assert.match(html, /id="act-trekking" data-activity="trekking"/);
