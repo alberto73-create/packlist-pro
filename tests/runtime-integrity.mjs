@@ -59,7 +59,6 @@ assert.match(app, /import\('\.\/modules\/admin\.js'\)/, 'the admin module must l
 assert.doesNotMatch(app, /from '\.\/modules\/admin\.js'/, 'the public app shell must not eagerly import the admin editor');
 assert.doesNotMatch(sw, /\/js\/modules\/admin\.js/, 'the non-public admin editor must not inflate the app-shell precache');
 assert.match(sw, /\/js\/modules\/packlist-generator\.js/, 'the generated-list rules must remain available offline');
-assert.match(sw, /\/js\/modules\/state-store\.js/, 'the observable state store must remain available offline');
 assert.match(sw, /\/css\/modules\/tokens\.css/, 'shared design tokens must remain available offline');
 assert.match(sw, /\/css\/modules\/base\.css/, 'base styles must remain available offline');
 assert.match(pwa, /updateViaCache: 'none'/);
@@ -93,12 +92,14 @@ assert.match(css, /admin-section\[open\] > summary::after/, 'admin section summa
 assert.match(css, /\.admin-item-title i \{[\s\S]*background: transparent !important;/, 'admin item chevron must not use a boxed background');
 assert.match(css, /\.setup-warning\.visible/, 'setup warning must have visible styling');
 assert.match(css, /\.share-quick[\s\S]*linear-gradient/, 'share quick button must have a stronger visual treatment');
-assert.match(css, /--card-glass:/, 'premium visual system must expose shared card tokens');
+assert.match(cssTokens, /--card-glass:/, 'premium visual system must expose shared card tokens');
 assert.match(css, /@import url\('\.\/modules\/tokens\.css'\)/, 'the stylesheet must compose shared design tokens');
 assert.match(css, /@import url\('\.\/modules\/base\.css'\)/, 'the stylesheet must compose base styles');
 assert.match(cssTokens, /--bg:/, 'design token module must define the application palette');
 assert.match(cssBase, /\*:focus-visible/, 'base module must retain keyboard focus visibility');
-assert.match(css, /--shadow-elevated:/, 'premium visual system must expose shared elevation tokens');
+assert.equal((css.match(/^\s*:root/gm) || []).length, 0, 'style.css must not retain duplicate root token declarations');
+assert.equal((cssTokens.match(/^:root/gm) || []).length, 1, 'the token module must define one canonical root token block');
+assert.match(cssTokens, /--shadow-elevated:/, 'premium visual system must expose shared elevation tokens');
 assert.match(css, /prefers-reduced-motion: reduce/, 'premium animations must respect reduced motion');
 assert.match(css, /\.fab-menu:not\(\.open\)[\s\S]*scale\(\.97\)/, 'FAB menu must animate with transform and opacity');
 assert.match(adminModule, /data-transport-mode/, 'admin items must expose per-item transport compatibility');

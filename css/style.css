@@ -1084,25 +1084,6 @@
     .admin-item-title em { display: none; }
 }
 
-/* Premium visual refinement v1.10.14 */
-:root {
-    --bg-deep: #070b14;
-    --card-glass: rgba(15, 23, 42, .72);
-    --card-elevated: rgba(17, 25, 40, .88);
-    --line-soft: rgba(148, 163, 184, .16);
-    --line-strong: rgba(167, 139, 250, .34);
-    --text-strong: #f8fafc;
-    --text-soft: #a7b3c7;
-    --accent: #8b5cf6;
-    --accent-2: #5a67f2;
-    --danger: #fb7185;
-    --shadow-soft: 0 14px 44px rgba(0, 0, 0, .28);
-    --shadow-elevated: 0 24px 70px rgba(0, 0, 0, .38);
-    --ease-premium: cubic-bezier(.2, .8, .2, 1);
-    --motion-fast: 150ms;
-    --motion-med: 210ms;
-}
-
 body {
     background-color: var(--bg-deep);
     background-image:
@@ -1342,14 +1323,6 @@ button:disabled,
     }
 }
 
-/* v1.10.14: animazioni più rapide e chevron admin più leggibile */
-:root {
-    --motion-fast: 95ms;
-    --motion-med: 135ms;
-    --shadow-soft: 0 10px 30px rgba(0, 0, 0, .24);
-    --shadow-elevated: 0 18px 48px rgba(0, 0, 0, .34);
-}
-
 .card,
 .stats-bar,
 .cat-box,
@@ -1422,14 +1395,6 @@ button:disabled,
 .modal-backdrop.visible,
 .admin-modal { animation-duration: 130ms; }
 .admin-unsaved.saved { animation-duration: 420ms; }
-
-/* v1.10.14: modalità più snella, niente effetti percepiti come lenti */
-:root {
-    --motion-fast: 60ms;
-    --motion-med: 90ms;
-    --shadow-soft: 0 8px 22px rgba(0, 0, 0, .22);
-    --shadow-elevated: 0 12px 34px rgba(0, 0, 0, .3);
-}
 
 .card,
 .stats-bar,

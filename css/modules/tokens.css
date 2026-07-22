@@ -27,4 +27,19 @@
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
+    --bg-deep: #070b14;
+    --card-glass: rgba(15, 23, 42, .72);
+    --card-elevated: rgba(17, 25, 40, .88);
+    --line-soft: rgba(148, 163, 184, .16);
+    --line-strong: rgba(167, 139, 250, .34);
+    --text-strong: #f8fafc;
+    --text-soft: #a7b3c7;
+    --accent: #8b5cf6;
+    --accent-2: #5a67f2;
+    --danger: #fb7185;
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, .22);
+    --shadow-elevated: 0 12px 34px rgba(0, 0, 0, .3);
+    --ease-premium: cubic-bezier(.2, .8, .2, 1);
+    --motion-fast: 60ms;
+    --motion-med: 90ms;
 }

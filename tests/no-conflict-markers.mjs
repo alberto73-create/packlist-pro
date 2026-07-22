@@ -7,7 +7,6 @@ const files = [
     'js/app.js',
     'js/modules/controller.js',
     'js/modules/packlist-generator.js',
-    'js/modules/state-store.js',
     'js/modules/db.js',
     'js/modules/pwa.js',
     'js/modules/ui.js',

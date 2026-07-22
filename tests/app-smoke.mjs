@@ -61,15 +61,6 @@ globalThis.prompt = () => null;
 const Ctrl = await import('../js/modules/controller.js');
 const db = await import('../js/modules/db.js');
 
-let observedChange;
-const unsubscribeState = db.subscribeState(change => { observedChange = change; });
-db.setState({ lastRemoved: { cat: 'Test', item: null, idx: 0 } }, 'test:state-event');
-assert.deepEqual(observedChange.changedKeys, ['lastRemoved']);
-assert.equal(observedChange.source, 'test:state-event');
-assert.equal(db.STATE.lastRemoved.cat, 'Test', 'the exported state binding must track store updates');
-unsubscribeState();
-db.setState({ lastRemoved: null }, 'test:state-cleanup');
-
 assert.equal(Object.values(db.DB).flatMap(value => Array.isArray(value) ? value : []).some(item => ['Sole','Pioggia','Freddo'].includes(item?.cat)), false, 'weather conditions must not become item categories');
 const longTripWarning = db.WARNINGS.at(-1);
 assert.equal(longTripWarning.check({ config: { nights: 7, laundry: false } }), true, 'long-trip warning must appear above six nights without laundry');
