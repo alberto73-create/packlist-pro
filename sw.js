@@ -11,6 +11,7 @@ const ASSETS = [
     '/vendor/pdf/packlist-pdf-adapter.js?v=1.10.27',
     '/vendor/pdf/packlist-autotable-adapter.js?v=1.10.27',
     '/js/modules/controller.js',
+    '/js/modules/packlist-generator.js',
     '/js/modules/db.js',
     '/js/modules/db-data.js',
     '/js/modules/anonymous-logs.js',
