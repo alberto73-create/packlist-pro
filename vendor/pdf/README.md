@@ -10,8 +10,8 @@ This PR intentionally keeps **Packlist Pro adapters**, not upstream jsPDF builds
 
 | File | API exposed | Version | Origin/source | License note |
 | --- | --- | --- | --- | --- |
-| `packlist-pdf-adapter.js` | Exposes `window.jspdf.jsPDF` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF build |
-| `packlist-autotable-adapter.js` | Adds `doc.autoTable` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.25` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF AutoTable build |
+| `packlist-pdf-adapter.js` | Exposes `window.jspdf.jsPDF` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.26` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF build |
+| `packlist-autotable-adapter.js` | Adds `doc.autoTable` methods used by Packlist Pro PDF export | Packlist Pro adapter for app version `1.10.26` | Created in-repo for the offline-first PDF export step | Project license; not an upstream jsPDF AutoTable build |
 
 ## Upstream libraries previously loaded from CDN
 

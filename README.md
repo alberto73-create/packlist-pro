@@ -83,7 +83,6 @@ packlist-pro/
 ├── index.html                 # Pagina principale dell’app
 ├── css/style.css              # Stili interfaccia
 ├── js/app.js                  # Entry point JavaScript
-├── js/share-v4-loader.js      # Compatibilità link condivisi multi-mezzo
 ├── js/modules/                # Moduli applicativi
 ├── api/                       # API serverless Vercel
 ├── manifest.json              # Manifest PWA

@@ -975,9 +975,9 @@ function base64UrlToBytes(value) {
 
 async function encodeSharedState(data) {
     const bytes = new TextEncoder().encode(JSON.stringify(data));
-    if (typeof CompressionStream === 'undefined') return `b.${bytesToBase64Url(bytes)}`;
-    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
-    return `g.${bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()))}`;
+    // Do not generate gzip-only links: a link created on a recent browser could
+    // otherwise be impossible to import on a browser without DecompressionStream.
+    return `b.${bytesToBase64Url(bytes)}`;
 }
 
 async function decodeSharedState(value) {
@@ -1001,8 +1001,8 @@ function compactSharedState() {
     const config = STATE.config;
     const baggageIndexes = new Map(STATE.baggages.map((bag, index) => [bag.id, index]));
     return [
-        3,
-        [config.nights, config.gender, config.transport, config.weather, config.activities, config.laundry ? 1 : 0, config.laundryFreq, config.laundryBuffer],
+        4,
+        [config.nights, config.gender, config.transport, config.transports || [], config.weather, config.activities, config.laundry ? 1 : 0, config.laundryFreq, config.laundryBuffer],
         STATE.listName || '',
         STATE.baggages.map(bag => [bag.name, bag.limit || 0]),
         Object.entries(STATE.list).map(([cat, items]) => [cat, items.map(item => compactItem(item, baggageIndexes))])
@@ -1010,6 +1010,11 @@ function compactSharedState() {
 }
 
 function expandSharedState(shared) {
+    if (Array.isArray(shared) && shared[0] === 4) {
+        const config = shared[1] || [];
+        const baggages = normalizeBaggages((shared[3] || []).map((bag, index) => ({ id: `b${index + 1}`, name: bag[0], limit: bag[1] })));
+        return { c: { nights: config[0], gender: config[1], transport: config[2], transports: config[3], weather: config[4], activities: config[5], laundry: Boolean(config[6]), laundryFreq: config[7], laundryBuffer: config[8] }, n: String(shared[2] || '').trim(), b: baggages, l: shared[4] };
+    }
     if (Array.isArray(shared) && shared[0] === 3) {
         const config = shared[1] || [];
         const baggages = normalizeBaggages((shared[3] || []).map((bag, index) => ({ id: `b${index + 1}`, name: bag[0], limit: bag[1] })));
@@ -1031,6 +1036,30 @@ export async function createShareUrl() {
     return url.toString();
 }
 
+async function copyShareUrl(url) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        return true;
+    }
+
+    const field = document.createElement('textarea');
+    field.value = url;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand?.('copy') === true;
+    field.remove();
+    if (copied) return true;
+
+    // Some in-app browsers expose neither the Clipboard API nor execCommand.
+    // Showing the URL still lets the user copy a working link instead of falsely
+    // claiming that it was copied.
+    window.prompt('Copia il link della lista:', url);
+    return false;
+}
+
 export async function shareList() {
     if (!getAllItems().length) {
         U.toast('Nessuna lista da condividere');
@@ -1047,8 +1076,8 @@ export async function shareList() {
         }
     }
     try {
-        await navigator.clipboard.writeText(url);
-        U.toast('Link della lista copiato negli appunti');
+        const copied = await copyShareUrl(url);
+        U.toast(copied ? 'Link della lista copiato negli appunti' : 'Copia il link mostrato per condividere la lista');
         return true;
     } catch (error) {
         console.warn('[Controller] Copia link fallita:', error);

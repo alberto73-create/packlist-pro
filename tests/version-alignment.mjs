@@ -30,12 +30,10 @@ for (const [label, actualVersion] of Object.entries(versions)) {
 
 const versionedAssetPatterns = {
   'index.html css/style.css': /\.\/css\/style\.css\?v=(\d+\.\d+\.\d+)/g,
-  'index.html js/share-v4-loader.js': /\.\/js\/share-v4-loader\.js\?v=(\d+\.\d+\.\d+)/g,
   'index.html js/app.js': /\.\/js\/app\.js\?v=(\d+\.\d+\.\d+)/g,
   'index.html vendor/pdf/packlist-pdf-adapter.js': /\.\/vendor\/pdf\/packlist-pdf-adapter\.js\?v=(\d+\.\d+\.\d+)/g,
   'index.html vendor/pdf/packlist-autotable-adapter.js': /\.\/vendor\/pdf\/packlist-autotable-adapter\.js\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /css/style.css': /\/css\/style\.css\?v=(\d+\.\d+\.\d+)/g,
-  'sw.js /js/share-v4-loader.js': /\/js\/share-v4-loader\.js\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /js/app.js': /\/js\/app\.js\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /vendor/pdf/packlist-pdf-adapter.js': /\/vendor\/pdf\/packlist-pdf-adapter\.js\?v=(\d+\.\d+\.\d+)/g,
   'sw.js /vendor/pdf/packlist-autotable-adapter.js': /\/vendor\/pdf\/packlist-autotable-adapter\.js\?v=(\d+\.\d+\.\d+)/g
