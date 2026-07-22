@@ -8,5 +8,5 @@
     "module": "ESNext",
     "moduleResolution": "Bundler"
   },
-  "include": ["js/modules/packlist-generator.js"]
+  "include": ["js/modules/packlist-generator.js", "js/modules/state-store.js", "js/modules/db.js"]
 }

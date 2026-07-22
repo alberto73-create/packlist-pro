@@ -1,4 +1,5 @@
 import { DB_DATA, DAYTRIP_EXCLUDE_DATA, PER_NIGHT_DATA, WARNING_MESSAGES } from './db-data.js';
+import { createStateStore } from './state-store.js';
 
 // js/modules/db.js - Database e costanti Packlist Pro
 // Fonte principale della versione applicazione. A ogni release aggiornare anche:
@@ -21,7 +22,7 @@ export const DEFAULT_CONFIG = {
   laundryBuffer: 1
 };
 // Stato globale dell'applicazione
-export let STATE = {
+const initialState = {
   config: { ...DEFAULT_CONFIG },
   list: {},
   listName: '',
@@ -30,9 +31,29 @@ export let STATE = {
   lastRemoved: null,
   filter: 'all'
 };
+const stateStore = createStateStore(initialState);
+export let STATE = stateStore.getState();
 
-export function setState(newState) {
-  STATE = { ...STATE, ...newState };
+/**
+ * Aggiorna lo stato dell'app e notifica gli osservatori registrati.
+ * @param {Partial<typeof STATE>} newState
+ * @param {string} [source]
+ */
+export function setState(newState, source = 'controller') {
+  STATE = stateStore.setState(newState, source);
+  return STATE;
+}
+
+/**
+ * Osserva le mutazioni effettuate tramite `setState`.
+ * Restituisce una funzione di cleanup da usare quando il consumer viene rimosso.
+ * @param {(change: {previousState: typeof STATE, state: typeof STATE, changedKeys: string[], source: string}) => void} listener
+ */
+export function subscribeState(listener) {
+  return stateStore.subscribe(change => {
+    STATE = change.state;
+    listener(change);
+  });
 }
 
 // Mappatura filtri per categorie

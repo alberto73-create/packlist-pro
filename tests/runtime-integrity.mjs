@@ -56,6 +56,7 @@ assert.match(app, /import\('\.\/modules\/admin\.js'\)/, 'the admin module must l
 assert.doesNotMatch(app, /from '\.\/modules\/admin\.js'/, 'the public app shell must not eagerly import the admin editor');
 assert.doesNotMatch(sw, /\/js\/modules\/admin\.js/, 'the non-public admin editor must not inflate the app-shell precache');
 assert.match(sw, /\/js\/modules\/packlist-generator\.js/, 'the generated-list rules must remain available offline');
+assert.match(sw, /\/js\/modules\/state-store\.js/, 'the observable state store must remain available offline');
 assert.match(pwa, /updateViaCache: 'none'/);
 assert.match(pwa, /controllerchange/);
 assert.match(pwa, /registration\.waiting/);
