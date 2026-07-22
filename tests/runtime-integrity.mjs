@@ -149,6 +149,8 @@ assert.match(controller, /PDF non disponibile offline: apro la stampa o copio la
 assert.match(controller, /catch \(error\) \{\n\s+return exportPdfFallback\(error\);/, 'PDF export errors must fall back without breaking the button');
 assert.match(controller, /documentTitle = listName/);
 assert.match(controller, /packlist\$\{namePart\}/);
+assert.match(controller, /PUBLIC_APP_URL = 'https:\/\/packlist-pro\.vercel\.app\/'/, 'PDF sharing must use the public Packlist Pro URL');
+assert.match(controller, /const shareUrl = await createPdfShareUrl\(\)/, 'PDF call-to-action must use the editable canonical link');
 assert.match(controller, /url\.hash = await encodeSharedState/);
 assert.match(controller, /STATE\.baggages\.map\(bag => \[bag\.name, bag\.limit/);
 assert.match(controller, /baggageIndexes\.get\(item\.baggageId\)/);
@@ -193,7 +195,9 @@ assert.match(communications, /mode: 'no-cors'/);
 assert.doesNotMatch(communications, /return \{ ok: true \};/, 'non-JSON responses must never be assumed successful');
 
 assert.match(html, /id="feedbackBtn"/);
+assert.match(html, /id="exportPdfQuickBtn"/, 'PDF export must be available beside the quick share action');
 assert.match(app, /fabItem\.id === 'feedbackBtn'\) openFeedbackModal\(\)/, 'the Feedback FAB action must open the feedback modal');
+assert.match(app, /exportPdfQuickBtn.*Ctrl\.exportPDF\(\)/, 'the quick PDF action must invoke PDF export');
 assert.doesNotMatch(html, /id="adminFabBtn"/, 'admin entry must not be duplicated in the FAB');
 assert.match(html, /id="removeCheckedBtn"/);
 assert.match(html, /id="act-speleo"/);

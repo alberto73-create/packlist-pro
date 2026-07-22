@@ -47,6 +47,7 @@ function setupEventListeners() {
 
     document.getElementById('generateBtn')?.addEventListener('click', () => { if (!Ctrl.validateSetupForGenerate()) return; Ctrl.generateList(); renderSupportBanner('afterGenerate'); maybeShowAutomaticFeedback('afterGenerate'); });
     document.getElementById('shareQuickBtn')?.addEventListener('click', () => Ctrl.shareList());
+    document.getElementById('exportPdfQuickBtn')?.addEventListener('click', async () => { await Ctrl.exportPDF(); maybeShowAutomaticFeedback('afterExport'); });
     document.getElementById('feedbackBtn')?.addEventListener('click', openFeedbackModal);
     document.getElementById('adminOpen')?.addEventListener('click', openAdminPanel);
 

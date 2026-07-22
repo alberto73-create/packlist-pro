@@ -196,6 +196,7 @@ export function editItemWeight(uid, newWeight) {
 
 const STATE_STORAGE_KEY = 'packlist_state';
 const STATE_BACKUP_KEY = 'packlist_state_backup';
+const PUBLIC_APP_URL = 'https://packlist-pro.vercel.app/';
 
 /**
  * Salva lo stato mantenendo anche l'ultima copia valida per gli aggiornamenti PWA.
@@ -746,7 +747,10 @@ export async function exportPDF() {
         }
     }
 
-    const shareUrl = await createShareUrl();
+    // Nel PDF usiamo sempre l'URL pubblico canonico: il fragment #b. include
+    // l'intera lista e la apre quindi come copia modificabile, anche se il PDF
+    // è stato creato da una preview Vercel o da un dominio personalizzato.
+    const shareUrl = await createPdfShareUrl();
     const pageCount = doc.getNumberOfPages?.() || 1;
     const cta = { x: 14, y: 278, width: 182, height: 12 };
     for (let page = 1; page <= pageCount; page += 1) {
@@ -889,6 +893,18 @@ function expandSharedState(shared) {
 
 export async function createShareUrl() {
     const url = new URL(window.location.href);
+    return createEditableListUrl(url);
+}
+
+/**
+ * Crea il link pubblico inserito nel PDF. Il payload nel fragment conserva
+ * configurazione, bagagli e articoli così il destinatario può modificarli.
+ */
+export async function createPdfShareUrl() {
+    return createEditableListUrl(new URL(PUBLIC_APP_URL));
+}
+
+async function createEditableListUrl(url) {
     url.search = '';
     if (url.pathname.endsWith('/index.html')) url.pathname = url.pathname.slice(0, -'index.html'.length);
     url.hash = await encodeSharedState(compactSharedState());
