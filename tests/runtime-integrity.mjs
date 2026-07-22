@@ -195,7 +195,9 @@ assert.match(communications, /mode: 'no-cors'/);
 assert.doesNotMatch(communications, /return \{ ok: true \};/, 'non-JSON responses must never be assumed successful');
 
 assert.match(html, /id="feedbackBtn"/);
+assert.match(html, /id="exportPdfQuickBtn"/, 'PDF export must be available beside the quick share action');
 assert.match(app, /fabItem\.id === 'feedbackBtn'\) openFeedbackModal\(\)/, 'the Feedback FAB action must open the feedback modal');
+assert.match(app, /exportPdfQuickBtn.*Ctrl\.exportPDF\(\)/, 'the quick PDF action must invoke PDF export');
 assert.doesNotMatch(html, /id="adminFabBtn"/, 'admin entry must not be duplicated in the FAB');
 assert.match(html, /id="removeCheckedBtn"/);
 assert.match(html, /id="act-speleo"/);
